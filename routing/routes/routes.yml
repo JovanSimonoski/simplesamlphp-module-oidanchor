@@ -1,0 +1,28 @@
+---
+
+# Entity Configuration endpoint.
+# Accessible at: /simplesaml/module.php/oidanchor/.well-known/openid-federation
+oidanchor-openid-federation:
+  path: /.well-known/openid-federation
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\OpenIDFederation::entityConfiguration'
+  }
+  methods: [GET]
+
+# Subordinate Listing endpoint (federation_list_endpoint).
+# Accessible at: /simplesaml/module.php/oidanchor/federation/list
+oidanchor-federation-list:
+  path: /federation/list
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\OpenIDFederation::subordinateList'
+  }
+  methods: [GET]
+
+# Subordinate Statement endpoint (federation_fetch_endpoint).
+# Accessible at: /simplesaml/module.php/oidanchor/federation/fetch?iss=<TA>&sub=<entity>
+oidanchor-federation-fetch:
+  path: /federation/fetch
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\OpenIDFederation::fetch'
+  }
+  methods: [GET]

@@ -18,7 +18,7 @@
 
         "simplesamlphp/assert": "^2.0",
         "simplesamlphp/simplesamlphp": "^2.5@dev",
-        "simplesamlphp/openid": "^0.1.42"
+        "simplesamlphp/openid": "^0.1.43"
     },
     "require-dev": {
         "simplesamlphp/simplesamlphp-test-framework": "^1.11"

@@ -1,0 +1,89 @@
+{% set pagetitle = 'Federation-wide Metadata Policies'|trans %}
+{% set frontpage_section = 'oidanchor' %}
+{% extends "base.twig" %}
+
+{% block preload %}
+<link rel="stylesheet" href="{{ asset('css/admin.css', 'admin') }}">
+<style>
+  .oidanchor-table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+  .oidanchor-table th, .oidanchor-table td { padding: .45em .7em; border: 1px solid #ddd; font-size: .9em; }
+  .oidanchor-table th { background: #f4f4f4; text-align: left; }
+  .oidanchor-table tr:hover td { background: #fafafa; }
+  .flash-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: .6em 1em; margin-bottom: 1em; border-radius: 3px; }
+  .flash-error   { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: .6em 1em; margin-bottom: 1em; border-radius: 3px; }
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="pure-g frontpage-menu">
+    <div class="pure-u-1">
+      <div class="pure-menu pure-menu-horizontal wrapping-menu">
+        <ul class="pure-menu-list">
+          {%- for id, option in menu %}
+          <li class="pure-menu-item{% if frontpage_section == id %} pure-menu-selected{% endif %}">
+            <a href="{{ option.url }}" class="pure-menu-link">{{ option.name|trans }}</a>
+          </li>
+          {%- endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h2>{% trans %}Federation-wide Metadata Policies{% endtrans %}</h2>
+
+  <p style="color:#555;font-size:.9em;">
+    {% trans %}These policies are applied to every subordinate of the matching entity type before any per-subordinate overrides.{% endtrans %}
+  </p>
+
+  {% if flash %}
+    <div class="flash-{{ flash.type }}">{{ flash.text|e }}</div>
+  {% endif %}
+
+  {% if missingTypes is not empty %}
+  <p>
+    <a href="{{ createUrl }}" class="pure-button pure-button-primary">
+      + {% trans %}Create policy{% endtrans %}
+    </a>
+  </p>
+  {% endif %}
+
+  {% if policies is empty %}
+    <p>{% trans %}No federation-wide policies defined yet.{% endtrans %}</p>
+  {% else %}
+    <table class="oidanchor-table">
+      <thead>
+        <tr>
+          <th>{% trans %}Entity Type{% endtrans %}</th>
+          <th>{% trans %}Parameters{% endtrans %}</th>
+          <th>{% trans %}Updated{% endtrans %}</th>
+          <th>{% trans %}Actions{% endtrans %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in policies %}
+          <tr>
+            <td><code>{{ p.entityType|e }}</code></td>
+            <td>{{ p.policy|keys|join(', ')|e }}</td>
+            <td>{{ p.updatedAt|date('Y-m-d H:i') }}</td>
+            <td>
+              {%- set encodedType = p.entityType|url_encode -%}
+
+              <a href="{{ moduleURL('oidanchor/admin/policies/' ~ encodedType ~ '/edit') }}"
+                 class="pure-button">{% trans %}Edit{% endtrans %}</a>
+
+              <form method="post"
+                    action="{{ moduleURL('oidanchor/admin/policies/' ~ encodedType ~ '/delete') }}"
+                    style="display:inline">
+                <button type="submit" class="pure-button pure-button-red"
+                        onclick="return confirm('Delete policy for {{ p.entityType|e('js') }}? This cannot be undone.')">
+                  {% trans %}Delete{% endtrans %}
+                </button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+
+{% endblock %}

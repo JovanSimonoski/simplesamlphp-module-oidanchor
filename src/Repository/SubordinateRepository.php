@@ -6,11 +6,12 @@ namespace SimpleSAML\Module\oidanchor\Repository;
 
 use PDO;
 use PDOException;
+use SimpleSAML\Module\oidanchor\Entity\Subordinate;
 
 /**
  * Data-access layer for the subordinate registry.
  *
- * Schema is initialised on construction so no external migration step is needed for SQLite.
+ * Schema is initialised (and migrated) on construction so no external migration step is needed for SQLite.
  */
 class SubordinateRepository
 {
@@ -24,8 +25,7 @@ class SubordinateRepository
 
 
     /**
-     * Create the table if it does not exist yet, and add any columns introduced
-     * after the initial schema so existing databases are upgraded transparently.
+     * Create the table if it does not exist yet, then apply any column migrations.
      */
     private function ensureSchema(): void
     {
@@ -37,25 +37,55 @@ class SubordinateRepository
             )',
         );
 
-        // Migration: jwks column added when fetch endpoint was introduced.
-        try {
-            $this->pdo->exec('ALTER TABLE ' . self::TABLE . ' ADD COLUMN jwks TEXT');
-        } catch (PDOException) {
-            // Column already exists — safe to ignore.
+        $migrations = [
+            'ALTER TABLE ' . self::TABLE . ' ADD COLUMN jwks TEXT',
+            'ALTER TABLE ' . self::TABLE . ' ADD COLUMN metadata_policy TEXT',
+            'ALTER TABLE ' . self::TABLE . ' ADD COLUMN extra_claims TEXT',
+            "ALTER TABLE " . self::TABLE . " ADD COLUMN status TEXT NOT NULL DEFAULT 'active'",
+            'ALTER TABLE ' . self::TABLE . ' ADD COLUMN updated_at INTEGER',
+        ];
+
+        foreach ($migrations as $sql) {
+            try {
+                $this->pdo->exec($sql);
+            } catch (PDOException) {
+                // Column already exists — safe to ignore.
+            }
         }
     }
 
 
     /**
-     * Return every registered entity_id, ordered by registration time.
+     * Return all registered subordinates regardless of status, ordered by registration time.
+     *
+     * @return Subordinate[]
+     */
+    public function findAll(): array
+    {
+        $stmt = $this->pdo->query(
+            'SELECT * FROM ' . self::TABLE . ' ORDER BY registered_at ASC',
+        );
+
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return array_map(
+            static fn(array $row): Subordinate => Subordinate::fromRow($row),
+            $rows,
+        );
+    }
+
+
+    /**
+     * Return entity IDs of all active subordinates, ordered by registration time.
      *
      * @return string[]
      */
-    public function getAllEntityIds(): array
+    public function getAllActiveEntityIds(): array
     {
-        $stmt = $this->pdo->query(
-            'SELECT entity_id FROM ' . self::TABLE . ' ORDER BY registered_at ASC',
+        $stmt = $this->pdo->prepare(
+            "SELECT entity_id FROM " . self::TABLE . " WHERE status = 'active' ORDER BY registered_at ASC",
         );
+        $stmt->execute();
 
         /** @var string[] $ids */
         $ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
@@ -65,23 +95,113 @@ class SubordinateRepository
 
 
     /**
-     * Find a single subordinate row by entity_id.
+     * Find a single subordinate by entity_id (any status).
      * Returns null when the entity_id is not registered.
-     *
-     * @return array{entity_id: string, entity_type: string|null, jwks: string|null, registered_at: int}|null
      */
-    public function findByEntityId(string $entityId): ?array
+    public function findByEntityId(string $entityId): ?Subordinate
     {
         $stmt = $this->pdo->prepare(
-            'SELECT entity_id, entity_type, jwks, registered_at
-               FROM ' . self::TABLE . '
-              WHERE entity_id = ?',
+            'SELECT * FROM ' . self::TABLE . ' WHERE entity_id = ?',
         );
         $stmt->execute([$entityId]);
 
-        /** @var array{entity_id: string, entity_type: string|null, jwks: string|null, registered_at: int}|false $row */
+        /** @var array<string,mixed>|false $row */
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        return $row === false ? null : $row;
+        return $row === false ? null : Subordinate::fromRow($row);
+    }
+
+
+    /**
+     * Check whether an entity_id already exists in the registry.
+     */
+    public function exists(string $entityId): bool
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT 1 FROM ' . self::TABLE . ' WHERE entity_id = ?',
+        );
+        $stmt->execute([$entityId]);
+
+        return $stmt->fetchColumn() !== false;
+    }
+
+
+    /**
+     * Insert a new subordinate row.
+     */
+    public function create(Subordinate $sub): void
+    {
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO ' . self::TABLE . '
+                (entity_id, entity_type, jwks, metadata_policy, extra_claims, status, registered_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        );
+
+        $stmt->execute([
+            $sub->entityId,
+            $sub->entityType,
+            $sub->jwks !== null ? json_encode($sub->jwks, JSON_UNESCAPED_SLASHES) : null,
+            $sub->metadataPolicy !== null ? json_encode($sub->metadataPolicy, JSON_UNESCAPED_SLASHES) : null,
+            $sub->extraClaims !== null ? json_encode($sub->extraClaims, JSON_UNESCAPED_SLASHES) : null,
+            $sub->status,
+            $sub->registeredAt,
+            $sub->updatedAt,
+        ]);
+    }
+
+
+    /**
+     * Update mutable columns for an existing subordinate.
+     *
+     * @param array<string,mixed> $fields Associative array of column => value pairs to update (entity_id excluded).
+     */
+    public function update(string $entityId, array $fields): void
+    {
+        $allowed = ['entity_type', 'jwks', 'metadata_policy', 'extra_claims', 'status', 'updated_at'];
+
+        $sets   = [];
+        $values = [];
+
+        foreach ($allowed as $col) {
+            if (array_key_exists($col, $fields)) {
+                $sets[]   = "$col = ?";
+                $values[] = $fields[$col];
+            }
+        }
+
+        if (empty($sets)) {
+            return;
+        }
+
+        $values[] = $entityId;
+
+        $stmt = $this->pdo->prepare(
+            'UPDATE ' . self::TABLE . ' SET ' . implode(', ', $sets) . ' WHERE entity_id = ?',
+        );
+        $stmt->execute($values);
+    }
+
+
+    /**
+     * Delete a subordinate row.
+     */
+    public function delete(string $entityId): void
+    {
+        $stmt = $this->pdo->prepare(
+            'DELETE FROM ' . self::TABLE . ' WHERE entity_id = ?',
+        );
+        $stmt->execute([$entityId]);
+    }
+
+
+    /**
+     * Update only the status (and updated_at) for a subordinate.
+     */
+    public function setStatus(string $entityId, string $status): void
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE ' . self::TABLE . ' SET status = ?, updated_at = ? WHERE entity_id = ?',
+        );
+        $stmt->execute([$status, time(), $entityId]);
     }
 }

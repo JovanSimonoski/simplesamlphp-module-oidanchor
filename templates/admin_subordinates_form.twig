@@ -1,0 +1,123 @@
+{% set pagetitle = title|trans %}
+{% set frontpage_section = 'oidanchor' %}
+{% extends "base.twig" %}
+
+{% block preload %}
+<link rel="stylesheet" href="{{ asset('css/admin.css', 'admin') }}">
+<style>
+  .oidanchor-form { max-width: 780px; }
+  .oidanchor-form .field { margin-bottom: 1.1em; }
+  .oidanchor-form label { display: block; font-weight: bold; margin-bottom: .25em; }
+  .oidanchor-form input[type=text],
+  .oidanchor-form select,
+  .oidanchor-form textarea { width: 100%; box-sizing: border-box; font-family: monospace; font-size: .9em; }
+  .oidanchor-form textarea { height: 140px; }
+  .field-error { color: #c00; font-size: .85em; margin-top: .2em; }
+  .field-hint  { color: #666; font-size: .82em; margin-top: .2em; }
+  .flash-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: .6em 1em; margin-bottom: 1em; border-radius: 3px; }
+  .flash-error   { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: .6em 1em; margin-bottom: 1em; border-radius: 3px; }
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="pure-g frontpage-menu">
+    <div class="pure-u-1">
+      <div class="pure-menu pure-menu-horizontal wrapping-menu">
+        <ul class="pure-menu-list">
+          {%- for id, option in menu %}
+          <li class="pure-menu-item{% if frontpage_section == id %} pure-menu-selected{% endif %}">
+            <a href="{{ option.url }}" class="pure-menu-link">{{ option.name|trans }}</a>
+          </li>
+          {%- endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h2>{{ title|e }}</h2>
+
+  {% if flash %}
+    <div class="flash-{{ flash.type }}">{{ flash.text|e }}</div>
+  {% endif %}
+
+  <form method="post" action="{{ actionUrl }}" class="pure-form pure-form-stacked oidanchor-form">
+
+    {# Entity ID - readonly on edit #}
+    <div class="field">
+      <label for="entity_id">{% trans %}Entity ID{% endtrans %} *</label>
+      {% if subordinate %}
+        <input type="text" id="entity_id" name="entity_id"
+               value="{{ formData.entity_id|default('')|e }}" readonly
+               class="pure-input-1{% if errors.entity_id is defined %} pure-input-error{% endif %}">
+      {% else %}
+        <input type="text" id="entity_id" name="entity_id"
+               value="{{ formData.entity_id|default('')|e }}" required
+               placeholder="https://rp.example.com"
+               class="pure-input-1{% if errors.entity_id is defined %} pure-input-error{% endif %}">
+      {% endif %}
+      {% if errors.entity_id is defined %}
+        <p class="field-error">{{ errors.entity_id|e }}</p>
+      {% else %}
+        <p class="field-hint">{% trans %}The HTTPS URL uniquely identifying this subordinate.{% endtrans %}</p>
+      {% endif %}
+    </div>
+
+    {# Entity Type #}
+    <div class="field">
+      <label for="entity_type">{% trans %}Entity Type{% endtrans %}</label>
+      <select id="entity_type" name="entity_type"
+              class="pure-input-1{% if errors.entity_type is defined %} pure-input-error{% endif %}">
+        <option value="">{% trans %}select type{% endtrans %}</option>
+        {% for type in entityTypes %}
+          <option value="{{ type }}"
+                  {% if formData.entity_type|default('') == type %}selected{% endif %}>
+            {{ type }}
+          </option>
+        {% endfor %}
+      </select>
+      {% if errors.entity_type is defined %}
+        <p class="field-error">{{ errors.entity_type|e }}</p>
+      {% endif %}
+    </div>
+
+    {# JWKS #}
+    <div class="field">
+      <label for="jwks">{% trans %}JWKS (public federation keys){% endtrans %}</label>
+      <textarea id="jwks" name="jwks"
+                placeholder='{"keys":[{"kty":"RSA","use":"sig","n":"...","e":"AQAB"}]}'
+                class="{% if errors.jwks is defined %}pure-input-error{% endif %}">{{ formData.jwks|default('')|e }}</textarea>
+      {% if errors.jwks is defined %}
+        <p class="field-error">{{ errors.jwks|e }}</p>
+      {% else %}
+        <p class="field-hint">{% trans %}Paste the subordinate's public JWKS. Must include at least one key.{% endtrans %}</p>
+      {% endif %}
+    </div>
+
+    {# Per-subordinate Metadata Policy #}
+    <div class="field">
+      <label for="metadata_policy">{% trans %}Per-subordinate Metadata Policy{% endtrans %} <em>({% trans %}optional{% endtrans %})</em></label>
+      <textarea id="metadata_policy" name="metadata_policy"
+                placeholder='{
+  "openid_relying_party": {
+    "id_token_signed_response_alg": { "one_of": ["ES256"] }
+  }
+}'
+                class="{% if errors.metadata_policy is defined %}pure-input-error{% endif %}">{{ formData.metadata_policy|default('')|e }}</textarea>
+      {% if errors.metadata_policy is defined %}
+        <p class="field-error">{{ errors.metadata_policy|e }}</p>
+      {% else %}
+        <p class="field-hint">
+          JSON object of <code>entity_type &rarr; parameter &rarr; operators</code>.
+          This policy is merged on top of the federation-wide policy for this entity type
+          (configured under <a href="{{ moduleURL('oidanchor/admin/policies') }}">Metadata Policies</a>).
+          Per-subordinate values take precedence per the OpenID Federation merging rules.
+        </p>
+      {% endif %}
+    </div>
+
+    <div class="field">
+      <button type="submit" class="pure-button pure-button-primary">{{ submitLabel|e }}</button>
+      <a href="{{ listUrl }}" class="pure-button">{% trans %}Cancel{% endtrans %}</a>
+    </div>
+  </form>
+{% endblock %}

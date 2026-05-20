@@ -1,0 +1,100 @@
+{% set pagetitle = title|trans %}
+{% set frontpage_section = 'oidanchor' %}
+{% extends "base.twig" %}
+
+{% block preload %}
+<link rel="stylesheet" href="{{ asset('css/admin.css', 'admin') }}">
+<style>
+  .oidanchor-form { max-width: 780px; }
+  .oidanchor-form .field { margin-bottom: 1.1em; }
+  .oidanchor-form label { display: block; font-weight: bold; margin-bottom: .25em; }
+  .oidanchor-form select,
+  .oidanchor-form textarea { width: 100%; box-sizing: border-box; font-family: monospace; font-size: .9em; }
+  .oidanchor-form textarea { height: 200px; }
+  .field-error { color: #c00; font-size: .85em; margin-top: .2em; }
+  .field-hint  { color: #666; font-size: .82em; margin-top: .2em; }
+  .flash-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: .6em 1em; margin-bottom: 1em; border-radius: 3px; }
+  .flash-error   { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: .6em 1em; margin-bottom: 1em; border-radius: 3px; }
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="pure-g frontpage-menu">
+    <div class="pure-u-1">
+      <div class="pure-menu pure-menu-horizontal wrapping-menu">
+        <ul class="pure-menu-list">
+          {%- for id, option in menu %}
+          <li class="pure-menu-item{% if frontpage_section == id %} pure-menu-selected{% endif %}">
+            <a href="{{ option.url }}" class="pure-menu-link">{{ option.name|trans }}</a>
+          </li>
+          {%- endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h2>{{ title|e }}</h2>
+
+  {% if flash %}
+    <div class="flash-{{ flash.type }}">{{ flash.text|e }}</div>
+  {% endif %}
+
+  <form method="post" action="{{ actionUrl }}" class="pure-form pure-form-stacked oidanchor-form">
+
+    {# Entity Type - dropdown on create, readonly label on edit #}
+    <div class="field">
+      <label for="entity_type">{% trans %}Entity Type{% endtrans %} *</label>
+      {% if isEdit %}
+        <input type="text" id="entity_type" name="entity_type"
+               value="{{ formData.entity_type|default('')|e }}" readonly
+               class="pure-input-1">
+        <p class="field-hint">{% trans %}Entity type cannot be changed. Delete and recreate to use a different type.{% endtrans %}</p>
+      {% else %}
+        <select id="entity_type" name="entity_type"
+                class="pure-input-1{% if errors.entity_type is defined %} pure-input-error{% endif %}">
+          <option value="">{% trans %} select type {% endtrans %}</option>
+          {% for type in entityTypes %}
+            <option value="{{ type }}"
+                    {% if formData.entity_type|default('') == type %}selected{% endif %}>
+              {{ type }}
+            </option>
+          {% endfor %}
+        </select>
+        {% if errors.entity_type is defined %}
+          <p class="field-error">{{ errors.entity_type|e }}</p>
+        {% endif %}
+      {% endif %}
+    </div>
+
+    {# Policy JSON #}
+    <div class="field">
+      <label for="policy">{% trans %}Policy JSON{% endtrans %} *</label>
+      <textarea id="policy" name="policy"
+                placeholder='{
+  "grant_types": {
+    "subset_of": ["authorization_code", "refresh_token"]
+  },
+  "id_token_signed_response_alg": {
+    "one_of": ["RS256", "ES256"]
+  }
+}'
+                class="{% if errors.policy is defined %}pure-input-error{% endif %}">{{ formData.policy|default('')|e }}</textarea>
+      {% if errors.policy is defined %}
+        <p class="field-error">{{ errors.policy|e }}</p>
+      {% else %}
+        <p class="field-hint">
+          JSON object of <code>parameter &rarr; operators</code> for the selected entity type.
+          Supported operators: <code>value</code>, <code>default</code>, <code>add</code>,
+          <code>one_of</code>, <code>subset_of</code>, <code>superset_of</code>, <code>essential</code>.
+          This policy is applied to every subordinate of this entity type. Per-subordinate policies
+          (configured on each subordinate) are merged on top according to the OpenID Federation merging rules.
+        </p>
+      {% endif %}
+    </div>
+
+    <div class="field">
+      <button type="submit" class="pure-button pure-button-primary">{{ submitLabel|e }}</button>
+      <a href="{{ listUrl }}" class="pure-button">{% trans %}Cancel{% endtrans %}</a>
+    </div>
+  </form>
+{% endblock %}

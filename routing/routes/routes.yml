@@ -26,3 +26,94 @@ oidanchor-federation-fetch:
     _controller: 'SimpleSAML\Module\oidanchor\Controller\OpenIDFederation::fetch'
   }
   methods: [GET]
+
+# ============================================================
+# Admin UI routes (require admin session)
+# ============================================================
+
+# List all subordinates.
+# Accessible at: /simplesaml/module.php/oidanchor/admin/subordinates
+oidanchor-admin-subordinates-list:
+  path: /admin/subordinates
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminSubordinates::list'
+  }
+  methods: [GET]
+
+# Register a new subordinate (GET = form, POST = submit).
+oidanchor-admin-subordinates-create:
+  path: /admin/subordinates/create
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminSubordinates::create'
+  }
+  methods: [GET, POST]
+
+# Edit an existing subordinate. {entityId} is the URL-encoded entity ID.
+oidanchor-admin-subordinates-edit:
+  path: /admin/subordinates/{entityId}/edit
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminSubordinates::edit'
+  }
+  requirements:
+    entityId: '.+'
+  methods: [GET, POST]
+
+# Delete a subordinate (POST only - triggered by form submit with confirm).
+oidanchor-admin-subordinates-delete:
+  path: /admin/subordinates/{entityId}/delete
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminSubordinates::delete'
+  }
+  requirements:
+    entityId: '.+'
+  methods: [POST]
+
+# Set subordinate status (POST only). Expects ?status=active|suspended in body.
+oidanchor-admin-subordinates-status:
+  path: /admin/subordinates/{entityId}/status
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminSubordinates::setStatus'
+  }
+  requirements:
+    entityId: '.+'
+  methods: [POST]
+
+# ============================================================
+# Admin UI routes — federation-wide metadata policies
+# ============================================================
+
+# List all federation-wide policies.
+oidanchor-admin-policies-list:
+  path: /admin/policies
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminPolicies::list'
+  }
+  methods: [GET]
+
+# Create a new federation-wide policy (GET = form, POST = submit).
+oidanchor-admin-policies-create:
+  path: /admin/policies/create
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminPolicies::create'
+  }
+  methods: [GET, POST]
+
+# Edit an existing federation-wide policy. {entityType} is the URL-encoded entity type.
+oidanchor-admin-policies-edit:
+  path: /admin/policies/{entityType}/edit
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminPolicies::edit'
+  }
+  requirements:
+    entityType: '.+'
+  methods: [GET, POST]
+
+# Delete a federation-wide policy (POST only).
+oidanchor-admin-policies-delete:
+  path: /admin/policies/{entityType}/delete
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminPolicies::delete'
+  }
+  requirements:
+    entityType: '.+'
+  methods: [POST]

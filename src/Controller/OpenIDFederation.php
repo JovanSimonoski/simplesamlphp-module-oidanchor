@@ -8,8 +8,11 @@ use PDO;
 use PDOException;
 use RuntimeException;
 use SimpleSAML\Configuration;
+use SimpleSAML\Module\oidanchor\Repository\FederationPolicyRepository;
 use SimpleSAML\Module\oidanchor\Repository\SubordinateRepository;
+use SimpleSAML\Module\oidanchor\Service\MetadataPolicyMerger;
 use SimpleSAML\Module\oidanchor\Service\SubordinateService;
+use SimpleSAML\OpenID\Exceptions\MetadataPolicyException;
 use SimpleSAML\OpenID\Algorithms\SignatureAlgorithmBag;
 use SimpleSAML\OpenID\Algorithms\SignatureAlgorithmEnum;
 use SimpleSAML\OpenID\Codebooks\ClaimsEnum;
@@ -35,9 +38,6 @@ class OpenIDFederation
 
     /**
      * Serve the Entity Configuration JWT at /.well-known/openid-federation.
-     *
-     * The JWT is self-signed with the TA's federation signing key and contains
-     * iss, sub (both = entity_id), iat, exp, jwks, and federation_entity metadata.
      */
     public function entityConfiguration(Request $request): Response
     {
@@ -84,10 +84,7 @@ class OpenIDFederation
 
 
     /**
-     * Serve the Subordinate Listing endpoint (federation_list_endpoint).
-     *
-     * Returns a JSON array of entity identifiers for which this TA has issued
-     * (or is prepared to issue) Subordinate Statements.
+     * Serve the Subordinate Listing endpoint — returns entity IDs of active subordinates only.
      */
     public function subordinateList(Request $request): JsonResponse
     {
@@ -102,10 +99,11 @@ class OpenIDFederation
 
 
     /**
-     * Serve the Subordinate Statement endpoint (federation_fetch_endpoint).
+     * Serve the Subordinate Statement endpoint.
      *
-     * Issues a signed JWT asserting the subordinate's keys and (optionally) metadata.
-     * Query parameters: iss (must equal this TA's entity_id), sub (the subordinate's entity_id).
+     * Only active subordinates are served. The metadata_policy claim is the result of
+     * merging the federation-wide policy for the subordinate's entity type with the
+     * per-subordinate policy stored in oidanchor_subordinates.
      */
     public function fetch(Request $request): Response
     {
@@ -131,8 +129,10 @@ class OpenIDFederation
             );
         }
 
+        $pdo = $this->buildPdo($moduleConfig);
+
         $service = new SubordinateService(
-            new SubordinateRepository($this->buildPdo($moduleConfig)),
+            new SubordinateRepository($pdo),
         );
 
         $subordinate = $service->findSubordinate($sub);
@@ -145,7 +145,15 @@ class OpenIDFederation
             );
         }
 
-        if (empty($subordinate['jwks'])) {
+        if ($subordinate->status !== 'active') {
+            return $this->federationError(
+                'not_found',
+                sprintf("Subordinate '%s' is not active", $sub),
+                Response::HTTP_NOT_FOUND,
+            );
+        }
+
+        if (empty($subordinate->jwks)) {
             return $this->federationError(
                 'not_found',
                 sprintf("No JWKS stored for subordinate '%s'", $sub),
@@ -153,8 +161,29 @@ class OpenIDFederation
             );
         }
 
-        /** @var array<string,mixed> $jwks */
-        $jwks = json_decode($subordinate['jwks'], true);
+        // Build the merged metadata_policy claim from federation-wide + per-subordinate layers.
+        $mergedPolicy = null;
+        try {
+            $policyRepo      = new FederationPolicyRepository($pdo);
+            $federationEntry = $subordinate->entityType !== null
+                ? $policyRepo->findByEntityType($subordinate->entityType)
+                : null;
+
+            $federationWidePolicy = $federationEntry !== null
+                ? [$federationEntry->entityType => $federationEntry->policy]
+                : null;
+
+            $mergedPolicy = (new MetadataPolicyMerger())->merge(
+                $federationWidePolicy,
+                $subordinate->metadataPolicy,
+            );
+        } catch (MetadataPolicyException $e) {
+            return $this->federationError(
+                'server_error',
+                'Incompatible metadata policies for this subordinate: ' . $e->getMessage(),
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+            );
+        }
 
         $lifetime = $moduleConfig->getOptionalInteger('subordinate_statement_lifetime', 86400) ?? 86400;
 
@@ -168,8 +197,18 @@ class OpenIDFederation
             ClaimsEnum::Sub->value  => $sub,
             ClaimsEnum::Iat->value  => $now,
             ClaimsEnum::Exp->value  => $now + $lifetime,
-            ClaimsEnum::Jwks->value => $jwks,
+            ClaimsEnum::Jwks->value => $subordinate->jwks,
         ];
+
+        if ($mergedPolicy !== null) {
+            $payload[ClaimsEnum::MetadataPolicy->value] = $mergedPolicy;
+        }
+
+        if ($subordinate->extraClaims !== null) {
+            foreach ($subordinate->extraClaims as $claim => $value) {
+                $payload[$claim] = $value;
+            }
+        }
 
         $token = $this->signEntityStatement($signingKey, $algorithm, $payload, [ClaimsEnum::Kid->value => $kid]);
 

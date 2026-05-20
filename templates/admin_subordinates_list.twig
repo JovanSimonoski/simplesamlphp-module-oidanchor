@@ -1,0 +1,109 @@
+{% set pagetitle = 'OIDC Federation Subordinates'|trans %}
+{% set frontpage_section = 'oidanchor' %}
+{% extends "base.twig" %}
+
+{% block preload %}
+<link rel="stylesheet" href="{{ asset('css/admin.css', 'admin') }}">
+<style>
+  .oidanchor-table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+  .oidanchor-table th, .oidanchor-table td { padding: .45em .7em; border: 1px solid #ddd; font-size: .9em; }
+  .oidanchor-table th { background: #f4f4f4; text-align: left; }
+  .oidanchor-table tr:hover td { background: #fafafa; }
+  .badge-active   { color: #2a6b2a; font-weight: bold; }
+  .badge-suspended { color: #9a3a00; font-weight: bold; }
+  .flash-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: .6em 1em; margin-bottom: 1em; border-radius: 3px; }
+  .flash-error   { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: .6em 1em; margin-bottom: 1em; border-radius: 3px; }
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="pure-g frontpage-menu">
+    <div class="pure-u-1">
+      <div class="pure-menu pure-menu-horizontal wrapping-menu">
+        <ul class="pure-menu-list">
+          {%- for id, option in menu %}
+          <li class="pure-menu-item{% if frontpage_section == id %} pure-menu-selected{% endif %}">
+            <a href="{{ option.url }}" class="pure-menu-link">{{ option.name|trans }}</a>
+          </li>
+          {%- endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h2>{% trans %}OIDC Federation Subordinates{% endtrans %}</h2>
+
+  {% if flash %}
+    <div class="flash-{{ flash.type }}">{{ flash.text|e }}</div>
+  {% endif %}
+
+  <p>
+    <a href="{{ createUrl }}" class="pure-button pure-button-primary">
+      + {% trans %}Register new subordinate{% endtrans %}
+    </a>
+  </p>
+
+  {% if subordinates is empty %}
+    <p>{% trans %}No subordinates registered yet.{% endtrans %}</p>
+  {% else %}
+    <table class="oidanchor-table">
+      <thead>
+        <tr>
+          <th>{% trans %}Entity ID{% endtrans %}</th>
+          <th>{% trans %}Type{% endtrans %}</th>
+          <th>{% trans %}Status{% endtrans %}</th>
+          <th>{% trans %}Registered{% endtrans %}</th>
+          <th>{% trans %}Updated{% endtrans %}</th>
+          <th>{% trans %}Actions{% endtrans %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sub in subordinates %}
+          <tr>
+            <td><code>{{ sub.entityId|e }}</code></td>
+            <td>{{ sub.entityType ?? '-' }}</td>
+            <td>
+              <span class="badge-{{ sub.status }}">{{ sub.status|e }}</span>
+            </td>
+            <td>{{ sub.registeredAt|date('Y-m-d H:i') }}</td>
+            <td>{{ sub.updatedAt ? sub.updatedAt|date('Y-m-d H:i') : '-' }}</td>
+            <td>
+              {%- set encodedId = sub.entityId|url_encode -%}
+
+              <a href="{{ moduleURL('oidanchor/admin/subordinates/' ~ encodedId ~ '/edit') }}"
+                 class="pure-button">{% trans %}Edit{% endtrans %}</a>
+
+              {% if sub.status == 'active' %}
+                <form method="post"
+                      action="{{ moduleURL('oidanchor/admin/subordinates/' ~ encodedId ~ '/status') }}"
+                      style="display:inline">
+                  <input type="hidden" name="status" value="suspended">
+                  <button type="submit" class="pure-button"
+                          onclick="return confirm('Suspend this subordinate?')">
+                    {% trans %}Suspend{% endtrans %}
+                  </button>
+                </form>
+              {% else %}
+                <form method="post"
+                      action="{{ moduleURL('oidanchor/admin/subordinates/' ~ encodedId ~ '/status') }}"
+                      style="display:inline">
+                  <input type="hidden" name="status" value="active">
+                  <button type="submit" class="pure-button">{% trans %}Activate{% endtrans %}</button>
+                </form>
+              {% endif %}
+
+              <form method="post"
+                    action="{{ moduleURL('oidanchor/admin/subordinates/' ~ encodedId ~ '/delete') }}"
+                    style="display:inline">
+                <button type="submit" class="pure-button pure-button-red"
+                        onclick="return confirm('Delete subordinate {{ sub.entityId|e('js') }}? This cannot be undone.')">
+                  {% trans %}Delete{% endtrans %}
+                </button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+{% endblock %}

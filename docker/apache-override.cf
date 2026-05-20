@@ -1,3 +1,8 @@
+# Allow %2F (encoded slashes) in URL path segments to reach PHP intact.
+# Without this, Apache decodes %2F → / before routing, which breaks entity IDs
+# like https://rp.example.com used as path parameters.
+AllowEncodedSlashes NoDecode
+
 RewriteEngine On
 RewriteRule ^/.well-known/openid-federation(.*) /${SSP_APACHE_ALIAS}module.php/oidanchor/openid-federation.php$1 [PT]
 

@@ -8,30 +8,28 @@ use PDO;
 use PDOException;
 use RuntimeException;
 use SimpleSAML\Configuration;
-use SimpleSAML\Logger;
-use SimpleSAML\Module\oidanchor\Repository\FederationPolicyRepository;
-use SimpleSAML\Module\oidanchor\Repository\IssuedTrustMarkRepository;
 use SimpleSAML\Module\oidanchor\Repository\SubordinateRepository;
-use SimpleSAML\Module\oidanchor\Repository\TrustMarkTypeRepository;
-use SimpleSAML\Module\oidanchor\Service\MetadataPolicyMerger;
+use SimpleSAML\Module\oidanchor\Service\EntityConfigurationService;
+use SimpleSAML\Module\oidanchor\Service\FederationKeyService;
 use SimpleSAML\Module\oidanchor\Service\SubordinateService;
+use SimpleSAML\Module\oidanchor\Service\SubordinateStatementService;
 use SimpleSAML\OpenID\Exceptions\MetadataPolicyException;
 use SimpleSAML\OpenID\Algorithms\SignatureAlgorithmBag;
 use SimpleSAML\OpenID\Algorithms\SignatureAlgorithmEnum;
 use SimpleSAML\OpenID\Codebooks\ClaimsEnum;
-use SimpleSAML\OpenID\Codebooks\EntityTypesEnum;
 use SimpleSAML\OpenID\Federation;
-use SimpleSAML\OpenID\Federation\Claims\TrustMarksClaimValue;
 use SimpleSAML\OpenID\Jwk;
 use SimpleSAML\OpenID\Jwk\JwkDecorator;
 use SimpleSAML\OpenID\SupportedAlgorithms;
-use Throwable;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Controller for OpenID Federation endpoints.
+ *
+ * Claim assembly is delegated to EntityConfigurationService / SubordinateStatementService so the
+ * signed wire output here and the read-only admin API stay in sync.
  */
 class OpenIDFederation
 {
@@ -48,58 +46,13 @@ class OpenIDFederation
     {
         $moduleConfig = Configuration::getConfig('module_oidanchor.php');
 
-        $entityId       = $moduleConfig->getString('entity_id');
-        $baseUrl        = $moduleConfig->getString('base_url');
-        $lifetime       = $moduleConfig->getOptionalInteger('entity_configuration_lifetime', 86400) ?? 86400;
-        /** @var string[] $authorityHints */
-        $authorityHints = $moduleConfig->getOptionalArray('authority_hints', []) ?? [];
+        $claims = (new EntityConfigurationService(new FederationKeyService($moduleConfig)))
+            ->buildClaims($moduleConfig, $this->buildPdo($moduleConfig));
 
-        $fetchEndpoint = $moduleConfig->getOptionalString('federation_fetch_endpoint', null)
-            ?? $baseUrl . '/federation/fetch';
-        $listEndpoint  = $moduleConfig->getOptionalString('federation_list_endpoint', null)
-            ?? $baseUrl . '/federation/list';
-
-        ['signingKey' => $signingKey, 'kid' => $kid, 'publicJwkData' => $publicJwkData, 'algorithm' => $algorithm]
+        ['signingKey' => $signingKey, 'kid' => $kid, 'algorithm' => $algorithm]
             = $this->loadSigningContext($moduleConfig);
 
-        $now = time();
-
-        $payload = [
-            ClaimsEnum::Iss->value  => $entityId,
-            ClaimsEnum::Sub->value  => $entityId,
-            ClaimsEnum::Iat->value  => $now,
-            ClaimsEnum::Exp->value  => $now + $lifetime,
-            ClaimsEnum::Jwks->value => ['keys' => [$publicJwkData]],
-            ClaimsEnum::Metadata->value => [
-                EntityTypesEnum::FederationEntity->value => [
-                    ClaimsEnum::FederationFetchEndpoint->value => $fetchEndpoint,
-                    ClaimsEnum::FederationListEndpoint->value  => $listEndpoint,
-                ],
-            ],
-        ];
-
-        if ($authorityHints !== []) {
-            $payload[ClaimsEnum::AuthorityHints->value] = $authorityHints;
-        }
-
-        // Advertise the Trust Mark Types this TA issues via the trust_mark_issuers claim:
-        // each type maps to the list of issuers permitted to issue it — here, only this TA.
-        // Done defensively so the Entity Configuration never fails over a Trust Mark lookup.
-        try {
-            $types = (new TrustMarkTypeRepository($this->buildPdo($moduleConfig)))->findAll();
-
-            if ($types !== []) {
-                $issuers = [];
-                foreach ($types as $type) {
-                    $issuers[$type->trustMarkId] = [$entityId];
-                }
-                $payload[ClaimsEnum::TrustMarkIssuers->value] = $issuers;
-            }
-        } catch (Throwable $e) {
-            Logger::warning('oidanchor: could not load trust mark types for entity configuration: ' . $e->getMessage());
-        }
-
-        $token = $this->signEntityStatement($signingKey, $algorithm, $payload, [ClaimsEnum::Kid->value => $kid]);
+        $token = $this->signEntityStatement($signingKey, $algorithm, $claims, [ClaimsEnum::Kid->value => $kid]);
 
         return new Response($token, Response::HTTP_OK, ['Content-Type' => 'application/entity-statement+jwt']);
     }
@@ -183,22 +136,8 @@ class OpenIDFederation
             );
         }
 
-        // Build the merged metadata_policy claim from federation-wide + per-subordinate layers.
-        $mergedPolicy = null;
         try {
-            $policyRepo      = new FederationPolicyRepository($pdo);
-            $federationEntry = $subordinate->entityType !== null
-                ? $policyRepo->findByEntityType($subordinate->entityType)
-                : null;
-
-            $federationWidePolicy = $federationEntry !== null
-                ? [$federationEntry->entityType => $federationEntry->policy]
-                : null;
-
-            $mergedPolicy = (new MetadataPolicyMerger())->merge(
-                $federationWidePolicy,
-                $subordinate->metadataPolicy,
-            );
+            $claims = (new SubordinateStatementService())->buildClaims($subordinate, $moduleConfig, $pdo);
         } catch (MetadataPolicyException $e) {
             return $this->federationError(
                 'server_error',
@@ -207,46 +146,10 @@ class OpenIDFederation
             );
         }
 
-        $lifetime = $moduleConfig->getOptionalInteger('subordinate_statement_lifetime', 86400) ?? 86400;
-
         ['signingKey' => $signingKey, 'kid' => $kid, 'algorithm' => $algorithm]
             = $this->loadSigningContext($moduleConfig);
 
-        $now = time();
-
-        $payload = [
-            ClaimsEnum::Iss->value  => $entityId,
-            ClaimsEnum::Sub->value  => $sub,
-            ClaimsEnum::Iat->value  => $now,
-            ClaimsEnum::Exp->value  => $now + $lifetime,
-            ClaimsEnum::Jwks->value => $subordinate->jwks,
-        ];
-
-        if ($mergedPolicy !== null) {
-            $payload[ClaimsEnum::MetadataPolicy->value] = $mergedPolicy;
-        }
-
-        if ($subordinate->extraClaims !== null) {
-            foreach ($subordinate->extraClaims as $claim => $value) {
-                $payload[$claim] = $value;
-            }
-        }
-
-        // Embed the subordinate's active, unexpired Trust Marks (issued by this TA) when opted in.
-        // Each entry uses the library's spec-correct { trust_mark_type, trust_mark } shape.
-        if ($subordinate->includeTrustMarks) {
-            $activeMarks = (new IssuedTrustMarkRepository($pdo))->findActiveBySub($sub);
-
-            if ($activeMarks !== []) {
-                $payload[ClaimsEnum::TrustMarks->value] = array_map(
-                    static fn($mark): array =>
-                        (new TrustMarksClaimValue($mark->trustMarkId, $mark->jwt))->jsonSerialize(),
-                    $activeMarks,
-                );
-            }
-        }
-
-        $token = $this->signEntityStatement($signingKey, $algorithm, $payload, [ClaimsEnum::Kid->value => $kid]);
+        $token = $this->signEntityStatement($signingKey, $algorithm, $claims, [ClaimsEnum::Kid->value => $kid]);
 
         return new Response($token, Response::HTTP_OK, ['Content-Type' => 'application/entity-statement+jwt']);
     }
@@ -284,6 +187,9 @@ class OpenIDFederation
 
     /**
      * Build a signed compact entity-statement+jwt from the given payload and header.
+     *
+     * @param array<string,mixed> $payload
+     * @param array<string,mixed> $header
      */
     private function signEntityStatement(
         JwkDecorator $signingKey,

@@ -229,3 +229,181 @@ oidanchor-admin-resolve:
     _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminResolve::index'
   }
   methods: [GET, POST]
+
+# ============================================================
+# Federation Admin REST API (/api/v1/admin/...). JSON. Requires admin session.
+# Implemented subset: endpoints backed by existing services (subordinates, general
+# metadata policies, trust mark types, read-only keys/entity-configuration).
+# NOTE: literal /subordinates/* paths are declared BEFORE /subordinates/{subordinateID}
+# so the greedy {subordinateID} (.+) does not swallow them.
+# ============================================================
+
+# ---- General metadata policies (FederationPolicyRepository) ----
+oidanchor-api-metadata-policy-operator:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}/{claim}/{operator}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::getOperator' }
+  methods: [GET]
+oidanchor-api-metadata-policy-operator-put:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}/{claim}/{operator}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::putOperator' }
+  methods: [PUT]
+oidanchor-api-metadata-policy-operator-delete:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}/{claim}/{operator}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::deleteOperator' }
+  methods: [DELETE]
+
+oidanchor-api-metadata-policy-claim:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}/{claim}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::getClaim' }
+  methods: [GET]
+oidanchor-api-metadata-policy-claim-put:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}/{claim}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::putClaim' }
+  methods: [PUT]
+oidanchor-api-metadata-policy-claim-post:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}/{claim}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::addOperators' }
+  methods: [POST]
+oidanchor-api-metadata-policy-claim-delete:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}/{claim}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::deleteClaim' }
+  methods: [DELETE]
+
+oidanchor-api-metadata-policy-type:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::getForType' }
+  methods: [GET]
+oidanchor-api-metadata-policy-type-put:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::putForType' }
+  methods: [PUT]
+oidanchor-api-metadata-policy-type-post:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::addForType' }
+  methods: [POST]
+oidanchor-api-metadata-policy-type-delete:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::deleteForType' }
+  methods: [DELETE]
+
+oidanchor-api-metadata-policies:
+  path: /api/v1/admin/subordinates/metadata-policies
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::getAll' }
+  methods: [GET]
+oidanchor-api-metadata-policies-put:
+  path: /api/v1/admin/subordinates/metadata-policies
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::replaceAll' }
+  methods: [PUT]
+
+# ---- Subordinate / EC lifetimes (read-only from config) ----
+oidanchor-api-subordinates-lifetime:
+  path: /api/v1/admin/subordinates/lifetime
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::getSubordinateLifetime' }
+  methods: [GET]
+
+# ---- Subordinates (SubordinateService) ----
+oidanchor-api-subordinates-list:
+  path: /api/v1/admin/subordinates
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::list' }
+  methods: [GET]
+oidanchor-api-subordinates-create:
+  path: /api/v1/admin/subordinates
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::create' }
+  methods: [POST]
+
+oidanchor-api-subordinate-statement:
+  path: /api/v1/admin/subordinates/{subordinateID}/statement
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::statement' }
+  requirements: { subordinateID: '.+' }
+  methods: [GET]
+
+oidanchor-api-subordinate-jwks:
+  path: /api/v1/admin/subordinates/{subordinateID}/jwks
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::getJwks' }
+  requirements: { subordinateID: '.+' }
+  methods: [GET]
+oidanchor-api-subordinate-jwks-put:
+  path: /api/v1/admin/subordinates/{subordinateID}/jwks
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::setJwks' }
+  requirements: { subordinateID: '.+' }
+  methods: [PUT]
+oidanchor-api-subordinate-jwks-post:
+  path: /api/v1/admin/subordinates/{subordinateID}/jwks
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::addJwk' }
+  requirements: { subordinateID: '.+' }
+  methods: [POST]
+
+oidanchor-api-subordinate-status:
+  path: /api/v1/admin/subordinates/{subordinateID}/status
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::changeStatus' }
+  requirements: { subordinateID: '.+' }
+  methods: [PUT]
+
+oidanchor-api-subordinate-get:
+  path: /api/v1/admin/subordinates/{subordinateID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::get' }
+  requirements: { subordinateID: '.+' }
+  methods: [GET]
+oidanchor-api-subordinate-put:
+  path: /api/v1/admin/subordinates/{subordinateID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::update' }
+  requirements: { subordinateID: '.+' }
+  methods: [PUT]
+oidanchor-api-subordinate-delete:
+  path: /api/v1/admin/subordinates/{subordinateID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::delete' }
+  requirements: { subordinateID: '.+' }
+  methods: [DELETE]
+
+# ---- Federation trust mark types (TrustMarkTypeRepository) ----
+oidanchor-api-trust-mark-types-list:
+  path: /api/v1/admin/trust-marks/types
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkTypesApi::list' }
+  methods: [GET]
+oidanchor-api-trust-mark-types-create:
+  path: /api/v1/admin/trust-marks/types
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkTypesApi::create' }
+  methods: [POST]
+oidanchor-api-trust-mark-type-get:
+  path: /api/v1/admin/trust-marks/types/{trustMarkTypeID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkTypesApi::get' }
+  requirements: { trustMarkTypeID: '.+' }
+  methods: [GET]
+oidanchor-api-trust-mark-type-put:
+  path: /api/v1/admin/trust-marks/types/{trustMarkTypeID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkTypesApi::update' }
+  requirements: { trustMarkTypeID: '.+' }
+  methods: [PUT]
+oidanchor-api-trust-mark-type-delete:
+  path: /api/v1/admin/trust-marks/types/{trustMarkTypeID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkTypesApi::delete' }
+  requirements: { trustMarkTypeID: '.+' }
+  methods: [DELETE]
+
+# ---- Keys (read-only, FederationKeyService) ----
+oidanchor-api-published-jwks:
+  path: /api/v1/admin/entity-configuration/jwks
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\KeysApi::publishedJwks' }
+  methods: [GET]
+oidanchor-api-keys-list:
+  path: /api/v1/admin/entity-configuration/keys
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\KeysApi::listKeys' }
+  methods: [GET]
+oidanchor-api-kms-info:
+  path: /api/v1/admin/kms
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\KeysApi::kmsInfo' }
+  methods: [GET]
+
+# ---- Entity configuration (read-only) ----
+oidanchor-api-entity-configuration-metadata:
+  path: /api/v1/admin/entity-configuration/metadata
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::getMetadata' }
+  methods: [GET]
+oidanchor-api-entity-configuration-lifetime:
+  path: /api/v1/admin/entity-configuration/lifetime
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::getEntityConfigurationLifetime' }
+  methods: [GET]
+oidanchor-api-entity-configuration:
+  path: /api/v1/admin/entity-configuration
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::get' }
+  methods: [GET]

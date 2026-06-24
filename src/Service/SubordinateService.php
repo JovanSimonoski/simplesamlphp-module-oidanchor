@@ -65,10 +65,11 @@ class SubordinateService
             extraClaims:    !empty($data['extra_claims'])
                                 ? json_decode((string) $data['extra_claims'], true)
                                 : null,
-            status:         'active',
+            status:         !empty($data['status']) ? (string) $data['status'] : 'active',
             registeredAt:   time(),
             updatedAt:      null,
             includeTrustMarks: !empty($data['include_trust_marks']),
+            description:    !empty($data['description']) ? (string) $data['description'] : null,
         );
 
         $this->repository->create($sub);
@@ -109,6 +110,11 @@ class SubordinateService
             $fields['include_trust_marks'] = !empty($data['include_trust_marks']) ? 1 : 0;
         }
 
+        if (array_key_exists('description', $data)) {
+            $raw = trim((string) ($data['description'] ?? ''));
+            $fields['description'] = $raw !== '' ? $raw : null;
+        }
+
         $this->repository->update($entityId, $fields);
     }
 
@@ -137,6 +143,15 @@ class SubordinateService
     public function activate(string $entityId): void
     {
         $this->repository->setStatus($entityId, 'active');
+    }
+
+
+    /**
+     * Set an arbitrary status value (e.g. active, blocked, pending, inactive).
+     */
+    public function setStatus(string $entityId, string $status): void
+    {
+        $this->repository->setStatus($entityId, $status);
     }
 
 

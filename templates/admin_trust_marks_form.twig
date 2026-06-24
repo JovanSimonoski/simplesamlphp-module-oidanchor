@@ -1,0 +1,109 @@
+{% set pagetitle = title|trans %}
+{% set frontpage_section = 'oidanchor' %}
+{% extends "base.twig" %}
+
+{% block preload %}
+<link rel="stylesheet" href="{{ asset('css/admin.css', 'admin') }}">
+<style>
+  .oidanchor-form { max-width: 780px; }
+  .oidanchor-form .field { margin-bottom: 1.1em; }
+  .oidanchor-form label { display: block; font-weight: bold; margin-bottom: .25em; }
+  .oidanchor-form input[type=text],
+  .oidanchor-form input[type=number],
+  .oidanchor-form select,
+  .oidanchor-form textarea { width: 100%; box-sizing: border-box; font-family: monospace; font-size: .9em; }
+  .oidanchor-form textarea { height: 120px; }
+  .field-error { color: #c00; font-size: .85em; margin-top: .2em; }
+  .field-hint  { color: #666; font-size: .82em; margin-top: .2em; }
+  .flash-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: .6em 1em; margin-bottom: 1em; border-radius: 3px; }
+  .flash-error   { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: .6em 1em; margin-bottom: 1em; border-radius: 3px; }
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="pure-g frontpage-menu">
+    <div class="pure-u-1">
+      <div class="pure-menu pure-menu-horizontal wrapping-menu">
+        <ul class="pure-menu-list">
+          {%- for id, option in menu %}
+          <li class="pure-menu-item{% if frontpage_section == id %} pure-menu-selected{% endif %}">
+            <a href="{{ option.url }}" class="pure-menu-link">{{ option.name|trans }}</a>
+          </li>
+          {%- endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h2>{{ title|e }}</h2>
+
+  {% if flash %}
+    <div class="flash-{{ flash.type }}">{{ flash.text|e }}</div>
+  {% endif %}
+
+  {% if types is empty %}
+    <p>{% trans %}No Trust Mark types exist yet. Create one before issuing marks.{% endtrans %}</p>
+    <p><a href="{{ moduleURL('oidanchor/admin/trust-mark-types/create') }}" class="pure-button pure-button-primary">
+      {% trans %}Create Trust Mark type{% endtrans %}
+    </a></p>
+  {% else %}
+  <form method="post" action="{{ actionUrl }}" class="pure-form pure-form-stacked oidanchor-form">
+    <input type="hidden" name="csrf_token" value="{{ csrfToken|e }}">
+
+    <div class="field">
+      <label for="trust_mark_id">{% trans %}Trust Mark type{% endtrans %} *</label>
+      <select id="trust_mark_id" name="trust_mark_id"
+              class="pure-input-1{% if errors.trust_mark_id is defined %} pure-input-error{% endif %}">
+        <option value="">{% trans %}select a type{% endtrans %}</option>
+        {% for type in types %}
+          <option value="{{ type.trustMarkId|e }}"
+                  {% if formData.trust_mark_id|default('') == type.trustMarkId %}selected{% endif %}>
+            {{ type.name|e }} — {{ type.trustMarkId|e }}
+          </option>
+        {% endfor %}
+      </select>
+      {% if errors.trust_mark_id is defined %}<p class="field-error">{{ errors.trust_mark_id|e }}</p>{% endif %}
+    </div>
+
+    <div class="field">
+      <label for="sub">{% trans %}Subject (sub){% endtrans %} *</label>
+      <input type="text" id="sub" name="sub" value="{{ formData.sub|default('')|e }}" required
+             placeholder="https://rp.example.com"
+             class="pure-input-1{% if errors.sub is defined %} pure-input-error{% endif %}">
+      {% if errors.sub is defined %}
+        <p class="field-error">{{ errors.sub|e }}</p>
+      {% else %}
+        <p class="field-hint">{% trans %}The entity the mark is issued for. Need not be a registered subordinate (you will be warned if it isn't).{% endtrans %}</p>
+      {% endif %}
+    </div>
+
+    <div class="field">
+      <label for="exp">{% trans %}Expiry override (seconds from now){% endtrans %}</label>
+      <input type="number" id="exp" name="exp" min="1" value="{{ formData.exp|default('')|e }}"
+             class="pure-input-1{% if errors.exp is defined %} pure-input-error{% endif %}">
+      {% if errors.exp is defined %}
+        <p class="field-error">{{ errors.exp|e }}</p>
+      {% else %}
+        <p class="field-hint">{% trans %}Overrides the type's default lifetime. Leave blank to use the type default (or no expiry if the type has none).{% endtrans %}</p>
+      {% endif %}
+    </div>
+
+    <div class="field">
+      <label for="extra_claims">{% trans %}Extra claims{% endtrans %} <em>({% trans %}optional JSON{% endtrans %})</em></label>
+      <textarea id="extra_claims" name="extra_claims"
+                placeholder='{ "ref": "https://rp.example.com/audit/2026" }'
+                class="{% if errors.extra_claims is defined %}pure-input-error{% endif %}">{{ formData.extra_claims|default('')|e }}</textarea>
+      {% if errors.extra_claims is defined %}
+        <p class="field-error">{{ errors.extra_claims|e }}</p>
+      {% else %}
+        <p class="field-hint">{% trans %}Merged on top of the type's extra claims (per-issuance wins). May not set iss, sub, iat, exp or trust_mark_type.{% endtrans %}</p>
+      {% endif %}
+    </div>
+
+    <div class="field">
+      <button type="submit" class="pure-button pure-button-primary">{% trans %}Issue{% endtrans %}</button>
+      <a href="{{ listUrl }}" class="pure-button">{% trans %}Cancel{% endtrans %}</a>
+    </div>
+  </form>
+  {% endif %}
+{% endblock %}

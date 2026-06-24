@@ -1,0 +1,121 @@
+{% set pagetitle = title|trans %}
+{% set frontpage_section = 'oidanchor' %}
+{% extends "base.twig" %}
+
+{% block preload %}
+<link rel="stylesheet" href="{{ asset('css/admin.css', 'admin') }}">
+<style>
+  .oidanchor-form { max-width: 780px; }
+  .oidanchor-form .field { margin-bottom: 1.1em; }
+  .oidanchor-form label { display: block; font-weight: bold; margin-bottom: .25em; }
+  .oidanchor-form input[type=text],
+  .oidanchor-form input[type=number],
+  .oidanchor-form textarea { width: 100%; box-sizing: border-box; font-family: monospace; font-size: .9em; }
+  .oidanchor-form textarea { height: 120px; }
+  .field-error { color: #c00; font-size: .85em; margin-top: .2em; }
+  .field-hint  { color: #666; font-size: .82em; margin-top: .2em; }
+  .flash-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: .6em 1em; margin-bottom: 1em; border-radius: 3px; }
+  .flash-error   { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: .6em 1em; margin-bottom: 1em; border-radius: 3px; }
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="pure-g frontpage-menu">
+    <div class="pure-u-1">
+      <div class="pure-menu pure-menu-horizontal wrapping-menu">
+        <ul class="pure-menu-list">
+          {%- for id, option in menu %}
+          <li class="pure-menu-item{% if frontpage_section == id %} pure-menu-selected{% endif %}">
+            <a href="{{ option.url }}" class="pure-menu-link">{{ option.name|trans }}</a>
+          </li>
+          {%- endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h2>{{ title|e }}</h2>
+
+  {% if flash %}
+    <div class="flash-{{ flash.type }}">{{ flash.text|e }}</div>
+  {% endif %}
+
+  <form method="post" action="{{ actionUrl }}" class="pure-form pure-form-stacked oidanchor-form">
+    <input type="hidden" name="csrf_token" value="{{ csrfToken|e }}">
+
+    <div class="field">
+      <label for="trust_mark_id">{% trans %}Trust Mark ID{% endtrans %} *</label>
+      <input type="text" id="trust_mark_id" name="trust_mark_id"
+             value="{{ formData.trust_mark_id|default('')|e }}"
+             {% if isEdit %}readonly{% else %}required placeholder="https://ta.example.com/marks/verified-rp"{% endif %}
+             class="pure-input-1{% if errors.trust_mark_id is defined %} pure-input-error{% endif %}">
+      {% if errors.trust_mark_id is defined %}
+        <p class="field-error">{{ errors.trust_mark_id|e }}</p>
+      {% else %}
+        <p class="field-hint">{% trans %}The HTTPS URL identifying this Trust Mark Type (becomes the trust_mark_type claim).{% endtrans %}</p>
+      {% endif %}
+    </div>
+
+    <div class="field">
+      <label for="name">{% trans %}Name{% endtrans %} *</label>
+      <input type="text" id="name" name="name" value="{{ formData.name|default('')|e }}" required
+             class="pure-input-1{% if errors.name is defined %} pure-input-error{% endif %}">
+      {% if errors.name is defined %}<p class="field-error">{{ errors.name|e }}</p>{% endif %}
+    </div>
+
+    <div class="field">
+      <label for="description">{% trans %}Description{% endtrans %}</label>
+      <input type="text" id="description" name="description" value="{{ formData.description|default('')|e }}"
+             class="pure-input-1">
+    </div>
+
+    <div class="field">
+      <label for="logo_uri">{% trans %}Logo URI{% endtrans %}</label>
+      <input type="text" id="logo_uri" name="logo_uri" value="{{ formData.logo_uri|default('')|e }}"
+             placeholder="https://ta.example.com/logo.png"
+             class="pure-input-1{% if errors.logo_uri is defined %} pure-input-error{% endif %}">
+      {% if errors.logo_uri is defined %}<p class="field-error">{{ errors.logo_uri|e }}</p>{% endif %}
+    </div>
+
+    <div class="field">
+      <label for="ref_uri">{% trans %}Reference URI (ref){% endtrans %}</label>
+      <input type="text" id="ref_uri" name="ref_uri" value="{{ formData.ref_uri|default('')|e }}"
+             placeholder="https://ta.example.com/marks/verified-rp/policy"
+             class="pure-input-1{% if errors.ref_uri is defined %} pure-input-error{% endif %}">
+      {% if errors.ref_uri is defined %}
+        <p class="field-error">{{ errors.ref_uri|e }}</p>
+      {% else %}
+        <p class="field-hint">{% trans %}Link to the documentation describing the criteria for this mark.{% endtrans %}</p>
+      {% endif %}
+    </div>
+
+    <div class="field">
+      <label for="default_lifetime">{% trans %}Default lifetime (seconds){% endtrans %}</label>
+      <input type="number" id="default_lifetime" name="default_lifetime" min="1"
+             value="{{ formData.default_lifetime|default('')|e }}"
+             class="pure-input-1{% if errors.default_lifetime is defined %} pure-input-error{% endif %}">
+      {% if errors.default_lifetime is defined %}
+        <p class="field-error">{{ errors.default_lifetime|e }}</p>
+      {% else %}
+        <p class="field-hint">{% trans %}If set, issued marks expire this many seconds after issuance. Leave blank for no expiry.{% endtrans %}</p>
+      {% endif %}
+    </div>
+
+    <div class="field">
+      <label for="extra_claims">{% trans %}Extra claims{% endtrans %} <em>({% trans %}optional JSON{% endtrans %})</em></label>
+      <textarea id="extra_claims" name="extra_claims"
+                placeholder='{ "assurance_level": "high" }'
+                class="{% if errors.extra_claims is defined %}pure-input-error{% endif %}">{{ formData.extra_claims|default('')|e }}</textarea>
+      {% if errors.extra_claims is defined %}
+        <p class="field-error">{{ errors.extra_claims|e }}</p>
+      {% else %}
+        <p class="field-hint">{% trans %}JSON object merged into every issued mark of this type. May not set iss, sub, iat, exp or trust_mark_type.{% endtrans %}</p>
+      {% endif %}
+    </div>
+
+    <div class="field">
+      <button type="submit" class="pure-button pure-button-primary">{{ submitLabel|e }}</button>
+      <a href="{{ listUrl }}" class="pure-button">{% trans %}Cancel{% endtrans %}</a>
+    </div>
+  </form>
+{% endblock %}

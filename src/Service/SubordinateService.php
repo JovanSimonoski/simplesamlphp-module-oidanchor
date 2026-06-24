@@ -68,6 +68,7 @@ class SubordinateService
             status:         'active',
             registeredAt:   time(),
             updatedAt:      null,
+            includeTrustMarks: !empty($data['include_trust_marks']),
         );
 
         $this->repository->create($sub);
@@ -102,6 +103,10 @@ class SubordinateService
         if (array_key_exists('extra_claims', $data)) {
             $raw = trim((string) ($data['extra_claims'] ?? ''));
             $fields['extra_claims'] = $raw !== '' ? $raw : null;
+        }
+
+        if (array_key_exists('include_trust_marks', $data)) {
+            $fields['include_trust_marks'] = !empty($data['include_trust_marks']) ? 1 : 0;
         }
 
         $this->repository->update($entityId, $fields);

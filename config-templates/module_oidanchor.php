@@ -80,6 +80,33 @@ return [
     'subordinate_statement_lifetime' => 86400,
 
     /*
+     * Lifetime in seconds of the signed Trust Mark Status Response JWT returned by
+     * the /trust_mark_status endpoint. This bounds how long a relying party may cache
+     * a status answer; keep it short. Does NOT affect the lifetime of issued Trust Marks
+     * themselves (those use the per-type default_lifetime or a per-issuance exp).
+     */
+    'trust_mark_status_response_lifetime' => 600,
+
+    /*
+     * Resolve endpoint (/oidanchor/resolve) settings.
+     */
+    'resolve' => [
+        // Maximum trust-chain depth the resolver will walk before failing (cycle/abuse guard).
+        'max_chain_depth'      => 6,
+        // cURL/Guzzle connect timeout, in seconds, for each entity-statement fetch.
+        'http_connect_timeout' => 5,
+        // Read timeout, in seconds, for each entity-statement fetch.
+        'http_read_timeout'    => 5,
+        // Lifetime in seconds applied to the exp claim of the signed Resolve Response JWT
+        // (capped by the trust chain's own expiration).
+        'response_lifetime'    => 600,
+        // DEV ONLY: set false to skip TLS certificate verification when fetching entity
+        // statements (e.g. a local mock leaf served with a self-signed certificate).
+        // Leave true in production.
+        'http_verify_tls'      => true,
+    ],
+
+    /*
      * Enable/disable the federation_fetch endpoint.
      */
     'federation_fetch_endpoint_enabled' => true,

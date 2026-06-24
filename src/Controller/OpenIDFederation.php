@@ -8,8 +8,11 @@ use PDO;
 use PDOException;
 use RuntimeException;
 use SimpleSAML\Configuration;
+use SimpleSAML\Logger;
 use SimpleSAML\Module\oidanchor\Repository\FederationPolicyRepository;
+use SimpleSAML\Module\oidanchor\Repository\IssuedTrustMarkRepository;
 use SimpleSAML\Module\oidanchor\Repository\SubordinateRepository;
+use SimpleSAML\Module\oidanchor\Repository\TrustMarkTypeRepository;
 use SimpleSAML\Module\oidanchor\Service\MetadataPolicyMerger;
 use SimpleSAML\Module\oidanchor\Service\SubordinateService;
 use SimpleSAML\OpenID\Exceptions\MetadataPolicyException;
@@ -18,9 +21,11 @@ use SimpleSAML\OpenID\Algorithms\SignatureAlgorithmEnum;
 use SimpleSAML\OpenID\Codebooks\ClaimsEnum;
 use SimpleSAML\OpenID\Codebooks\EntityTypesEnum;
 use SimpleSAML\OpenID\Federation;
+use SimpleSAML\OpenID\Federation\Claims\TrustMarksClaimValue;
 use SimpleSAML\OpenID\Jwk;
 use SimpleSAML\OpenID\Jwk\JwkDecorator;
 use SimpleSAML\OpenID\SupportedAlgorithms;
+use Throwable;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -75,6 +80,23 @@ class OpenIDFederation
 
         if ($authorityHints !== []) {
             $payload[ClaimsEnum::AuthorityHints->value] = $authorityHints;
+        }
+
+        // Advertise the Trust Mark Types this TA issues via the trust_mark_issuers claim:
+        // each type maps to the list of issuers permitted to issue it — here, only this TA.
+        // Done defensively so the Entity Configuration never fails over a Trust Mark lookup.
+        try {
+            $types = (new TrustMarkTypeRepository($this->buildPdo($moduleConfig)))->findAll();
+
+            if ($types !== []) {
+                $issuers = [];
+                foreach ($types as $type) {
+                    $issuers[$type->trustMarkId] = [$entityId];
+                }
+                $payload[ClaimsEnum::TrustMarkIssuers->value] = $issuers;
+            }
+        } catch (Throwable $e) {
+            Logger::warning('oidanchor: could not load trust mark types for entity configuration: ' . $e->getMessage());
         }
 
         $token = $this->signEntityStatement($signingKey, $algorithm, $payload, [ClaimsEnum::Kid->value => $kid]);
@@ -207,6 +229,20 @@ class OpenIDFederation
         if ($subordinate->extraClaims !== null) {
             foreach ($subordinate->extraClaims as $claim => $value) {
                 $payload[$claim] = $value;
+            }
+        }
+
+        // Embed the subordinate's active, unexpired Trust Marks (issued by this TA) when opted in.
+        // Each entry uses the library's spec-correct { trust_mark_type, trust_mark } shape.
+        if ($subordinate->includeTrustMarks) {
+            $activeMarks = (new IssuedTrustMarkRepository($pdo))->findActiveBySub($sub);
+
+            if ($activeMarks !== []) {
+                $payload[ClaimsEnum::TrustMarks->value] = array_map(
+                    static fn($mark): array =>
+                        (new TrustMarksClaimValue($mark->trustMarkId, $mark->jwt))->jsonSerialize(),
+                    $activeMarks,
+                );
             }
         }
 

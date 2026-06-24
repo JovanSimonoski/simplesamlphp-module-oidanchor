@@ -28,4 +28,19 @@ function oidanchor_hook_federationpage(Template $template): void
         'href' => Module::getModuleURL('oidanchor/admin/policies'),
         'text' => Translate::noop('OIDC Federation Metadata Policies'),
     ];
+
+    $template->data['links'][] = [
+        'href' => Module::getModuleURL('oidanchor/admin/trust-mark-types'),
+        'text' => Translate::noop('OIDC Federation Trust Mark Types'),
+    ];
+
+    $template->data['links'][] = [
+        'href' => Module::getModuleURL('oidanchor/admin/trust-marks'),
+        'text' => Translate::noop('OIDC Federation Issued Trust Marks'),
+    ];
+
+    $template->data['links'][] = [
+        'href' => Module::getModuleURL('oidanchor/admin/resolve'),
+        'text' => Translate::noop('OIDC Federation Resolve Tester'),
+    ];
 }

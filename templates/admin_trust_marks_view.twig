@@ -1,0 +1,87 @@
+{% set pagetitle = 'OIDC Federation Trust Mark'|trans %}
+{% set frontpage_section = 'oidanchor' %}
+{% extends "base.twig" %}
+
+{% block preload %}
+<link rel="stylesheet" href="{{ asset('css/admin.css', 'admin') }}">
+<style>
+  .oidanchor-view { max-width: 900px; }
+  .oidanchor-view dl { display: grid; grid-template-columns: 180px 1fr; gap: .35em 1em; }
+  .oidanchor-view dt { font-weight: bold; }
+  .oidanchor-view dd { margin: 0; word-break: break-all; }
+  .oidanchor-view textarea { width: 100%; box-sizing: border-box; font-family: monospace; font-size: .82em; height: 110px; }
+  .oidanchor-view pre { background: #f4f4f4; border: 1px solid #ddd; padding: .7em; overflow-x: auto; font-size: .82em; }
+  .badge-active  { color: #2a6b2a; font-weight: bold; }
+  .badge-revoked { color: #9a3a00; font-weight: bold; }
+  .decode-note { color: #9a3a00; font-size: .82em; }
+  .flash-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: .6em 1em; margin-bottom: 1em; border-radius: 3px; }
+  .flash-error   { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: .6em 1em; margin-bottom: 1em; border-radius: 3px; }
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="pure-g frontpage-menu">
+    <div class="pure-u-1">
+      <div class="pure-menu pure-menu-horizontal wrapping-menu">
+        <ul class="pure-menu-list">
+          {%- for id, option in menu %}
+          <li class="pure-menu-item{% if frontpage_section == id %} pure-menu-selected{% endif %}">
+            <a href="{{ option.url }}" class="pure-menu-link">{{ option.name|trans }}</a>
+          </li>
+          {%- endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h2>{% trans %}Trust Mark{% endtrans %} #{{ mark.id }}</h2>
+
+  {% if flash %}
+    <div class="flash-{{ flash.type }}">{{ flash.text|e }}</div>
+  {% endif %}
+
+  <div class="oidanchor-view">
+    <dl>
+      <dt>{% trans %}Trust Mark ID{% endtrans %}</dt><dd><code>{{ mark.trustMarkId|e }}</code></dd>
+      <dt>{% trans %}Subject{% endtrans %}</dt><dd><code>{{ mark.sub|e }}</code></dd>
+      <dt>{% trans %}Status{% endtrans %}</dt><dd><span class="badge-{{ mark.status }}">{{ mark.status|e }}</span></dd>
+      <dt>{% trans %}Issued at{% endtrans %}</dt><dd>{{ mark.iat|date('Y-m-d H:i:s') }} ({{ mark.iat }})</dd>
+      <dt>{% trans %}Expires{% endtrans %}</dt>
+      <dd>{{ mark.exp ? mark.exp|date('Y-m-d H:i:s') ~ ' (' ~ mark.exp ~ ')' : 'no expiry' }}</dd>
+      {% if mark.status == 'revoked' %}
+        <dt>{% trans %}Revoked at{% endtrans %}</dt>
+        <dd>{{ mark.revokedAt ? mark.revokedAt|date('Y-m-d H:i:s') : '-' }}</dd>
+        <dt>{% trans %}Reason{% endtrans %}</dt>
+        <dd>{{ mark.revocationReason ?? '-' }}</dd>
+      {% endif %}
+    </dl>
+
+    <h3>{% trans %}Compact JWT{% endtrans %}</h3>
+    <textarea readonly onclick="this.select()">{{ mark.jwt|e }}</textarea>
+
+    {% if decodeNote %}
+      <p class="decode-note">{{ decodeNote|e }}</p>
+    {% endif %}
+
+    <h3>{% trans %}Decoded header{% endtrans %}</h3>
+    <pre>{{ decodedHeader|e }}</pre>
+
+    <h3>{% trans %}Decoded payload{% endtrans %}</h3>
+    <pre>{{ decodedPayload|e }}</pre>
+
+    <p>
+      <a href="{{ listUrl }}" class="pure-button">{% trans %}Back to list{% endtrans %}</a>
+
+      {% if mark.status == 'active' %}
+        <form method="post" action="{{ revokeUrl }}" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrfToken|e }}">
+          <input type="text" name="reason" placeholder="revocation reason (optional)" style="font-size:.85em">
+          <button type="submit" class="pure-button pure-button-red"
+                  onclick="return confirm('Revoke this Trust Mark?')">
+            {% trans %}Revoke{% endtrans %}
+          </button>
+        </form>
+      {% endif %}
+    </p>
+  </div>
+{% endblock %}

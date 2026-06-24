@@ -15,6 +15,7 @@ class Subordinate
         public readonly string $status,
         public readonly int $registeredAt,
         public readonly ?int $updatedAt,
+        public readonly bool $includeTrustMarks = false,
     ) {
     }
 
@@ -37,6 +38,7 @@ class Subordinate
             status:         isset($row['status']) ? (string) $row['status'] : 'active',
             registeredAt:   (int) $row['registered_at'],
             updatedAt:      isset($row['updated_at']) ? (int) $row['updated_at'] : null,
+            includeTrustMarks: isset($row['include_trust_marks']) ? (bool) $row['include_trust_marks'] : false,
         );
     }
 }

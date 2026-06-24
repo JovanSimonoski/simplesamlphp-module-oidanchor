@@ -1,0 +1,128 @@
+{% set pagetitle = 'OIDC Federation Resolve Tester'|trans %}
+{% set frontpage_section = 'oidanchor' %}
+{% extends "base.twig" %}
+
+{% block preload %}
+<link rel="stylesheet" href="{{ asset('css/admin.css', 'admin') }}">
+<style>
+  .oidanchor-form { max-width: 820px; }
+  .oidanchor-form .field { margin-bottom: 1em; }
+  .oidanchor-form label { display: block; font-weight: bold; margin-bottom: .25em; }
+  .oidanchor-form input[type=text] { width: 100%; box-sizing: border-box; font-family: monospace; font-size: .9em; }
+  .field-hint  { color: #666; font-size: .82em; margin-top: .2em; }
+  .oidanchor-result { max-width: 980px; margin-top: 1.5em; }
+  .oidanchor-result pre { background: #f4f4f4; border: 1px solid #ddd; padding: .7em; overflow-x: auto; font-size: .8em; }
+  .oidanchor-result textarea { width: 100%; box-sizing: border-box; font-family: monospace; font-size: .78em; height: 120px; }
+  .chain-statement { border: 1px solid #ddd; border-radius: 3px; padding: .5em .8em; margin-bottom: .8em; }
+  .chain-statement h4 { margin: .2em 0; font-size: .9em; }
+  .warn-list { background: #fff7e6; border: 1px solid #ffe0a3; padding: .5em 1em; border-radius: 3px; }
+  .resolve-error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: .8em 1em; margin: 1em 0; border-radius: 3px; }
+  .resolve-error code { font-weight: bold; }
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="pure-g frontpage-menu">
+    <div class="pure-u-1">
+      <div class="pure-menu pure-menu-horizontal wrapping-menu">
+        <ul class="pure-menu-list">
+          {%- for id, option in menu %}
+          <li class="pure-menu-item{% if frontpage_section == id %} pure-menu-selected{% endif %}">
+            <a href="{{ option.url }}" class="pure-menu-link">{{ option.name|trans }}</a>
+          </li>
+          {%- endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h2>{% trans %}Resolve Tester{% endtrans %}</h2>
+
+  <p class="field-hint">
+    {% trans %}Runs an in-process resolution (no HTTP self-call). The subject must publish a reachable
+    entity configuration at &lt;sub&gt;/.well-known/openid-federation.{% endtrans %}
+  </p>
+
+  <form method="post" action="{{ actionUrl }}" class="pure-form pure-form-stacked oidanchor-form">
+    <input type="hidden" name="csrf_token" value="{{ csrfToken|e }}">
+
+    <div class="field">
+      <label for="sub">{% trans %}Subject (sub){% endtrans %} *</label>
+      <input type="text" id="sub" name="sub" required placeholder="https://rp.example.com"
+             value="{{ formData.sub|default('')|e }}" class="pure-input-1">
+    </div>
+
+    <div class="field">
+      <label for="trust_anchor">{% trans %}Trust Anchor{% endtrans %} *</label>
+      <input type="text" id="trust_anchor" name="trust_anchor" required
+             value="{{ formData.trust_anchor|default('')|e }}" class="pure-input-1">
+      <p class="field-hint">{% trans %}Must be this TA's own entity ID.{% endtrans %}</p>
+    </div>
+
+    <div class="field">
+      <label for="type">{% trans %}Entity type{% endtrans %} <em>({% trans %}optional{% endtrans %})</em></label>
+      <input type="text" id="type" name="type" placeholder="openid_relying_party"
+             value="{{ formData.type|default('')|e }}" class="pure-input-1">
+      <p class="field-hint">{% trans %}Leave blank to resolve metadata for all entity types present in the subject.{% endtrans %}</p>
+    </div>
+
+    <div class="field">
+      <button type="submit" class="pure-button pure-button-primary">{% trans %}Resolve{% endtrans %}</button>
+    </div>
+  </form>
+
+  {% if error %}
+    <div class="resolve-error">
+      <strong>{% trans %}Resolution failed{% endtrans %}:</strong>
+      <code>{{ error.code|e }}</code> — {{ error.description|e }}
+    </div>
+  {% endif %}
+
+  {% if view %}
+    <div class="oidanchor-result">
+      <h3>{% trans %}Resolved metadata{% endtrans %}</h3>
+      <pre>{{ view.metadata|e }}</pre>
+
+      <h3>{% trans %}Trust chain{% endtrans %} ({{ view.chain|length }})</h3>
+      {% for st in view.chain %}
+        <div class="chain-statement">
+          <h4>{{ loop.index }}. <code>{{ st.iss|e }}</code>{% if st.iss != st.sub %} → <code>{{ st.sub|e }}</code>{% endif %}</h4>
+          <details>
+            <summary>{% trans %}header{% endtrans %}</summary>
+            <pre>{{ st.header|e }}</pre>
+          </details>
+          <details>
+            <summary>{% trans %}payload{% endtrans %}</summary>
+            <pre>{{ st.payload|e }}</pre>
+          </details>
+        </div>
+      {% endfor %}
+
+      <h3>{% trans %}Validated Trust Marks{% endtrans %} ({{ view.trustMarks|length }})</h3>
+      {% if view.trustMarks is empty %}
+        <p>{% trans %}none{% endtrans %}</p>
+      {% else %}
+        {% for tm in view.trustMarks %}
+          <div class="chain-statement">
+            <h4><code>{{ tm.type|e }}</code> — <span style="color:#2a6b2a">active</span></h4>
+            <details><summary>{% trans %}payload{% endtrans %}</summary><pre>{{ tm.payload|e }}</pre></details>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <h3>{% trans %}Warnings{% endtrans %} ({{ view.warnings|length }})</h3>
+      {% if view.warnings is empty %}
+        <p>{% trans %}none{% endtrans %}</p>
+      {% else %}
+        <div class="warn-list">
+          <ul>
+            {% for w in view.warnings %}<li>{{ w|e }}</li>{% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      <h3>{% trans %}Signed Resolve Response JWT{% endtrans %}</h3>
+      <textarea readonly onclick="this.select()">{{ view.token|e }}</textarea>
+    </div>
+  {% endif %}
+{% endblock %}

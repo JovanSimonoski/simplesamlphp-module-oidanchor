@@ -117,3 +117,115 @@ oidanchor-admin-policies-delete:
   requirements:
     entityType: '.+'
   methods: [POST]
+
+# ============================================================
+# Trust Mark Status endpoint (public — no admin session).
+# Accessible at: /simplesaml/module.php/oidanchor/trust_mark_status
+#   ?trust_mark_type=<type>&sub=<entity>   or   ?trust_mark=<compact JWT>
+# ============================================================
+oidanchor-trust-mark-status:
+  path: /trust_mark_status
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\TrustMarkStatus::status'
+  }
+  methods: [GET]
+
+# ============================================================
+# Admin UI routes — Trust Mark Types catalog (require admin session)
+# ============================================================
+
+# List all Trust Mark types.
+oidanchor-admin-trust-mark-types-list:
+  path: /admin/trust-mark-types
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminTrustMarkTypes::list'
+  }
+  methods: [GET]
+
+# Create a new Trust Mark type (GET = form, POST = submit).
+oidanchor-admin-trust-mark-types-create:
+  path: /admin/trust-mark-types/create
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminTrustMarkTypes::create'
+  }
+  methods: [GET, POST]
+
+# Edit an existing Trust Mark type. {trustMarkId} is the URL-encoded type identifier.
+oidanchor-admin-trust-mark-types-edit:
+  path: /admin/trust-mark-types/{trustMarkId}/edit
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminTrustMarkTypes::edit'
+  }
+  requirements:
+    trustMarkId: '.+'
+  methods: [GET, POST]
+
+# Delete a Trust Mark type (POST only).
+oidanchor-admin-trust-mark-types-delete:
+  path: /admin/trust-mark-types/{trustMarkId}/delete
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminTrustMarkTypes::delete'
+  }
+  requirements:
+    trustMarkId: '.+'
+  methods: [POST]
+
+# ============================================================
+# Admin UI routes — issued Trust Marks (require admin session)
+# ============================================================
+
+# List issued Trust Marks (supports ?trust_mark_id, ?sub, ?status filters).
+oidanchor-admin-trust-marks-list:
+  path: /admin/trust-marks
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminTrustMarks::list'
+  }
+  methods: [GET]
+
+# Issue a new Trust Mark (GET = form, POST = submit).
+oidanchor-admin-trust-marks-issue:
+  path: /admin/trust-marks/issue
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminTrustMarks::issue'
+  }
+  methods: [GET, POST]
+
+# View a single issued Trust Mark (decoded header/payload + raw JWT). {id} is the row id.
+oidanchor-admin-trust-marks-view:
+  path: /admin/trust-marks/{id}/view
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminTrustMarks::view'
+  }
+  requirements:
+    id: '\d+'
+  methods: [GET]
+
+# Revoke an issued Trust Mark (POST only).
+oidanchor-admin-trust-marks-revoke:
+  path: /admin/trust-marks/{id}/revoke
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminTrustMarks::revoke'
+  }
+  requirements:
+    id: '\d+'
+  methods: [POST]
+
+# ============================================================
+# Resolve endpoint (public — no admin session).
+# Accessible at: /simplesaml/module.php/oidanchor/resolve
+#   ?sub=<entity>&trust_anchor=<TA>[&type=<entity_type>]
+# ============================================================
+oidanchor-resolve:
+  path: /resolve
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\Resolve::resolve'
+  }
+  methods: [GET]
+
+# Admin Resolve Tester (require admin session). GET = form, POST = run.
+oidanchor-admin-resolve:
+  path: /admin/resolve
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminResolve::index'
+  }
+  methods: [GET, POST]

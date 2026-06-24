@@ -292,11 +292,12 @@ class AdminSubordinates
     private function emptyFormData(): array
     {
         return [
-            'entity_id'       => '',
-            'entity_type'     => '',
-            'jwks'            => '',
-            'metadata_policy' => '',
-            'extra_claims'    => '',
+            'entity_id'           => '',
+            'entity_type'         => '',
+            'jwks'                => '',
+            'metadata_policy'     => '',
+            'extra_claims'        => '',
+            'include_trust_marks' => '',
         ];
     }
 
@@ -307,11 +308,12 @@ class AdminSubordinates
     private function extractFormData(Request $request): array
     {
         return [
-            'entity_id'       => trim((string) $request->request->get('entity_id', '')),
-            'entity_type'     => trim((string) $request->request->get('entity_type', '')),
-            'jwks'            => trim((string) $request->request->get('jwks', '')),
-            'metadata_policy' => trim((string) $request->request->get('metadata_policy', '')),
-            'extra_claims'    => trim((string) $request->request->get('extra_claims', '')),
+            'entity_id'           => trim((string) $request->request->get('entity_id', '')),
+            'entity_type'         => trim((string) $request->request->get('entity_type', '')),
+            'jwks'                => trim((string) $request->request->get('jwks', '')),
+            'metadata_policy'     => trim((string) $request->request->get('metadata_policy', '')),
+            'extra_claims'        => trim((string) $request->request->get('extra_claims', '')),
+            'include_trust_marks' => $request->request->get('include_trust_marks') !== null ? '1' : '',
         ];
     }
 
@@ -333,6 +335,7 @@ class AdminSubordinates
             'extra_claims'    => $sub->extraClaims !== null
                                     ? json_encode($sub->extraClaims, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
                                     : '',
+            'include_trust_marks' => $sub->includeTrustMarks ? '1' : '',
         ];
     }
 

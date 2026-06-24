@@ -43,6 +43,7 @@ class SubordinateRepository
             'ALTER TABLE ' . self::TABLE . ' ADD COLUMN extra_claims TEXT',
             "ALTER TABLE " . self::TABLE . " ADD COLUMN status TEXT NOT NULL DEFAULT 'active'",
             'ALTER TABLE ' . self::TABLE . ' ADD COLUMN updated_at INTEGER',
+            'ALTER TABLE ' . self::TABLE . ' ADD COLUMN include_trust_marks INTEGER NOT NULL DEFAULT 0',
         ];
 
         foreach ($migrations as $sql) {
@@ -133,8 +134,8 @@ class SubordinateRepository
     {
         $stmt = $this->pdo->prepare(
             'INSERT INTO ' . self::TABLE . '
-                (entity_id, entity_type, jwks, metadata_policy, extra_claims, status, registered_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                (entity_id, entity_type, jwks, metadata_policy, extra_claims, status, registered_at, updated_at, include_trust_marks)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
         );
 
         $stmt->execute([
@@ -146,6 +147,7 @@ class SubordinateRepository
             $sub->status,
             $sub->registeredAt,
             $sub->updatedAt,
+            $sub->includeTrustMarks ? 1 : 0,
         ]);
     }
 
@@ -157,7 +159,7 @@ class SubordinateRepository
      */
     public function update(string $entityId, array $fields): void
     {
-        $allowed = ['entity_type', 'jwks', 'metadata_policy', 'extra_claims', 'status', 'updated_at'];
+        $allowed = ['entity_type', 'jwks', 'metadata_policy', 'extra_claims', 'status', 'updated_at', 'include_trust_marks'];
 
         $sets   = [];
         $values = [];

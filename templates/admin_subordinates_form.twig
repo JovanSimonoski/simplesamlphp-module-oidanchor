@@ -115,6 +115,18 @@
       {% endif %}
     </div>
 
+    {# Embed issued Trust Marks toggle #}
+    <div class="field">
+      <label for="include_trust_marks" style="font-weight:normal">
+        <input type="checkbox" id="include_trust_marks" name="include_trust_marks" value="1"
+               {% if formData.include_trust_marks|default('') == '1' %}checked{% endif %}>
+        {% trans %}Include issued Trust Marks in subordinate statement{% endtrans %}
+      </label>
+      <p class="field-hint">
+        {% trans %}When enabled, active Trust Marks this TA has issued for this subordinate are embedded under the trust_marks claim of its subordinate statement.{% endtrans %}
+      </p>
+    </div>
+
     <div class="field">
       <button type="submit" class="pure-button pure-button-primary">{{ submitLabel|e }}</button>
       <a href="{{ listUrl }}" class="pure-button">{% trans %}Cancel{% endtrans %}</a>

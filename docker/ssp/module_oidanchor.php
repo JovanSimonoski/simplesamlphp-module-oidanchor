@@ -17,6 +17,20 @@ return [
     'federation_list_endpoint' => null,
 
     'subordinate_statement_lifetime' => 86400,
+
+    // Lifetime (seconds) of the signed Trust Mark Status Response JWT from /trust_mark_status.
+    'trust_mark_status_response_lifetime' => 600,
+
+    // Resolve endpoint (/oidanchor/resolve) settings.
+    'resolve' => [
+        'max_chain_depth'      => 6,
+        'http_connect_timeout' => 5,
+        'http_read_timeout'    => 5,
+        'response_lifetime'    => 600,
+        // DEV ONLY — allow self-signed TLS on fetched entity statements (e.g. the mock leaf).
+        'http_verify_tls'      => getenv('OIDANCHOR_RESOLVE_VERIFY_TLS') === 'false' ? false : true,
+    ],
+
     'federation_fetch_endpoint_enabled' => true,
     'federation_list_endpoint_enabled' => true,
     'database_dsn' => getenv('OIDANCHOR_DATABASE_DSN') ?: 'sqlite:/var/simplesamlphp/data/oidanchor.sqlite',

@@ -1,0 +1,38 @@
+services:
+  http-proxy:
+    image: nginxproxy/nginx-proxy:1.2.1
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./nginx-certs/:/etc/nginx/certs
+    links:
+      - oidanchor-ta
+  oidanchor-ta:
+    hostname: ta.local.stack-dev.cirrusidentity.com
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        SSP_VERSION: "${SSP_VERSION}"
+        OIDANCHOR_VERSION: "${OIDANCHOR_VERSION}"
+    environment:
+      - STAGINGCOMPOSERREPOS=oidanchor
+      - SSP_ADMIN_PASSWORD=secret1
+      - VIRTUAL_HOST=ta.local.stack-dev.cirrusidentity.com
+      - VIRTUAL_PORT=443
+      - VIRTUAL_PROTO=https
+      - CERT_NAME=default
+    volumes:
+      - ../:/var/simplesamlphp/staging-modules/oidanchor:ro
+      - ./ssp/module_oidanchor.php:/var/simplesamlphp/config/module_oidanchor.php:ro
+      - ./ssp/authsources.php:/var/simplesamlphp/config/authsources.php:ro
+      - ./ssp/config-override.php:/var/simplesamlphp/config/config-override.php:ro
+      - ./ssp/oidanchor_module.crt:/var/simplesamlphp/cert/oidanchor_module.crt:ro
+      - ./ssp/oidanchor_module.key:/var/simplesamlphp/cert/oidanchor_module.key:ro
+      - ./apache-override.cf:/etc/apache2/sites-enabled/ssp-override.cf:ro
+
+networks:
+  default:
+    name: oidanchor_default

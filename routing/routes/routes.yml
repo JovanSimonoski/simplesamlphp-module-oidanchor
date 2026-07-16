@@ -1,0 +1,1260 @@
+---
+
+# Entity Configuration endpoint.
+# Accessible at: /simplesaml/module.php/oidanchor/.well-known/openid-federation
+oidanchor-openid-federation:
+  path: /.well-known/openid-federation
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\OpenIDFederation::entityConfiguration'
+  }
+  methods: [GET]
+
+# Subordinate Listing endpoint (federation_list_endpoint).
+# Accessible at: /simplesaml/module.php/oidanchor/federation/list
+oidanchor-federation-list:
+  path: /federation/list
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\OpenIDFederation::subordinateList'
+  }
+  methods: [GET]
+
+# Subordinate Statement endpoint (federation_fetch_endpoint).
+# Accessible at: /simplesaml/module.php/oidanchor/federation/fetch?iss=<TA>&sub=<entity>
+oidanchor-federation-fetch:
+  path: /federation/fetch
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\OpenIDFederation::fetch'
+  }
+  methods: [GET]
+
+# ============================================================
+# Admin UI routes (require admin session)
+# ============================================================
+
+# List all subordinates.
+# Accessible at: /simplesaml/module.php/oidanchor/admin/subordinates
+oidanchor-admin-subordinates-list:
+  path: /admin/subordinates
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminSubordinates::list'
+  }
+  methods: [GET]
+
+# Register a new subordinate (GET = form, POST = submit).
+oidanchor-admin-subordinates-create:
+  path: /admin/subordinates/create
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminSubordinates::create'
+  }
+  methods: [GET, POST]
+
+# Edit an existing subordinate. {entityId} is the URL-encoded entity ID.
+oidanchor-admin-subordinates-edit:
+  path: /admin/subordinates/{entityId}/edit
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminSubordinates::edit'
+  }
+  requirements:
+    entityId: '.+'
+  methods: [GET, POST]
+
+# Delete a subordinate (POST only - triggered by form submit with confirm).
+oidanchor-admin-subordinates-delete:
+  path: /admin/subordinates/{entityId}/delete
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminSubordinates::delete'
+  }
+  requirements:
+    entityId: '.+'
+  methods: [POST]
+
+# Set subordinate status (POST only). Expects ?status=active|suspended in body.
+oidanchor-admin-subordinates-status:
+  path: /admin/subordinates/{entityId}/status
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminSubordinates::setStatus'
+  }
+  requirements:
+    entityId: '.+'
+  methods: [POST]
+
+# ============================================================
+# Admin UI routes — federation-wide metadata policies
+# ============================================================
+
+# List all federation-wide policies.
+oidanchor-admin-policies-list:
+  path: /admin/policies
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminPolicies::list'
+  }
+  methods: [GET]
+
+# Create a new federation-wide policy (GET = form, POST = submit).
+oidanchor-admin-policies-create:
+  path: /admin/policies/create
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminPolicies::create'
+  }
+  methods: [GET, POST]
+
+# Edit an existing federation-wide policy. {entityType} is the URL-encoded entity type.
+oidanchor-admin-policies-edit:
+  path: /admin/policies/{entityType}/edit
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminPolicies::edit'
+  }
+  requirements:
+    entityType: '.+'
+  methods: [GET, POST]
+
+# Delete a federation-wide policy (POST only).
+oidanchor-admin-policies-delete:
+  path: /admin/policies/{entityType}/delete
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminPolicies::delete'
+  }
+  requirements:
+    entityType: '.+'
+  methods: [POST]
+
+# ============================================================
+# Trust Mark Status endpoint (public — no admin session).
+# Accessible at: /simplesaml/module.php/oidanchor/trust_mark_status
+#   ?trust_mark_type=<type>&sub=<entity>   or   ?trust_mark=<compact JWT>
+# ============================================================
+oidanchor-trust-mark-status:
+  path: /trust_mark_status
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\TrustMarkStatus::status'
+  }
+  methods: [GET]
+
+# ============================================================
+# Admin UI routes — Trust Mark Types catalog (require admin session)
+# ============================================================
+
+# List all Trust Mark types.
+oidanchor-admin-trust-mark-types-list:
+  path: /admin/trust-mark-types
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminTrustMarkTypes::list'
+  }
+  methods: [GET]
+
+# Create a new Trust Mark type (GET = form, POST = submit).
+oidanchor-admin-trust-mark-types-create:
+  path: /admin/trust-mark-types/create
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminTrustMarkTypes::create'
+  }
+  methods: [GET, POST]
+
+# Edit an existing Trust Mark type. {trustMarkId} is the URL-encoded type identifier.
+oidanchor-admin-trust-mark-types-edit:
+  path: /admin/trust-mark-types/{trustMarkId}/edit
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminTrustMarkTypes::edit'
+  }
+  requirements:
+    trustMarkId: '.+'
+  methods: [GET, POST]
+
+# Delete a Trust Mark type (POST only).
+oidanchor-admin-trust-mark-types-delete:
+  path: /admin/trust-mark-types/{trustMarkId}/delete
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminTrustMarkTypes::delete'
+  }
+  requirements:
+    trustMarkId: '.+'
+  methods: [POST]
+
+# ============================================================
+# Admin UI routes — issued Trust Marks (require admin session)
+# ============================================================
+
+# List issued Trust Marks (supports ?trust_mark_id, ?sub, ?status filters).
+oidanchor-admin-trust-marks-list:
+  path: /admin/trust-marks
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminTrustMarks::list'
+  }
+  methods: [GET]
+
+# Issue a new Trust Mark (GET = form, POST = submit).
+oidanchor-admin-trust-marks-issue:
+  path: /admin/trust-marks/issue
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminTrustMarks::issue'
+  }
+  methods: [GET, POST]
+
+# View a single issued Trust Mark (decoded header/payload + raw JWT). {id} is the row id.
+oidanchor-admin-trust-marks-view:
+  path: /admin/trust-marks/{id}/view
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminTrustMarks::view'
+  }
+  requirements:
+    id: '\d+'
+  methods: [GET]
+
+# Revoke an issued Trust Mark (POST only).
+oidanchor-admin-trust-marks-revoke:
+  path: /admin/trust-marks/{id}/revoke
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminTrustMarks::revoke'
+  }
+  requirements:
+    id: '\d+'
+  methods: [POST]
+
+# ============================================================
+# Resolve endpoint (public — no admin session).
+# Accessible at: /simplesaml/module.php/oidanchor/resolve
+#   ?sub=<entity>&trust_anchor=<TA>[&type=<entity_type>]
+# ============================================================
+oidanchor-resolve:
+  path: /resolve
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\Resolve::resolve'
+  }
+  methods: [GET]
+
+# Admin Resolve Tester (require admin session). GET = form, POST = run.
+oidanchor-admin-resolve:
+  path: /admin/resolve
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminResolve::index'
+  }
+  methods: [GET, POST]
+
+# ============================================================
+# Federation Admin REST API (/api/v1/admin/...). JSON. Requires admin session.
+# Complete implementation of federation_admin_openapi.yaml.
+#
+# Route order matters: Symfony matches the first route whose path fits, so literal
+# segments are declared before the placeholder routes that could swallow them
+# (e.g. /trust-marks/owners before /trust-marks/types/{trustMarkTypeID}).
+# InternalID placeholders are additionally constrained to \d+.
+# ============================================================
+
+oidanchor-api-published-jwks:
+  path: /api/v1/admin/entity-configuration/jwks
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\KeysApi::publishedJwks' }
+  methods: [GET]
+
+oidanchor-api-keys-list:
+  path: /api/v1/admin/entity-configuration/keys
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\KeysApi::listKeys' }
+  methods: [GET]
+
+oidanchor-api-keys-add:
+  path: /api/v1/admin/entity-configuration/keys
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\KeysApi::addKey' }
+  methods: [POST]
+
+oidanchor-api-key-update:
+  path: /api/v1/admin/entity-configuration/keys/{kid}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\KeysApi::updateKeyMetadata' }
+  methods: [PUT]
+
+oidanchor-api-key-rotate:
+  path: /api/v1/admin/entity-configuration/keys/{kid}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\KeysApi::rotateKey' }
+  methods: [POST]
+
+oidanchor-api-key-delete:
+  path: /api/v1/admin/entity-configuration/keys/{kid}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\KeysApi::deleteKey' }
+  methods: [DELETE]
+
+oidanchor-api-kms-info:
+  path: /api/v1/admin/kms
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\KeysApi::kmsInfo' }
+  methods: [GET]
+
+oidanchor-api-kms-alg:
+  path: /api/v1/admin/kms/alg
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\KeysApi::updateAlg' }
+  methods: [PUT]
+
+oidanchor-api-kms-rsa-key-len:
+  path: /api/v1/admin/kms/rsa-key-len
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\KeysApi::updateRsaKeyLen' }
+  methods: [PUT]
+
+oidanchor-api-kms-rotation-get:
+  path: /api/v1/admin/kms/rotation
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\KeysApi::getRotationOptions' }
+  methods: [GET]
+
+oidanchor-api-kms-rotation-put:
+  path: /api/v1/admin/kms/rotation
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\KeysApi::putRotationOptions' }
+  methods: [PUT]
+
+oidanchor-api-kms-rotation-patch:
+  path: /api/v1/admin/kms/rotation
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\KeysApi::patchRotationOptions' }
+  methods: [PATCH]
+
+oidanchor-api-kms-rotate:
+  path: /api/v1/admin/kms/rotate
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\KeysApi::triggerRotation' }
+  methods: [POST]
+
+oidanchor-api-entity-configuration:
+  path: /api/v1/admin/entity-configuration
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::get' }
+  methods: [GET]
+
+oidanchor-api-ec-lifetime-get:
+  path: /api/v1/admin/entity-configuration/lifetime
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::getEntityConfigurationLifetime' }
+  methods: [GET]
+
+oidanchor-api-ec-lifetime-put:
+  path: /api/v1/admin/entity-configuration/lifetime
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::updateEntityConfigurationLifetime' }
+  methods: [PUT]
+
+oidanchor-api-ec-metadata:
+  path: /api/v1/admin/entity-configuration/metadata
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::getMetadata' }
+  methods: [GET]
+
+oidanchor-api-ec-metadata-put:
+  path: /api/v1/admin/entity-configuration/metadata
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::updateMetadata' }
+  methods: [PUT]
+
+oidanchor-api-ec-metadata-type:
+  path: /api/v1/admin/entity-configuration/metadata/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::getEntityTypedMetadata' }
+  methods: [GET]
+
+oidanchor-api-ec-metadata-type-put:
+  path: /api/v1/admin/entity-configuration/metadata/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::changeEntityTypedMetadata' }
+  methods: [PUT]
+
+oidanchor-api-ec-metadata-type-post:
+  path: /api/v1/admin/entity-configuration/metadata/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::addMetadataClaims' }
+  methods: [POST]
+
+oidanchor-api-ec-metadata-type-delete:
+  path: /api/v1/admin/entity-configuration/metadata/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::deleteEntityTypedMetadata' }
+  methods: [DELETE]
+
+oidanchor-api-ec-metadata-claim:
+  path: /api/v1/admin/entity-configuration/metadata/{entityType}/{claim}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::getMetadataClaim' }
+  methods: [GET]
+
+oidanchor-api-ec-metadata-claim-put:
+  path: /api/v1/admin/entity-configuration/metadata/{entityType}/{claim}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::changeMetadataClaim' }
+  methods: [PUT]
+
+oidanchor-api-ec-metadata-claim-delete:
+  path: /api/v1/admin/entity-configuration/metadata/{entityType}/{claim}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::deleteMetadataClaim' }
+  methods: [DELETE]
+
+oidanchor-api-ec-claims:
+  path: /api/v1/admin/entity-configuration/additional-claims
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::getAdditionalClaims' }
+  methods: [GET]
+
+oidanchor-api-ec-claims-put:
+  path: /api/v1/admin/entity-configuration/additional-claims
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::updateAdditionalClaims' }
+  methods: [PUT]
+
+oidanchor-api-ec-claims-post:
+  path: /api/v1/admin/entity-configuration/additional-claims
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::addAdditionalClaims' }
+  methods: [POST]
+
+oidanchor-api-ec-claim:
+  path: /api/v1/admin/entity-configuration/additional-claims/{additionalClaimsID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::getAdditionalClaim' }
+  requirements: { additionalClaimsID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-ec-claim-put:
+  path: /api/v1/admin/entity-configuration/additional-claims/{additionalClaimsID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::updateAdditionalClaim' }
+  requirements: { additionalClaimsID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-ec-claim-delete:
+  path: /api/v1/admin/entity-configuration/additional-claims/{additionalClaimsID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::deleteAdditionalClaim' }
+  requirements: { additionalClaimsID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-authority-hints:
+  path: /api/v1/admin/entity-configuration/authority-hints
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\AuthorityHintsApi::list' }
+  methods: [GET]
+
+oidanchor-api-authority-hints-create:
+  path: /api/v1/admin/entity-configuration/authority-hints
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\AuthorityHintsApi::create' }
+  methods: [POST]
+
+oidanchor-api-authority-hint:
+  path: /api/v1/admin/entity-configuration/authority-hints/{authorityHintID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\AuthorityHintsApi::get' }
+  requirements: { authorityHintID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-authority-hint-put:
+  path: /api/v1/admin/entity-configuration/authority-hints/{authorityHintID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\AuthorityHintsApi::update' }
+  requirements: { authorityHintID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-authority-hint-delete:
+  path: /api/v1/admin/entity-configuration/authority-hints/{authorityHintID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\AuthorityHintsApi::delete' }
+  requirements: { authorityHintID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-ec-trust-marks:
+  path: /api/v1/admin/entity-configuration/trust-marks
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EcTrustMarksApi::list' }
+  methods: [GET]
+
+oidanchor-api-ec-trust-marks-create:
+  path: /api/v1/admin/entity-configuration/trust-marks
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EcTrustMarksApi::create' }
+  methods: [POST]
+
+oidanchor-api-ec-trust-mark:
+  path: /api/v1/admin/entity-configuration/trust-marks/{trustMarkID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EcTrustMarksApi::get' }
+  requirements: { trustMarkID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-ec-trust-mark-put:
+  path: /api/v1/admin/entity-configuration/trust-marks/{trustMarkID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EcTrustMarksApi::replace' }
+  requirements: { trustMarkID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-ec-trust-mark-patch:
+  path: /api/v1/admin/entity-configuration/trust-marks/{trustMarkID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EcTrustMarksApi::patch' }
+  requirements: { trustMarkID: '\d+' }
+  methods: [PATCH]
+
+oidanchor-api-ec-trust-mark-delete:
+  path: /api/v1/admin/entity-configuration/trust-marks/{trustMarkID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EcTrustMarksApi::delete' }
+  requirements: { trustMarkID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-subordinates-lifetime-get:
+  path: /api/v1/admin/subordinates/lifetime
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::getSubordinateLifetime' }
+  methods: [GET]
+
+oidanchor-api-subordinates-lifetime-put:
+  path: /api/v1/admin/subordinates/lifetime
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\EntityConfigurationApi::updateSubordinateLifetime' }
+  methods: [PUT]
+
+oidanchor-api-subordinates-claims:
+  path: /api/v1/admin/subordinates/additional-claims
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::getGeneralAdditionalClaims' }
+  methods: [GET]
+
+oidanchor-api-subordinates-claims-put:
+  path: /api/v1/admin/subordinates/additional-claims
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::updateGeneralAdditionalClaims' }
+  methods: [PUT]
+
+oidanchor-api-subordinates-claims-post:
+  path: /api/v1/admin/subordinates/additional-claims
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::addGeneralAdditionalClaim' }
+  methods: [POST]
+
+oidanchor-api-subordinates-claim:
+  path: /api/v1/admin/subordinates/additional-claims/{additionalClaimsID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::getGeneralAdditionalClaim' }
+  requirements: { additionalClaimsID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-subordinates-claim-put:
+  path: /api/v1/admin/subordinates/additional-claims/{additionalClaimsID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::updateGeneralAdditionalClaim' }
+  requirements: { additionalClaimsID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-subordinates-claim-delete:
+  path: /api/v1/admin/subordinates/additional-claims/{additionalClaimsID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::deleteGeneralAdditionalClaim' }
+  requirements: { additionalClaimsID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-metadata-policies:
+  path: /api/v1/admin/subordinates/metadata-policies
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::getAll' }
+  methods: [GET]
+
+oidanchor-api-metadata-policies-put:
+  path: /api/v1/admin/subordinates/metadata-policies
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::replaceAll' }
+  methods: [PUT]
+
+oidanchor-api-metadata-policy-type:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::getForType' }
+  methods: [GET]
+
+oidanchor-api-metadata-policy-type-put:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::putForType' }
+  methods: [PUT]
+
+oidanchor-api-metadata-policy-type-post:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::addForType' }
+  methods: [POST]
+
+oidanchor-api-metadata-policy-type-delete:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::deleteForType' }
+  methods: [DELETE]
+
+oidanchor-api-metadata-policy-claim:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}/{claim}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::getClaim' }
+  methods: [GET]
+
+oidanchor-api-metadata-policy-claim-put:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}/{claim}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::putClaim' }
+  methods: [PUT]
+
+oidanchor-api-metadata-policy-claim-post:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}/{claim}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::addOperators' }
+  methods: [POST]
+
+oidanchor-api-metadata-policy-claim-delete:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}/{claim}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::deleteClaim' }
+  methods: [DELETE]
+
+oidanchor-api-metadata-policy-operator:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}/{claim}/{operator}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::getOperator' }
+  methods: [GET]
+
+oidanchor-api-metadata-policy-operator-put:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}/{claim}/{operator}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::putOperator' }
+  methods: [PUT]
+
+oidanchor-api-metadata-policy-operator-delete:
+  path: /api/v1/admin/subordinates/metadata-policies/{entityType}/{claim}/{operator}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPoliciesApi::deleteOperator' }
+  methods: [DELETE]
+
+oidanchor-api-metadata-policy-crit:
+  path: /api/v1/admin/subordinates/metadata-policy-crit
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPolicyCritApi::list' }
+  methods: [GET]
+
+oidanchor-api-metadata-policy-crit-put:
+  path: /api/v1/admin/subordinates/metadata-policy-crit
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPolicyCritApi::replace' }
+  methods: [PUT]
+
+oidanchor-api-metadata-policy-crit-post:
+  path: /api/v1/admin/subordinates/metadata-policy-crit
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPolicyCritApi::create' }
+  methods: [POST]
+
+oidanchor-api-metadata-policy-crit-delete:
+  path: /api/v1/admin/subordinates/metadata-policy-crit/{operator}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\MetadataPolicyCritApi::delete' }
+  methods: [DELETE]
+
+oidanchor-api-constraints:
+  path: /api/v1/admin/subordinates/constraints
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\ConstraintsApi::get' }
+  methods: [GET]
+
+oidanchor-api-constraints-put:
+  path: /api/v1/admin/subordinates/constraints
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\ConstraintsApi::update' }
+  methods: [PUT]
+
+oidanchor-api-constraints-mpl:
+  path: /api/v1/admin/subordinates/constraints/max-path-length
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\ConstraintsApi::getMaxPathLength' }
+  methods: [GET]
+
+oidanchor-api-constraints-mpl-put:
+  path: /api/v1/admin/subordinates/constraints/max-path-length
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\ConstraintsApi::setMaxPathLength' }
+  methods: [PUT]
+
+oidanchor-api-constraints-mpl-delete:
+  path: /api/v1/admin/subordinates/constraints/max-path-length
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\ConstraintsApi::deleteMaxPathLength' }
+  methods: [DELETE]
+
+oidanchor-api-constraints-naming:
+  path: /api/v1/admin/subordinates/constraints/naming-constraints
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\ConstraintsApi::getNamingConstraints' }
+  methods: [GET]
+
+oidanchor-api-constraints-naming-put:
+  path: /api/v1/admin/subordinates/constraints/naming-constraints
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\ConstraintsApi::setNamingConstraints' }
+  methods: [PUT]
+
+oidanchor-api-constraints-naming-delete:
+  path: /api/v1/admin/subordinates/constraints/naming-constraints
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\ConstraintsApi::deleteNamingConstraints' }
+  methods: [DELETE]
+
+oidanchor-api-constraints-aet:
+  path: /api/v1/admin/subordinates/constraints/allowed-entity-types
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\ConstraintsApi::getAllowedEntityTypes' }
+  methods: [GET]
+
+oidanchor-api-constraints-aet-put:
+  path: /api/v1/admin/subordinates/constraints/allowed-entity-types
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\ConstraintsApi::setAllowedEntityTypes' }
+  methods: [PUT]
+
+oidanchor-api-constraints-aet-post:
+  path: /api/v1/admin/subordinates/constraints/allowed-entity-types
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\ConstraintsApi::addAllowedEntityType' }
+  methods: [POST]
+
+oidanchor-api-constraints-aet-delete:
+  path: /api/v1/admin/subordinates/constraints/allowed-entity-types/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\ConstraintsApi::deleteAllowedEntityType' }
+  methods: [DELETE]
+
+oidanchor-api-subordinates-list:
+  path: /api/v1/admin/subordinates
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::list' }
+  methods: [GET]
+
+oidanchor-api-subordinates-create:
+  path: /api/v1/admin/subordinates
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::create' }
+  methods: [POST]
+
+oidanchor-api-subordinate-statement:
+  path: /api/v1/admin/subordinates/{subordinateID}/statement
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::statement' }
+  requirements: { subordinateID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-subordinate-history:
+  path: /api/v1/admin/subordinates/{subordinateID}/history
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::history' }
+  requirements: { subordinateID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-subordinate-status:
+  path: /api/v1/admin/subordinates/{subordinateID}/status
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::changeStatus' }
+  requirements: { subordinateID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-subordinate-jwks:
+  path: /api/v1/admin/subordinates/{subordinateID}/jwks
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::getJwks' }
+  requirements: { subordinateID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-subordinate-jwks-put:
+  path: /api/v1/admin/subordinates/{subordinateID}/jwks
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::setJwks' }
+  requirements: { subordinateID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-subordinate-jwks-post:
+  path: /api/v1/admin/subordinates/{subordinateID}/jwks
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::addJwk' }
+  requirements: { subordinateID: '\d+' }
+  methods: [POST]
+
+oidanchor-api-subordinate-jwk-delete:
+  path: /api/v1/admin/subordinates/{subordinateID}/jwks/{kid}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::deleteJwk' }
+  requirements: { subordinateID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-subordinate-claims:
+  path: /api/v1/admin/subordinates/{subordinateID}/additional-claims
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::getSubordinateAdditionalClaims' }
+  requirements: { subordinateID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-subordinate-claims-put:
+  path: /api/v1/admin/subordinates/{subordinateID}/additional-claims
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::updateSubordinateAdditionalClaims' }
+  requirements: { subordinateID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-subordinate-claims-post:
+  path: /api/v1/admin/subordinates/{subordinateID}/additional-claims
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::addSubordinateAdditionalClaims' }
+  requirements: { subordinateID: '\d+' }
+  methods: [POST]
+
+oidanchor-api-subordinate-claim:
+  path: /api/v1/admin/subordinates/{subordinateID}/additional-claims/{additionalClaimsID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::getSubordinateAdditionalClaim' }
+  requirements: { additionalClaimsID: '\d+', subordinateID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-subordinate-claim-put:
+  path: /api/v1/admin/subordinates/{subordinateID}/additional-claims/{additionalClaimsID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::updateSubordinateAdditionalClaim' }
+  requirements: { additionalClaimsID: '\d+', subordinateID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-subordinate-claim-delete:
+  path: /api/v1/admin/subordinates/{subordinateID}/additional-claims/{additionalClaimsID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::deleteSubordinateAdditionalClaim' }
+  requirements: { additionalClaimsID: '\d+', subordinateID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-subordinate-metadata:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataApi::getMetadata' }
+  requirements: { subordinateID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-subordinate-metadata-put:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataApi::updateMetadata' }
+  requirements: { subordinateID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-subordinate-metadata-type:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataApi::getEntityTypedMetadata' }
+  requirements: { subordinateID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-subordinate-metadata-type-put:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataApi::changeEntityTypedMetadata' }
+  requirements: { subordinateID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-subordinate-metadata-type-post:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataApi::addMetadataClaims' }
+  requirements: { subordinateID: '\d+' }
+  methods: [POST]
+
+oidanchor-api-subordinate-metadata-type-delete:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataApi::deleteEntityTypedMetadata' }
+  requirements: { subordinateID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-subordinate-metadata-claim:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata/{entityType}/{claim}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataApi::getMetadataClaim' }
+  requirements: { subordinateID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-subordinate-metadata-claim-put:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata/{entityType}/{claim}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataApi::changeMetadataClaim' }
+  requirements: { subordinateID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-subordinate-metadata-claim-delete:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata/{entityType}/{claim}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataApi::deleteMetadataClaim' }
+  requirements: { subordinateID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-subordinate-policies:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata-policies
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataPoliciesApi::getAll' }
+  requirements: { subordinateID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-subordinate-policies-put:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata-policies
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataPoliciesApi::replaceAll' }
+  requirements: { subordinateID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-subordinate-policies-post:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata-policies
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataPoliciesApi::copyFromGeneral' }
+  requirements: { subordinateID: '\d+' }
+  methods: [POST]
+
+oidanchor-api-subordinate-policies-delete:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata-policies
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataPoliciesApi::deleteAll' }
+  requirements: { subordinateID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-subordinate-policy-type:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata-policies/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataPoliciesApi::getForType' }
+  requirements: { subordinateID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-subordinate-policy-type-put:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata-policies/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataPoliciesApi::putForType' }
+  requirements: { subordinateID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-subordinate-policy-type-post:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata-policies/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataPoliciesApi::addForType' }
+  requirements: { subordinateID: '\d+' }
+  methods: [POST]
+
+oidanchor-api-subordinate-policy-type-delete:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata-policies/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataPoliciesApi::deleteForType' }
+  requirements: { subordinateID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-subordinate-policy-claim:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata-policies/{entityType}/{claim}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataPoliciesApi::getClaim' }
+  requirements: { subordinateID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-subordinate-policy-claim-put:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata-policies/{entityType}/{claim}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataPoliciesApi::putClaim' }
+  requirements: { subordinateID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-subordinate-policy-claim-post:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata-policies/{entityType}/{claim}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataPoliciesApi::addOperators' }
+  requirements: { subordinateID: '\d+' }
+  methods: [POST]
+
+oidanchor-api-subordinate-policy-claim-delete:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata-policies/{entityType}/{claim}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataPoliciesApi::deleteClaim' }
+  requirements: { subordinateID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-subordinate-policy-operator:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata-policies/{entityType}/{claim}/{operator}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataPoliciesApi::getOperator' }
+  requirements: { subordinateID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-subordinate-policy-operator-put:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata-policies/{entityType}/{claim}/{operator}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataPoliciesApi::putOperator' }
+  requirements: { subordinateID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-subordinate-policy-operator-delete:
+  path: /api/v1/admin/subordinates/{subordinateID}/metadata-policies/{entityType}/{claim}/{operator}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateMetadataPoliciesApi::deleteOperator' }
+  requirements: { subordinateID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-subordinate-constraints:
+  path: /api/v1/admin/subordinates/{subordinateID}/constraints
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateConstraintsApi::get' }
+  requirements: { subordinateID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-subordinate-constraints-put:
+  path: /api/v1/admin/subordinates/{subordinateID}/constraints
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateConstraintsApi::update' }
+  requirements: { subordinateID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-subordinate-constraints-post:
+  path: /api/v1/admin/subordinates/{subordinateID}/constraints
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateConstraintsApi::copyFromGeneral' }
+  requirements: { subordinateID: '\d+' }
+  methods: [POST]
+
+oidanchor-api-subordinate-constraints-delete:
+  path: /api/v1/admin/subordinates/{subordinateID}/constraints
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateConstraintsApi::delete' }
+  requirements: { subordinateID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-subordinate-constraints-mpl:
+  path: /api/v1/admin/subordinates/{subordinateID}/constraints/max-path-length
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateConstraintsApi::getMaxPathLength' }
+  requirements: { subordinateID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-subordinate-constraints-mpl-put:
+  path: /api/v1/admin/subordinates/{subordinateID}/constraints/max-path-length
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateConstraintsApi::setMaxPathLength' }
+  requirements: { subordinateID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-subordinate-constraints-mpl-delete:
+  path: /api/v1/admin/subordinates/{subordinateID}/constraints/max-path-length
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateConstraintsApi::deleteMaxPathLength' }
+  requirements: { subordinateID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-subordinate-constraints-naming:
+  path: /api/v1/admin/subordinates/{subordinateID}/constraints/naming-constraints
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateConstraintsApi::getNamingConstraints' }
+  requirements: { subordinateID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-subordinate-constraints-naming-put:
+  path: /api/v1/admin/subordinates/{subordinateID}/constraints/naming-constraints
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateConstraintsApi::setNamingConstraints' }
+  requirements: { subordinateID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-subordinate-constraints-naming-delete:
+  path: /api/v1/admin/subordinates/{subordinateID}/constraints/naming-constraints
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateConstraintsApi::deleteNamingConstraints' }
+  requirements: { subordinateID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-subordinate-constraints-aet:
+  path: /api/v1/admin/subordinates/{subordinateID}/constraints/allowed-entity-types
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateConstraintsApi::getAllowedEntityTypes' }
+  requirements: { subordinateID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-subordinate-constraints-aet-put:
+  path: /api/v1/admin/subordinates/{subordinateID}/constraints/allowed-entity-types
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateConstraintsApi::setAllowedEntityTypes' }
+  requirements: { subordinateID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-subordinate-constraints-aet-post:
+  path: /api/v1/admin/subordinates/{subordinateID}/constraints/allowed-entity-types
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateConstraintsApi::addAllowedEntityType' }
+  requirements: { subordinateID: '\d+' }
+  methods: [POST]
+
+oidanchor-api-subordinate-constraints-aet-delete:
+  path: /api/v1/admin/subordinates/{subordinateID}/constraints/allowed-entity-types/{entityType}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinateConstraintsApi::deleteAllowedEntityType' }
+  requirements: { subordinateID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-subordinate-get:
+  path: /api/v1/admin/subordinates/{subordinateID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::get' }
+  requirements: { subordinateID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-subordinate-put:
+  path: /api/v1/admin/subordinates/{subordinateID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::update' }
+  requirements: { subordinateID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-subordinate-delete:
+  path: /api/v1/admin/subordinates/{subordinateID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\SubordinatesApi::delete' }
+  requirements: { subordinateID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-tm-owners:
+  path: /api/v1/admin/trust-marks/owners
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkOwnersApi::list' }
+  methods: [GET]
+
+oidanchor-api-tm-owners-create:
+  path: /api/v1/admin/trust-marks/owners
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkOwnersApi::create' }
+  methods: [POST]
+
+oidanchor-api-tm-owner:
+  path: /api/v1/admin/trust-marks/owners/{ownerID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkOwnersApi::get' }
+  requirements: { ownerID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-tm-owner-put:
+  path: /api/v1/admin/trust-marks/owners/{ownerID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkOwnersApi::update' }
+  requirements: { ownerID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-tm-owner-delete:
+  path: /api/v1/admin/trust-marks/owners/{ownerID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkOwnersApi::delete' }
+  requirements: { ownerID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-tm-owner-types:
+  path: /api/v1/admin/trust-marks/owners/{ownerID}/types
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkOwnersApi::listTypes' }
+  requirements: { ownerID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-tm-owner-types-put:
+  path: /api/v1/admin/trust-marks/owners/{ownerID}/types
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkOwnersApi::setTypes' }
+  requirements: { ownerID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-tm-owner-types-post:
+  path: /api/v1/admin/trust-marks/owners/{ownerID}/types
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkOwnersApi::addType' }
+  requirements: { ownerID: '\d+' }
+  methods: [POST]
+
+oidanchor-api-tm-owner-type-delete:
+  path: /api/v1/admin/trust-marks/owners/{ownerID}/types/{trustMarkTypeID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkOwnersApi::unlinkType' }
+  requirements: { ownerID: '\d+', trustMarkTypeID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-tm-issuers:
+  path: /api/v1/admin/trust-marks/issuers
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuersApi::list' }
+  methods: [GET]
+
+oidanchor-api-tm-issuers-create:
+  path: /api/v1/admin/trust-marks/issuers
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuersApi::create' }
+  methods: [POST]
+
+oidanchor-api-tm-issuer:
+  path: /api/v1/admin/trust-marks/issuers/{issuerID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuersApi::get' }
+  requirements: { issuerID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-tm-issuer-put:
+  path: /api/v1/admin/trust-marks/issuers/{issuerID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuersApi::update' }
+  requirements: { issuerID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-tm-issuer-delete:
+  path: /api/v1/admin/trust-marks/issuers/{issuerID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuersApi::delete' }
+  requirements: { issuerID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-tm-issuer-types:
+  path: /api/v1/admin/trust-marks/issuers/{issuerID}/types
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuersApi::listTypes' }
+  requirements: { issuerID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-tm-issuer-types-put:
+  path: /api/v1/admin/trust-marks/issuers/{issuerID}/types
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuersApi::setTypes' }
+  requirements: { issuerID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-tm-issuer-types-post:
+  path: /api/v1/admin/trust-marks/issuers/{issuerID}/types
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuersApi::addType' }
+  requirements: { issuerID: '\d+' }
+  methods: [POST]
+
+oidanchor-api-tm-issuer-type-delete:
+  path: /api/v1/admin/trust-marks/issuers/{issuerID}/types/{trustMarkTypeID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuersApi::unlinkType' }
+  requirements: { issuerID: '\d+', trustMarkTypeID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-tm-specs:
+  path: /api/v1/admin/trust-marks/issuance-spec
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuanceApi::listSpecs' }
+  methods: [GET]
+
+oidanchor-api-tm-specs-create:
+  path: /api/v1/admin/trust-marks/issuance-spec
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuanceApi::createSpec' }
+  methods: [POST]
+
+oidanchor-api-tm-spec:
+  path: /api/v1/admin/trust-marks/issuance-spec/{trustMarkSpecID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuanceApi::getSpec' }
+  requirements: { trustMarkSpecID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-tm-spec-put:
+  path: /api/v1/admin/trust-marks/issuance-spec/{trustMarkSpecID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuanceApi::updateSpec' }
+  requirements: { trustMarkSpecID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-tm-spec-patch:
+  path: /api/v1/admin/trust-marks/issuance-spec/{trustMarkSpecID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuanceApi::patchSpec' }
+  requirements: { trustMarkSpecID: '\d+' }
+  methods: [PATCH]
+
+oidanchor-api-tm-spec-delete:
+  path: /api/v1/admin/trust-marks/issuance-spec/{trustMarkSpecID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuanceApi::deleteSpec' }
+  requirements: { trustMarkSpecID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-tm-subjects:
+  path: /api/v1/admin/trust-marks/issuance-spec/{trustMarkSpecID}/subjects
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuanceApi::listSubjects' }
+  requirements: { trustMarkSpecID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-tm-subjects-create:
+  path: /api/v1/admin/trust-marks/issuance-spec/{trustMarkSpecID}/subjects
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuanceApi::createSubject' }
+  requirements: { trustMarkSpecID: '\d+' }
+  methods: [POST]
+
+oidanchor-api-tm-subject-status:
+  path: /api/v1/admin/trust-marks/issuance-spec/{trustMarkSpecID}/subjects/{trustMarkSubjectID}/status
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuanceApi::changeSubjectStatus' }
+  requirements: { trustMarkSpecID: '\d+', trustMarkSubjectID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-tm-subject-claims:
+  path: /api/v1/admin/trust-marks/issuance-spec/{trustMarkSpecID}/subjects/{trustMarkSubjectID}/additional-claims
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuanceApi::getSubjectClaims' }
+  requirements: { trustMarkSpecID: '\d+', trustMarkSubjectID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-tm-subject-claims-put:
+  path: /api/v1/admin/trust-marks/issuance-spec/{trustMarkSpecID}/subjects/{trustMarkSubjectID}/additional-claims
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuanceApi::updateSubjectClaims' }
+  requirements: { trustMarkSpecID: '\d+', trustMarkSubjectID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-tm-subject-claims-post:
+  path: /api/v1/admin/trust-marks/issuance-spec/{trustMarkSpecID}/subjects/{trustMarkSubjectID}/additional-claims
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuanceApi::copySubjectClaims' }
+  requirements: { trustMarkSpecID: '\d+', trustMarkSubjectID: '\d+' }
+  methods: [POST]
+
+oidanchor-api-tm-subject:
+  path: /api/v1/admin/trust-marks/issuance-spec/{trustMarkSpecID}/subjects/{trustMarkSubjectID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuanceApi::getSubject' }
+  requirements: { trustMarkSpecID: '\d+', trustMarkSubjectID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-tm-subject-put:
+  path: /api/v1/admin/trust-marks/issuance-spec/{trustMarkSpecID}/subjects/{trustMarkSubjectID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuanceApi::updateSubject' }
+  requirements: { trustMarkSpecID: '\d+', trustMarkSubjectID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-tm-subject-delete:
+  path: /api/v1/admin/trust-marks/issuance-spec/{trustMarkSpecID}/subjects/{trustMarkSubjectID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuanceApi::deleteSubject' }
+  requirements: { trustMarkSpecID: '\d+', trustMarkSubjectID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-tm-types:
+  path: /api/v1/admin/trust-marks/types
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkTypesApi::list' }
+  methods: [GET]
+
+oidanchor-api-tm-types-create:
+  path: /api/v1/admin/trust-marks/types
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkTypesApi::create' }
+  methods: [POST]
+
+oidanchor-api-tm-type-issuers:
+  path: /api/v1/admin/trust-marks/types/{trustMarkTypeID}/issuers
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkTypesApi::listIssuers' }
+  requirements: { trustMarkTypeID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-tm-type-issuers-put:
+  path: /api/v1/admin/trust-marks/types/{trustMarkTypeID}/issuers
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkTypesApi::setIssuers' }
+  requirements: { trustMarkTypeID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-tm-type-issuers-post:
+  path: /api/v1/admin/trust-marks/types/{trustMarkTypeID}/issuers
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkTypesApi::addIssuer' }
+  requirements: { trustMarkTypeID: '\d+' }
+  methods: [POST]
+
+oidanchor-api-tm-type-issuer-delete:
+  path: /api/v1/admin/trust-marks/types/{trustMarkTypeID}/issuers/{issuerID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkTypesApi::deleteIssuer' }
+  requirements: { issuerID: '\d+', trustMarkTypeID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-tm-type-owner:
+  path: /api/v1/admin/trust-marks/types/{trustMarkTypeID}/owner
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkTypesApi::getOwner' }
+  requirements: { trustMarkTypeID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-tm-type-owner-put:
+  path: /api/v1/admin/trust-marks/types/{trustMarkTypeID}/owner
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkTypesApi::updateOwner' }
+  requirements: { trustMarkTypeID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-tm-type-owner-post:
+  path: /api/v1/admin/trust-marks/types/{trustMarkTypeID}/owner
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkTypesApi::createOwner' }
+  requirements: { trustMarkTypeID: '\d+' }
+  methods: [POST]
+
+oidanchor-api-tm-type-owner-delete:
+  path: /api/v1/admin/trust-marks/types/{trustMarkTypeID}/owner
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkTypesApi::deleteOwner' }
+  requirements: { trustMarkTypeID: '\d+' }
+  methods: [DELETE]
+
+oidanchor-api-tm-type:
+  path: /api/v1/admin/trust-marks/types/{trustMarkTypeID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkTypesApi::get' }
+  requirements: { trustMarkTypeID: '\d+' }
+  methods: [GET]
+
+oidanchor-api-tm-type-put:
+  path: /api/v1/admin/trust-marks/types/{trustMarkTypeID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkTypesApi::update' }
+  requirements: { trustMarkTypeID: '\d+' }
+  methods: [PUT]
+
+oidanchor-api-tm-type-delete:
+  path: /api/v1/admin/trust-marks/types/{trustMarkTypeID}
+  defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkTypesApi::delete' }
+  requirements: { trustMarkTypeID: '\d+' }
+  methods: [DELETE]
+
+# Alias of /federation/fetch at /fetch (iss defaults to this TA). Some federation clients — e.g. the
+# Federation Gateway chain inspector — expect the fetch endpoint at <base>/fetch?sub=<entity>.
+oidanchor-federation-fetch-alias:
+  path: /fetch
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\OpenIDFederation::fetch'
+  }
+  methods: [GET]

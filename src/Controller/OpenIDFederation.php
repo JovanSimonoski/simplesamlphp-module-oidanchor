@@ -76,8 +76,15 @@ class OpenIDFederation
         $moduleConfig = Configuration::getConfig('module_oidanchor.php');
         $entityId     = $moduleConfig->getString('entity_id');
 
-        $iss = $request->query->get('iss', '');
-        $sub = $request->query->get('sub', '');
+        // iss is optional: this TA is always the issuer, so default it to our entity_id when the
+        // caller omits it (the Federation Gateway's chain inspector calls /fetch?sub=… with no iss).
+        // An explicitly-supplied iss must still match this TA.
+        $iss = (string) $request->query->get('iss', '');
+        $sub = (string) $request->query->get('sub', '');
+
+        if ($iss === '') {
+            $iss = $entityId;
+        }
 
         if ($iss !== $entityId) {
             return $this->federationError(

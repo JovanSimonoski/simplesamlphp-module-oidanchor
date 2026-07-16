@@ -1249,3 +1249,12 @@ oidanchor-api-tm-type-delete:
   defaults: { _controller: 'SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkTypesApi::delete' }
   requirements: { trustMarkTypeID: '\d+' }
   methods: [DELETE]
+
+# Alias of /federation/fetch at /fetch (iss defaults to this TA). Some federation clients — e.g. the
+# Federation Gateway chain inspector — expect the fetch endpoint at <base>/fetch?sub=<entity>.
+oidanchor-federation-fetch-alias:
+  path: /fetch
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\OpenIDFederation::fetch'
+  }
+  methods: [GET]

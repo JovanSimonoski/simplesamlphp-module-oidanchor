@@ -14,6 +14,7 @@ use SimpleSAML\Logger;
 use SimpleSAML\Module;
 use SimpleSAML\Module\admin\Controller\Menu;
 use SimpleSAML\Module\oidanchor\Entity\Subordinate;
+use SimpleSAML\Module\oidanchor\Repository\SubordinateEventRepository;
 use SimpleSAML\Module\oidanchor\Repository\SubordinateRepository;
 use SimpleSAML\Module\oidanchor\Service\SubordinateService;
 use SimpleSAML\Module\oidanchor\Validation\SubordinateValidator;
@@ -260,9 +261,13 @@ class AdminSubordinates
     private function getService(): SubordinateService
     {
         $moduleConfig = Configuration::getConfig('module_oidanchor.php');
+        $pdo          = $this->buildPdo($moduleConfig);
 
+        // Pass the event repository so UI mutations also land in the audit trail served by
+        // GET /api/v1/admin/subordinates/{id}/history.
         return new SubordinateService(
-            new SubordinateRepository($this->buildPdo($moduleConfig)),
+            new SubordinateRepository($pdo),
+            new SubordinateEventRepository($pdo),
         );
     }
 

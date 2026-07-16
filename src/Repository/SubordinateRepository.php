@@ -11,7 +11,9 @@ use SimpleSAML\Module\oidanchor\Entity\Subordinate;
 /**
  * Data-access layer for the subordinate registry.
  *
- * Schema is initialised (and migrated) on construction so no external migration step is needed for SQLite.
+ * Schema is initialised (and migrated) on construction so no external migration step is needed.
+ * The table was migrated to carry a surrogate `id` (the API's InternalID) while `entity_id`
+ * stays unique — the admin UI and the federation endpoints still address rows by entity_id.
  */
 class SubordinateRepository
 {
@@ -45,6 +47,8 @@ class SubordinateRepository
             'ALTER TABLE ' . self::TABLE . ' ADD COLUMN updated_at INTEGER',
             'ALTER TABLE ' . self::TABLE . ' ADD COLUMN include_trust_marks INTEGER NOT NULL DEFAULT 0',
             'ALTER TABLE ' . self::TABLE . ' ADD COLUMN description TEXT',
+            'ALTER TABLE ' . self::TABLE . ' ADD COLUMN metadata TEXT',
+            'ALTER TABLE ' . self::TABLE . ' ADD COLUMN constraints TEXT',
         ];
 
         foreach ($migrations as $sql) {
@@ -54,6 +58,54 @@ class SubordinateRepository
                 // Column already exists — safe to ignore.
             }
         }
+
+        $this->migrateToSurrogateId();
+    }
+
+
+    /**
+     * One-shot migration: rebuild the table with an autoincrement `id` primary key, preserving
+     * every row (registration order becomes id order). Detected by the absence of the `id`
+     * column, so it is idempotent.
+     */
+    private function migrateToSurrogateId(): void
+    {
+        $columns = $this->pdo->query('PRAGMA table_info(' . self::TABLE . ')')->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($columns as $column) {
+            if (($column['name'] ?? null) === 'id') {
+                return;
+            }
+        }
+
+        $this->pdo->exec(
+            'CREATE TABLE ' . self::TABLE . "_new (
+                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                entity_id           TEXT    NOT NULL UNIQUE,
+                entity_type         TEXT,
+                jwks                TEXT,
+                metadata            TEXT,
+                metadata_policy     TEXT,
+                constraints         TEXT,
+                extra_claims        TEXT,
+                status              TEXT    NOT NULL DEFAULT 'active',
+                registered_at       INTEGER NOT NULL,
+                updated_at          INTEGER,
+                include_trust_marks INTEGER NOT NULL DEFAULT 0,
+                description         TEXT
+            )",
+        );
+
+        $this->pdo->exec(
+            'INSERT INTO ' . self::TABLE . '_new
+                (entity_id, entity_type, jwks, metadata, metadata_policy, constraints, extra_claims,
+                 status, registered_at, updated_at, include_trust_marks, description)
+             SELECT entity_id, entity_type, jwks, metadata, metadata_policy, constraints, extra_claims,
+                    status, registered_at, updated_at, include_trust_marks, description
+             FROM ' . self::TABLE . ' ORDER BY registered_at ASC',
+        );
+
+        $this->pdo->exec('DROP TABLE ' . self::TABLE);
+        $this->pdo->exec('ALTER TABLE ' . self::TABLE . '_new RENAME TO ' . self::TABLE);
     }
 
 
@@ -115,6 +167,23 @@ class SubordinateRepository
 
 
     /**
+     * Find a single subordinate by its surrogate id (the API's InternalID).
+     */
+    public function findByInternalId(int $id): ?Subordinate
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT * FROM ' . self::TABLE . ' WHERE id = ?',
+        );
+        $stmt->execute([$id]);
+
+        /** @var array<string,mixed>|false $row */
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $row === false ? null : Subordinate::fromRow($row);
+    }
+
+
+    /**
      * Check whether an entity_id already exists in the registry.
      */
     public function exists(string $entityId): bool
@@ -129,21 +198,24 @@ class SubordinateRepository
 
 
     /**
-     * Insert a new subordinate row.
+     * Insert a new subordinate row and return its surrogate id.
      */
-    public function create(Subordinate $sub): void
+    public function create(Subordinate $sub): int
     {
         $stmt = $this->pdo->prepare(
             'INSERT INTO ' . self::TABLE . '
-                (entity_id, entity_type, jwks, metadata_policy, extra_claims, status, registered_at, updated_at, include_trust_marks, description)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (entity_id, entity_type, jwks, metadata, metadata_policy, constraints, extra_claims,
+                 status, registered_at, updated_at, include_trust_marks, description)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         );
 
         $stmt->execute([
             $sub->entityId,
             $sub->entityType,
             $sub->jwks !== null ? json_encode($sub->jwks, JSON_UNESCAPED_SLASHES) : null,
+            $sub->metadata !== null ? json_encode($sub->metadata, JSON_UNESCAPED_SLASHES) : null,
             $sub->metadataPolicy !== null ? json_encode($sub->metadataPolicy, JSON_UNESCAPED_SLASHES) : null,
+            $sub->constraints !== null ? json_encode($sub->constraints, JSON_UNESCAPED_SLASHES) : null,
             $sub->extraClaims !== null ? json_encode($sub->extraClaims, JSON_UNESCAPED_SLASHES) : null,
             $sub->status,
             $sub->registeredAt,
@@ -151,6 +223,8 @@ class SubordinateRepository
             $sub->includeTrustMarks ? 1 : 0,
             $sub->description,
         ]);
+
+        return (int) $this->pdo->lastInsertId();
     }
 
 
@@ -161,7 +235,10 @@ class SubordinateRepository
      */
     public function update(string $entityId, array $fields): void
     {
-        $allowed = ['entity_type', 'jwks', 'metadata_policy', 'extra_claims', 'status', 'updated_at', 'include_trust_marks', 'description'];
+        $allowed = [
+            'entity_type', 'jwks', 'metadata', 'metadata_policy', 'constraints',
+            'extra_claims', 'status', 'updated_at', 'include_trust_marks', 'description',
+        ];
 
         $sets   = [];
         $values = [];

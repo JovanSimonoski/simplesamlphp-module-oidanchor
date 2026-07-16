@@ -6,8 +6,9 @@ namespace SimpleSAML\Module\oidanchor\Controller\Api;
 
 use SimpleSAML\Logger;
 use SimpleSAML\Module\oidanchor\Entity\Subordinate;
-use SimpleSAML\Module\oidanchor\Repository\SubordinateRepository;
-use SimpleSAML\Module\oidanchor\Service\SubordinateService;
+use SimpleSAML\Module\oidanchor\Repository\AdditionalClaimsRepository;
+use SimpleSAML\Module\oidanchor\Repository\SubordinateEventRepository;
+use SimpleSAML\Module\oidanchor\Service\ConstraintsService;
 use SimpleSAML\Module\oidanchor\Service\SubordinateStatementService;
 use SimpleSAML\OpenID\Exceptions\MetadataPolicyException;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -16,15 +17,19 @@ use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 /**
- * REST API for subordinates, backed by the existing SubordinateService / SubordinateRepository.
+ * REST API for subordinates: CRUD, status, event history, the signed statement's claims,
+ * the JWKS sub-resource, and additional claims (both the general defaults and per-subordinate).
  *
- * The spec's InternalID {subordinateID} is this module's entity_id (our subordinates are keyed by
- * entity_id), so {subordinateID} is the URL-encoded entity_id. registered_entity_types maps to the
- * single stored entity_type ([entity_type]).
+ * {subordinateID} is the spec's InternalID — the surrogate id on oidanchor_subordinates.
  */
 class SubordinatesApi extends ApiController
 {
+    use AdditionalClaimsTrait;
+
     private const STATUSES = ['active', 'blocked', 'pending', 'inactive'];
+
+    private const HISTORY_DEFAULT_LIMIT = 50;
+    private const HISTORY_MAX_LIMIT = 100;
 
 
     public function list(Request $request): JsonResponse
@@ -34,10 +39,8 @@ class SubordinatesApi extends ApiController
         $entityType = trim((string) $request->query->get('entity_type', '')) ?: null;
         $status     = trim((string) $request->query->get('status', '')) ?: null;
 
-        $subordinates = $this->service()->findAll();
-
         $result = [];
-        foreach ($subordinates as $sub) {
+        foreach ($this->subordinateService()->findAll() as $sub) {
             if ($entityType !== null && $sub->entityType !== $entityType) {
                 continue;
             }
@@ -75,7 +78,7 @@ class SubordinatesApi extends ApiController
             return $this->badRequest('status "active" requires a jwks with at least one key.');
         }
 
-        $service = $this->service();
+        $service = $this->subordinateService();
         if ($service->exists($entityId)) {
             return $this->conflict(sprintf('A subordinate with entity_id "%s" already exists.', $entityId));
         }
@@ -100,9 +103,9 @@ class SubordinatesApi extends ApiController
     {
         $this->requireAdmin();
 
-        $sub = $this->service()->findSubordinate($subordinateID);
+        $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null) {
-            return $this->notFound(sprintf('Subordinate "%s" not found.', $subordinateID));
+            return $this->subordinateNotFound($subordinateID);
         }
 
         return $this->json($this->details($sub));
@@ -113,10 +116,9 @@ class SubordinatesApi extends ApiController
     {
         $this->requireAdmin();
 
-        $service = $this->service();
-        $sub     = $service->findSubordinate($subordinateID);
+        $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null) {
-            return $this->notFound(sprintf('Subordinate "%s" not found.', $subordinateID));
+            return $this->subordinateNotFound($subordinateID);
         }
 
         $body = $this->decodeJson($request);
@@ -133,11 +135,12 @@ class SubordinatesApi extends ApiController
             $fields['entity_type'] = $types[0] ?? null;
         }
 
-        $service->update($subordinateID, $fields);
+        $service = $this->subordinateService();
+        $service->update($sub->entityId, $fields, 'updated', 'subordinate details updated');
 
-        Logger::info(sprintf('oidanchor: API subordinate updated: %s', $subordinateID));
+        Logger::info(sprintf('oidanchor: API subordinate updated: %s', $sub->entityId));
 
-        return $this->json($this->details($service->findSubordinate($subordinateID)));
+        return $this->json($this->details($service->findSubordinate($sub->entityId)));
     }
 
 
@@ -145,15 +148,19 @@ class SubordinatesApi extends ApiController
     {
         $this->requireAdmin();
 
-        $service = $this->service();
-        if ($service->findSubordinate($subordinateID) === null) {
-            return $this->notFound(sprintf('Subordinate "%s" not found.', $subordinateID));
+        $sub = $this->resolveSubordinate($subordinateID);
+        if ($sub === null) {
+            return $this->subordinateNotFound($subordinateID);
         }
 
-        $service->delete($subordinateID);
-        Logger::info(sprintf('oidanchor: API subordinate deleted: %s', $subordinateID));
+        if ($sub->id !== null) {
+            (new AdditionalClaimsRepository($this->buildPdo()))->deleteForSubordinate($sub->id);
+        }
 
-        return new Response('', Response::HTTP_NO_CONTENT);
+        $this->subordinateService()->delete($sub->entityId);
+        Logger::info(sprintf('oidanchor: API subordinate deleted: %s', $sub->entityId));
+
+        return $this->noContent();
     }
 
 
@@ -161,13 +168,12 @@ class SubordinatesApi extends ApiController
     {
         $this->requireAdmin();
 
-        $service = $this->service();
-        $sub     = $service->findSubordinate($subordinateID);
+        $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null) {
-            return $this->notFound(sprintf('Subordinate "%s" not found.', $subordinateID));
+            return $this->subordinateNotFound($subordinateID);
         }
 
-        $status = $this->bodyString($request);
+        $status = trim($this->bodyString($request), " \t\n\r\0\x0B\"");
         if (!in_array($status, self::STATUSES, true)) {
             return $this->badRequest('status must be one of: ' . implode(', ', self::STATUSES) . '.');
         }
@@ -176,20 +182,91 @@ class SubordinatesApi extends ApiController
             return $this->badRequest('Cannot set status "active": the subordinate has no keys in its JWKS.');
         }
 
-        $service->setStatus($subordinateID, $status);
-        Logger::info(sprintf('oidanchor: API subordinate status changed: %s -> %s', $subordinateID, $status));
+        $service = $this->subordinateService();
+        $service->setStatus($sub->entityId, $status);
+        Logger::info(sprintf('oidanchor: API subordinate status changed: %s -> %s', $sub->entityId, $status));
 
-        return $this->json($this->summary($service->findSubordinate($subordinateID)));
+        return $this->json($this->summary($service->findSubordinate($sub->entityId)));
     }
 
+
+    /**
+     * GET /subordinates/{id}/history — the audit trail, newest first, paginated.
+     */
+    public function history(Request $request, string $subordinateID): JsonResponse
+    {
+        $this->requireAdmin();
+
+        $sub = $this->resolveSubordinate($subordinateID);
+        if ($sub === null || $sub->id === null) {
+            return $this->subordinateNotFound($subordinateID);
+        }
+
+        $limit = $this->intQuery($request, 'limit', self::HISTORY_DEFAULT_LIMIT);
+        if ($limit < 1 || $limit > self::HISTORY_MAX_LIMIT) {
+            return $this->badRequest(sprintf('limit must be between 1 and %d.', self::HISTORY_MAX_LIMIT));
+        }
+
+        $offset = $this->intQuery($request, 'offset', 0);
+        if ($offset < 0) {
+            return $this->badRequest('offset must be non-negative.');
+        }
+
+        $type = trim((string) $request->query->get('type', '')) ?: null;
+        if ($type !== null && !in_array($type, SubordinateEventRepository::TYPES, true)) {
+            return $this->badRequest('type must be one of: ' . implode(', ', SubordinateEventRepository::TYPES) . '.');
+        }
+
+        $from = $request->query->has('from') ? $this->intQuery($request, 'from', 0) : null;
+        $to   = $request->query->has('to') ? $this->intQuery($request, 'to', 0) : null;
+
+        $result = (new SubordinateEventRepository($this->buildPdo()))
+            ->query($sub->id, $limit, $offset, $type, $from, $to);
+
+        return $this->json([
+            'events'     => $result['events'],
+            'pagination' => ['total' => $result['total'], 'limit' => $limit, 'offset' => $offset],
+        ]);
+    }
+
+
+    /**
+     * GET /subordinates/{id}/statement — the claims of the statement /federation/fetch would sign.
+     */
+    public function statement(Request $request, string $subordinateID): JsonResponse
+    {
+        $this->requireAdmin();
+
+        $sub = $this->resolveSubordinate($subordinateID);
+        if ($sub === null) {
+            return $this->subordinateNotFound($subordinateID);
+        }
+
+        if (!$this->jwksHasKeys($sub->jwks)) {
+            return $this->notFound(sprintf('Subordinate "%s" has no JWKS; no statement can be built.', $sub->entityId));
+        }
+
+        try {
+            $claims = (new SubordinateStatementService())->buildClaims($sub, $this->moduleConfig(), $this->buildPdo());
+        } catch (MetadataPolicyException $e) {
+            return $this->serverError('Incompatible metadata policies for this subordinate: ' . $e->getMessage());
+        } catch (Throwable $e) {
+            return $this->serverError('Could not build statement: ' . $e->getMessage());
+        }
+
+        return $this->json($claims);
+    }
+
+
+    // ---- JWKS sub-resource --------------------------------------------------
 
     public function getJwks(Request $request, string $subordinateID): JsonResponse
     {
         $this->requireAdmin();
 
-        $sub = $this->service()->findSubordinate($subordinateID);
+        $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null) {
-            return $this->notFound(sprintf('Subordinate "%s" not found.', $subordinateID));
+            return $this->subordinateNotFound($subordinateID);
         }
 
         return $this->json($sub->jwks ?? ['keys' => []]);
@@ -200,9 +277,9 @@ class SubordinatesApi extends ApiController
     {
         $this->requireAdmin();
 
-        $service = $this->service();
-        if ($service->findSubordinate($subordinateID) === null) {
-            return $this->notFound(sprintf('Subordinate "%s" not found.', $subordinateID));
+        $sub = $this->resolveSubordinate($subordinateID);
+        if ($sub === null) {
+            return $this->subordinateNotFound($subordinateID);
         }
 
         $body = $this->decodeJson($request);
@@ -210,8 +287,13 @@ class SubordinatesApi extends ApiController
             return $this->badRequest('Body must be a JWKS object with a non-empty "keys" array.');
         }
 
-        $service->update($subordinateID, ['jwks' => json_encode($body, JSON_UNESCAPED_SLASHES)]);
-        Logger::info(sprintf('oidanchor: API subordinate jwks replaced: %s', $subordinateID));
+        $this->subordinateService()->update(
+            $sub->entityId,
+            ['jwks' => json_encode($body, JSON_UNESCAPED_SLASHES)],
+            'jwks_replaced',
+            'JWKS replaced',
+        );
+        Logger::info(sprintf('oidanchor: API subordinate jwks replaced: %s', $sub->entityId));
 
         return $this->json($body);
     }
@@ -221,10 +303,9 @@ class SubordinatesApi extends ApiController
     {
         $this->requireAdmin();
 
-        $service = $this->service();
-        $sub     = $service->findSubordinate($subordinateID);
+        $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null) {
-            return $this->notFound(sprintf('Subordinate "%s" not found.', $subordinateID));
+            return $this->subordinateNotFound($subordinateID);
         }
 
         $jwk = $this->decodeJson($request);
@@ -232,62 +313,226 @@ class SubordinatesApi extends ApiController
             return $this->badRequest('Body must be a single JWK object (with at least a "kty").');
         }
 
-        $jwks = is_array($sub->jwks) && isset($sub->jwks['keys']) && is_array($sub->jwks['keys'])
-            ? $sub->jwks
-            : ['keys' => []];
+        /** @var array{keys: list<array<string,mixed>>} $jwks */
+        $jwks = $this->jwksHasKeys($sub->jwks) ? $sub->jwks : ['keys' => []];
         $jwks['keys'][] = $jwk;
 
-        $service->update($subordinateID, ['jwks' => json_encode($jwks, JSON_UNESCAPED_SLASHES)]);
-        Logger::info(sprintf('oidanchor: API subordinate jwk added: %s', $subordinateID));
+        $this->subordinateService()->update(
+            $sub->entityId,
+            ['jwks' => json_encode($jwks, JSON_UNESCAPED_SLASHES)],
+            'jwk_added',
+            sprintf('key added: %s', isset($jwk['kid']) ? (string) $jwk['kid'] : 'no kid'),
+        );
+        Logger::info(sprintf('oidanchor: API subordinate jwk added: %s', $sub->entityId));
 
         return $this->json($jwks, JsonResponse::HTTP_CREATED);
     }
 
 
-    public function statement(Request $request, string $subordinateID): JsonResponse
+    /**
+     * DELETE /subordinates/{id}/jwks/{kid} — returns the remaining JWKS.
+     */
+    public function deleteJwk(Request $request, string $subordinateID, string $kid): JsonResponse
     {
         $this->requireAdmin();
 
-        $sub = $this->service()->findSubordinate($subordinateID);
+        $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null) {
-            return $this->notFound(sprintf('Subordinate "%s" not found.', $subordinateID));
+            return $this->subordinateNotFound($subordinateID);
         }
 
-        if (!$this->jwksHasKeys($sub->jwks)) {
-            return $this->notFound(sprintf('Subordinate "%s" has no JWKS; no statement can be built.', $subordinateID));
-        }
+        /** @var array{keys: list<array<string,mixed>>} $jwks */
+        $jwks = $this->jwksHasKeys($sub->jwks) ? $sub->jwks : ['keys' => []];
 
-        try {
-            $claims = (new SubordinateStatementService())->buildClaims($sub, $this->moduleConfig(), $this->buildPdo());
-        } catch (MetadataPolicyException $e) {
-            return $this->error(
-                'server_error',
-                'Incompatible metadata policies for this subordinate: ' . $e->getMessage(),
-                JsonResponse::HTTP_INTERNAL_SERVER_ERROR,
+        $remaining = array_values(array_filter(
+            $jwks['keys'],
+            static fn(array $key): bool => ($key['kid'] ?? null) !== $kid,
+        ));
+
+        if (count($remaining) !== count($jwks['keys'])) {
+            $jwks['keys'] = $remaining;
+            $this->subordinateService()->update(
+                $sub->entityId,
+                ['jwks' => json_encode($jwks, JSON_UNESCAPED_SLASHES)],
+                'jwk_removed',
+                sprintf('key removed: %s', $kid),
             );
-        } catch (Throwable $e) {
-            return $this->error('server_error', 'Could not build statement: ' . $e->getMessage(), 500);
+            Logger::info(sprintf('oidanchor: API subordinate jwk removed: %s (%s)', $sub->entityId, $kid));
         }
 
-        return $this->json($claims);
+        return $this->json($jwks);
+    }
+
+
+    // ---- additional claims: general defaults ---------------------------------
+
+    public function getGeneralAdditionalClaims(Request $request): JsonResponse
+    {
+        $this->requireAdmin();
+
+        return $this->additionalClaimsIndex(AdditionalClaimsRepository::SCOPE_SUBORDINATE_GENERAL);
+    }
+
+
+    public function updateGeneralAdditionalClaims(Request $request): JsonResponse
+    {
+        $this->requireAdmin();
+
+        return $this->additionalClaimsReplace($request, AdditionalClaimsRepository::SCOPE_SUBORDINATE_GENERAL);
+    }
+
+
+    public function addGeneralAdditionalClaim(Request $request): JsonResponse
+    {
+        $this->requireAdmin();
+
+        return $this->additionalClaimsAdd($request, AdditionalClaimsRepository::SCOPE_SUBORDINATE_GENERAL);
+    }
+
+
+    public function getGeneralAdditionalClaim(Request $request, string $additionalClaimsID): JsonResponse
+    {
+        $this->requireAdmin();
+
+        return $this->additionalClaimGet(AdditionalClaimsRepository::SCOPE_SUBORDINATE_GENERAL, $additionalClaimsID);
+    }
+
+
+    public function updateGeneralAdditionalClaim(Request $request, string $additionalClaimsID): JsonResponse
+    {
+        $this->requireAdmin();
+
+        return $this->additionalClaimUpdate(
+            $request,
+            AdditionalClaimsRepository::SCOPE_SUBORDINATE_GENERAL,
+            $additionalClaimsID,
+        );
+    }
+
+
+    public function deleteGeneralAdditionalClaim(Request $request, string $additionalClaimsID): Response
+    {
+        $this->requireAdmin();
+
+        return $this->additionalClaimDelete(
+            AdditionalClaimsRepository::SCOPE_SUBORDINATE_GENERAL,
+            $additionalClaimsID,
+        );
+    }
+
+
+    // ---- additional claims: per subordinate ----------------------------------
+
+    public function getSubordinateAdditionalClaims(Request $request, string $subordinateID): JsonResponse
+    {
+        $this->requireAdmin();
+
+        $sub = $this->resolveSubordinate($subordinateID);
+        if ($sub === null || $sub->id === null) {
+            return $this->subordinateNotFound($subordinateID);
+        }
+
+        return $this->additionalClaimsIndex(AdditionalClaimsRepository::SCOPE_SUBORDINATE, $sub->id);
+    }
+
+
+    public function updateSubordinateAdditionalClaims(Request $request, string $subordinateID): JsonResponse
+    {
+        $this->requireAdmin();
+
+        $sub = $this->resolveSubordinate($subordinateID);
+        if ($sub === null || $sub->id === null) {
+            return $this->subordinateNotFound($subordinateID);
+        }
+
+        $response = $this->additionalClaimsReplace($request, AdditionalClaimsRepository::SCOPE_SUBORDINATE, $sub->id);
+        $this->recordClaimsEvent($response, $sub, 'claims_updated', 'additional claims replaced');
+
+        return $response;
+    }
+
+
+    public function addSubordinateAdditionalClaims(Request $request, string $subordinateID): JsonResponse
+    {
+        $this->requireAdmin();
+
+        $sub = $this->resolveSubordinate($subordinateID);
+        if ($sub === null || $sub->id === null) {
+            return $this->subordinateNotFound($subordinateID);
+        }
+
+        $response = $this->additionalClaimsAdd($request, AdditionalClaimsRepository::SCOPE_SUBORDINATE, $sub->id);
+        $this->recordClaimsEvent($response, $sub, 'claims_updated', 'additional claim added');
+
+        return $response;
+    }
+
+
+    public function getSubordinateAdditionalClaim(Request $request, string $subordinateID, string $additionalClaimsID): JsonResponse
+    {
+        $this->requireAdmin();
+
+        $sub = $this->resolveSubordinate($subordinateID);
+        if ($sub === null || $sub->id === null) {
+            return $this->subordinateNotFound($subordinateID);
+        }
+
+        return $this->additionalClaimGet(AdditionalClaimsRepository::SCOPE_SUBORDINATE, $additionalClaimsID, $sub->id);
+    }
+
+
+    public function updateSubordinateAdditionalClaim(Request $request, string $subordinateID, string $additionalClaimsID): JsonResponse
+    {
+        $this->requireAdmin();
+
+        $sub = $this->resolveSubordinate($subordinateID);
+        if ($sub === null || $sub->id === null) {
+            return $this->subordinateNotFound($subordinateID);
+        }
+
+        $response = $this->additionalClaimUpdate(
+            $request,
+            AdditionalClaimsRepository::SCOPE_SUBORDINATE,
+            $additionalClaimsID,
+            $sub->id,
+        );
+        $this->recordClaimsEvent($response, $sub, 'claims_updated', 'additional claim updated');
+
+        return $response;
+    }
+
+
+    public function deleteSubordinateAdditionalClaim(Request $request, string $subordinateID, string $additionalClaimsID): Response
+    {
+        $this->requireAdmin();
+
+        $sub = $this->resolveSubordinate($subordinateID);
+        if ($sub === null || $sub->id === null) {
+            return $this->subordinateNotFound($subordinateID);
+        }
+
+        $response = $this->additionalClaimDelete(
+            AdditionalClaimsRepository::SCOPE_SUBORDINATE,
+            $additionalClaimsID,
+            $sub->id,
+        );
+        $this->recordClaimsEvent($response, $sub, 'claim_deleted', 'additional claim deleted');
+
+        return $response;
     }
 
 
     // -------------------------------------------------------------------------
 
-    private function service(): SubordinateService
-    {
-        return new SubordinateService(new SubordinateRepository($this->buildPdo()));
-    }
-
-
     /**
+     * Spec Subordinate shape.
+     *
      * @return array<string,mixed>
      */
     private function summary(Subordinate $sub): array
     {
         $data = [
-            'id'                      => $sub->entityId,
+            'id'                      => $sub->id,
             'entity_id'               => $sub->entityId,
             'status'                  => $sub->status,
             'registered_entity_types' => $sub->entityType !== null ? [$sub->entityType] : [],
@@ -302,6 +547,8 @@ class SubordinatesApi extends ApiController
 
 
     /**
+     * Spec SubordinateDetails shape.
+     *
      * @return array<string,mixed>
      */
     private function details(Subordinate $sub): array
@@ -309,14 +556,49 @@ class SubordinatesApi extends ApiController
         $data = $this->summary($sub);
         $data['jwks'] = $sub->jwks ?? ['keys' => []];
 
+        if ($sub->metadata !== null) {
+            $data['metadata'] = $sub->metadata;
+        }
         if ($sub->metadataPolicy !== null) {
             $data['metadata_policy'] = $sub->metadataPolicy;
         }
-        if ($sub->extraClaims !== null) {
-            $data['additional_claims'] = $sub->extraClaims;
+
+        $constraints = (new ConstraintsService($this->buildPdo()))->forSubordinate($sub);
+        if ($constraints !== []) {
+            $data['constraints'] = $constraints;
+        }
+
+        if ($sub->id !== null) {
+            $claims = (new AdditionalClaimsRepository($this->buildPdo()))
+                ->asMap(AdditionalClaimsRepository::SCOPE_SUBORDINATE, $sub->id);
+            if ($claims !== []) {
+                $data['additional_claims'] = $claims;
+            }
         }
 
         return $data;
+    }
+
+
+    /**
+     * Record an audit event only when the claim mutation actually succeeded.
+     */
+    private function recordClaimsEvent(Response $response, Subordinate $sub, string $type, string $message): void
+    {
+        if ($response->getStatusCode() >= 400) {
+            return;
+        }
+
+        (new SubordinateEventRepository($this->buildPdo()))
+            ->record($sub->id, $sub->entityId, $type, $sub->status, $message);
+    }
+
+
+    private function intQuery(Request $request, string $name, int $default): int
+    {
+        $raw = $request->query->get($name);
+
+        return is_string($raw) && $raw !== '' && preg_match('/^-?\d+$/', $raw) === 1 ? (int) $raw : $default;
     }
 
 
@@ -333,15 +615,6 @@ class SubordinatesApi extends ApiController
             array_map(static fn($v): string => is_string($v) ? trim($v) : '', $value),
             static fn(string $v): bool => $v !== '',
         ));
-    }
-
-
-    private function jwksHasKeys(mixed $jwks): bool
-    {
-        return is_array($jwks)
-            && isset($jwks['keys'])
-            && is_array($jwks['keys'])
-            && $jwks['keys'] !== [];
     }
 
 

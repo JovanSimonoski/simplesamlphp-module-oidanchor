@@ -5,12 +5,20 @@ declare(strict_types=1);
 namespace SimpleSAML\Module\oidanchor\Service;
 
 use SimpleSAML\Module\oidanchor\Entity\Subordinate;
+use SimpleSAML\Module\oidanchor\Repository\SubordinateEventRepository;
 use SimpleSAML\Module\oidanchor\Repository\SubordinateRepository;
 
+/**
+ * Subordinate registry operations shared by the admin UI and the Federation Admin API.
+ *
+ * Every mutation records an audit event when an event repository is supplied, which is what
+ * backs GET /api/v1/admin/subordinates/{id}/history.
+ */
 class SubordinateService
 {
     public function __construct(
         private readonly SubordinateRepository $repository,
+        private readonly ?SubordinateEventRepository $events = null,
     ) {
     }
 
@@ -47,6 +55,15 @@ class SubordinateService
 
 
     /**
+     * Find a single subordinate by its surrogate id (the API's InternalID).
+     */
+    public function findByInternalId(int $id): ?Subordinate
+    {
+        return $this->repository->findByInternalId($id);
+    }
+
+
+    /**
      * Create a new subordinate from the given data array.
      *
      * @param array<string,mixed> $data
@@ -72,9 +89,17 @@ class SubordinateService
             description:    !empty($data['description']) ? (string) $data['description'] : null,
         );
 
-        $this->repository->create($sub);
+        $id = $this->repository->create($sub);
 
-        return $sub;
+        $this->events?->record(
+            $id,
+            $sub->entityId,
+            'created',
+            $sub->status,
+            sprintf('subordinate created: %s', $sub->entityId),
+        );
+
+        return $this->repository->findByInternalId($id) ?? $sub;
     }
 
 
@@ -83,7 +108,7 @@ class SubordinateService
      *
      * @param array<string,mixed> $data
      */
-    public function update(string $entityId, array $data): void
+    public function update(string $entityId, array $data, string $eventType = 'updated', ?string $message = null): void
     {
         $fields = ['updated_at' => time()];
 
@@ -91,19 +116,11 @@ class SubordinateService
             $fields['entity_type'] = !empty($data['entity_type']) ? (string) $data['entity_type'] : null;
         }
 
-        if (array_key_exists('jwks', $data)) {
-            $raw = trim((string) ($data['jwks'] ?? ''));
-            $fields['jwks'] = $raw !== '' ? $raw : null;
-        }
-
-        if (array_key_exists('metadata_policy', $data)) {
-            $raw = trim((string) ($data['metadata_policy'] ?? ''));
-            $fields['metadata_policy'] = $raw !== '' ? $raw : null;
-        }
-
-        if (array_key_exists('extra_claims', $data)) {
-            $raw = trim((string) ($data['extra_claims'] ?? ''));
-            $fields['extra_claims'] = $raw !== '' ? $raw : null;
+        foreach (['jwks', 'metadata', 'metadata_policy', 'constraints', 'extra_claims'] as $jsonColumn) {
+            if (array_key_exists($jsonColumn, $data)) {
+                $raw = trim((string) ($data[$jsonColumn] ?? ''));
+                $fields[$jsonColumn] = $raw !== '' ? $raw : null;
+            }
         }
 
         if (array_key_exists('include_trust_marks', $data)) {
@@ -116,6 +133,8 @@ class SubordinateService
         }
 
         $this->repository->update($entityId, $fields);
+
+        $this->recordFor($entityId, $eventType, $message);
     }
 
 
@@ -124,7 +143,17 @@ class SubordinateService
      */
     public function delete(string $entityId): void
     {
+        $sub = $this->repository->findByEntityId($entityId);
+
         $this->repository->delete($entityId);
+
+        $this->events?->record(
+            $sub?->id,
+            $entityId,
+            'deleted',
+            $sub?->status,
+            sprintf('subordinate deleted: %s', $entityId),
+        );
     }
 
 
@@ -133,7 +162,7 @@ class SubordinateService
      */
     public function suspend(string $entityId): void
     {
-        $this->repository->setStatus($entityId, 'suspended');
+        $this->setStatus($entityId, 'suspended');
     }
 
 
@@ -142,7 +171,7 @@ class SubordinateService
      */
     public function activate(string $entityId): void
     {
-        $this->repository->setStatus($entityId, 'active');
+        $this->setStatus($entityId, 'active');
     }
 
 
@@ -152,6 +181,15 @@ class SubordinateService
     public function setStatus(string $entityId, string $status): void
     {
         $this->repository->setStatus($entityId, $status);
+
+        $sub = $this->repository->findByEntityId($entityId);
+        $this->events?->record(
+            $sub?->id,
+            $entityId,
+            'status_updated',
+            $status,
+            sprintf('status changed to %s', $status),
+        );
     }
 
 
@@ -161,5 +199,19 @@ class SubordinateService
     public function exists(string $entityId): bool
     {
         return $this->repository->exists($entityId);
+    }
+
+
+    /**
+     * Record an audit event for a subordinate addressed by entity_id.
+     */
+    public function recordFor(string $entityId, string $eventType, ?string $message = null): void
+    {
+        if ($this->events === null) {
+            return;
+        }
+
+        $sub = $this->repository->findByEntityId($entityId);
+        $this->events->record($sub?->id, $entityId, $eventType, $sub?->status, $message);
     }
 }

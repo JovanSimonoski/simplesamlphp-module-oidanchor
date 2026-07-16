@@ -14,13 +14,6 @@ use SimpleSAML\Module\oidanchor\Service\FederationKeyService;
 use SimpleSAML\Module\oidanchor\Service\SubordinateService;
 use SimpleSAML\Module\oidanchor\Service\SubordinateStatementService;
 use SimpleSAML\OpenID\Exceptions\MetadataPolicyException;
-use SimpleSAML\OpenID\Algorithms\SignatureAlgorithmBag;
-use SimpleSAML\OpenID\Algorithms\SignatureAlgorithmEnum;
-use SimpleSAML\OpenID\Codebooks\ClaimsEnum;
-use SimpleSAML\OpenID\Federation;
-use SimpleSAML\OpenID\Jwk;
-use SimpleSAML\OpenID\Jwk\JwkDecorator;
-use SimpleSAML\OpenID\SupportedAlgorithms;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -45,14 +38,12 @@ class OpenIDFederation
     public function entityConfiguration(Request $request): Response
     {
         $moduleConfig = Configuration::getConfig('module_oidanchor.php');
+        $pdo          = $this->buildPdo($moduleConfig);
+        $keys         = new FederationKeyService($moduleConfig, $pdo);
 
-        $claims = (new EntityConfigurationService(new FederationKeyService($moduleConfig)))
-            ->buildClaims($moduleConfig, $this->buildPdo($moduleConfig));
+        $claims = (new EntityConfigurationService($keys))->buildClaims($moduleConfig, $pdo);
 
-        ['signingKey' => $signingKey, 'kid' => $kid, 'algorithm' => $algorithm]
-            = $this->loadSigningContext($moduleConfig);
-
-        $token = $this->signEntityStatement($signingKey, $algorithm, $claims, [ClaimsEnum::Kid->value => $kid]);
+        $token = $keys->signEntityStatement($claims);
 
         return new Response($token, Response::HTTP_OK, ['Content-Type' => 'application/entity-statement+jwt']);
     }
@@ -146,10 +137,7 @@ class OpenIDFederation
             );
         }
 
-        ['signingKey' => $signingKey, 'kid' => $kid, 'algorithm' => $algorithm]
-            = $this->loadSigningContext($moduleConfig);
-
-        $token = $this->signEntityStatement($signingKey, $algorithm, $claims, [ClaimsEnum::Kid->value => $kid]);
+        $token = (new FederationKeyService($moduleConfig, $pdo))->signEntityStatement($claims);
 
         return new Response($token, Response::HTTP_OK, ['Content-Type' => 'application/entity-statement+jwt']);
     }
@@ -158,57 +146,6 @@ class OpenIDFederation
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
-
-    /**
-     * Load the signing key from config and derive the kid and public JWK data.
-     *
-     * @return array{signingKey: JwkDecorator, kid: string, publicJwkData: array<string,mixed>, algorithm: SignatureAlgorithmEnum}
-     */
-    private function loadSigningContext(Configuration $moduleConfig): array
-    {
-        $keyFile      = $moduleConfig->getString('signing_key_file');
-        $keyPass      = $moduleConfig->getOptionalString('signing_key_passphrase', null);
-        $algorithmStr = $moduleConfig->getOptionalString('signing_algorithm', 'RS256') ?? 'RS256';
-
-        $signingKey    = (new Jwk())->jwkDecoratorFactory()->fromPkcs1Or8KeyFile($keyFile, $keyPass, ['use' => 'sig']);
-        $publicJwk     = $signingKey->jwk()->toPublic();
-        $kid           = $publicJwk->thumbprint('sha256');
-        $publicJwkData = $publicJwk->jsonSerialize();
-        $publicJwkData['kid'] = $kid;
-
-        return [
-            'signingKey'    => $signingKey,
-            'kid'           => $kid,
-            'publicJwkData' => $publicJwkData,
-            'algorithm'     => SignatureAlgorithmEnum::from($algorithmStr),
-        ];
-    }
-
-
-    /**
-     * Build a signed compact entity-statement+jwt from the given payload and header.
-     *
-     * @param array<string,mixed> $payload
-     * @param array<string,mixed> $header
-     */
-    private function signEntityStatement(
-        JwkDecorator $signingKey,
-        SignatureAlgorithmEnum $algorithm,
-        array $payload,
-        array $header,
-    ): string {
-        $federation = new Federation(
-            new SupportedAlgorithms(new SignatureAlgorithmBag($algorithm)),
-        );
-
-        return $federation->entityStatementFactory()->fromData(
-            $signingKey,
-            $algorithm,
-            $payload,
-            $header,
-        )->getToken();
-    }
-
 
     /**
      * Build a PDO connection from the module configuration.

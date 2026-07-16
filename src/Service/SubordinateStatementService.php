@@ -7,17 +7,22 @@ namespace SimpleSAML\Module\oidanchor\Service;
 use PDO;
 use SimpleSAML\Configuration;
 use SimpleSAML\Module\oidanchor\Entity\Subordinate;
+use SimpleSAML\Module\oidanchor\Repository\AdditionalClaimsRepository;
 use SimpleSAML\Module\oidanchor\Repository\FederationPolicyRepository;
-use SimpleSAML\Module\oidanchor\Repository\IssuedTrustMarkRepository;
+use SimpleSAML\Module\oidanchor\Repository\SettingsRepository;
 use SimpleSAML\OpenID\Codebooks\ClaimsEnum;
-use SimpleSAML\OpenID\Federation\Claims\TrustMarksClaimValue;
 
 /**
  * Assembles the Subordinate Statement claim set for a subordinate.
  *
- * Single source of truth shared by the signed /federation/fetch endpoint and the read-only admin
- * API (GET /api/v1/admin/subordinates/{id}/statement) so the issued statement and the admin view
+ * Single source of truth shared by the signed /federation/fetch endpoint and the admin API
+ * (GET /api/v1/admin/subordinates/{id}/statement) so the issued statement and the admin view
  * never drift. Callers are responsible for validating the subordinate is active and has a JWKS.
+ *
+ * Claims assembled here: jwks, metadata (per-subordinate overrides), metadata_policy (federation
+ * -wide merged with per-subordinate), metadata_policy_crit, constraints (general merged with
+ * per-subordinate), trust_marks, and additional claims (general defaults overlaid with
+ * per-subordinate ones).
  */
 class SubordinateStatementService
 {
@@ -30,7 +35,7 @@ class SubordinateStatementService
     public function buildClaims(Subordinate $subordinate, Configuration $moduleConfig, PDO $pdo): array
     {
         $entityId = $moduleConfig->getString('entity_id');
-        $lifetime = $moduleConfig->getOptionalInteger('subordinate_statement_lifetime', 86400) ?? 86400;
+        $lifetime = $this->lifetime($moduleConfig, $pdo);
 
         // Merge federation-wide policy (per entity type) with the per-subordinate policy.
         $policyRepo      = new FederationPolicyRepository($pdo);
@@ -57,28 +62,76 @@ class SubordinateStatementService
             ClaimsEnum::Jwks->value => $subordinate->jwks,
         ];
 
-        if ($mergedPolicy !== null) {
-            $payload[ClaimsEnum::MetadataPolicy->value] = $mergedPolicy;
+        if ($subordinate->metadata !== null && $subordinate->metadata !== []) {
+            $payload[ClaimsEnum::Metadata->value] = $subordinate->metadata;
         }
 
-        if ($subordinate->extraClaims !== null) {
-            foreach ($subordinate->extraClaims as $claim => $value) {
+        if ($mergedPolicy !== null) {
+            $payload[ClaimsEnum::MetadataPolicy->value] = $mergedPolicy;
+
+            $crit = (new MetadataPolicyCritService($pdo))->all();
+            if ($crit !== []) {
+                $payload[ClaimsEnum::MetadataPolicyCrit->value] = $crit;
+            }
+        }
+
+        $constraints = (new ConstraintsService($pdo))->effective($subordinate);
+        if ($constraints !== null) {
+            // simplesamlphp/openid models no constraints claim (checked Codebooks\ClaimsEnum and
+            // Federation\*), so the OpenID Federation 1.0 §3.1 claim name is used literally.
+            $payload[ConstraintsService::CLAIM] = $constraints;
+        }
+
+        foreach ($this->additionalClaims($subordinate, $pdo) as $claim => $value) {
+            if (!array_key_exists($claim, $payload)) {
                 $payload[$claim] = $value;
             }
         }
 
-        if ($subordinate->includeTrustMarks) {
-            $activeMarks = (new IssuedTrustMarkRepository($pdo))->findActiveBySub($subordinate->entityId);
-
-            if ($activeMarks !== []) {
-                $payload[ClaimsEnum::TrustMarks->value] = array_map(
-                    static fn($mark): array =>
-                        (new TrustMarksClaimValue($mark->trustMarkId, $mark->jwt))->jsonSerialize(),
-                    $activeMarks,
-                );
-            }
-        }
+        // NOTE: a `trust_marks` claim is deliberately NOT emitted here. Per OpenID Federation 1.0,
+        // an entity's Trust Marks live in that entity's own Entity Configuration (iss == sub), not
+        // in the superior's Subordinate Statement about it (iss = TA, sub = subordinate). The
+        // simplesamlphp/openid library enforces exactly this: EntityStatement::validate() throws
+        // "Trust Marks claim encountered in configuration statement" when a non-configuration
+        // statement carries `trust_marks`, so signing such a statement would fail. The
+        // `include_trust_marks` column is retained (inert) to avoid a migration; the TA advertises
+        // the marks it issues via `trust_mark_issuers` in its own Entity Configuration instead.
 
         return $payload;
+    }
+
+
+    /**
+     * The subordinate statement lifetime: API-managed setting, else the config default.
+     */
+    public function lifetime(Configuration $moduleConfig, PDO $pdo): int
+    {
+        return (new SettingsRepository($pdo))->getInt(SettingsRepository::SUBORDINATE_STATEMENT_LIFETIME)
+            ?? $moduleConfig->getOptionalInteger('subordinate_statement_lifetime', 86400)
+            ?? 86400;
+    }
+
+
+    /**
+     * General subordinate additional claims overlaid with the per-subordinate ones.
+     * The legacy `extra_claims` column is applied first so pre-migration data keeps working.
+     *
+     * @return array<string,mixed>
+     */
+    private function additionalClaims(Subordinate $subordinate, PDO $pdo): array
+    {
+        $repo = new AdditionalClaimsRepository($pdo);
+
+        $claims = $subordinate->extraClaims ?? [];
+        $claims = array_merge($claims, $repo->asMap(AdditionalClaimsRepository::SCOPE_SUBORDINATE_GENERAL));
+
+        if ($subordinate->id !== null) {
+            $claims = array_merge(
+                $claims,
+                $repo->asMap(AdditionalClaimsRepository::SCOPE_SUBORDINATE, $subordinate->id),
+            );
+        }
+
+        return $claims;
     }
 }

@@ -36,4 +36,9 @@ return [
     'database_dsn' => getenv('OIDANCHOR_DATABASE_DSN') ?: 'sqlite:/var/simplesamlphp/data/oidanchor.sqlite',
     'database_username' => null,
     'database_password' => null,
+
+    // Federation Admin API HTTP Basic credential (what the Federation Gateway BFF proxy injects).
+    // Must match admin_auth username/password for this instance in the gateway's gateway.yaml.
+    'api_admin_username' => getenv('OIDANCHOR_API_ADMIN_USERNAME') ?: null,
+    'api_admin_password' => getenv('OIDANCHOR_API_ADMIN_PASSWORD') ?: null,
 ];

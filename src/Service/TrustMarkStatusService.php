@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SimpleSAML\Module\oidanchor\Service;
 
 use SimpleSAML\Module\oidanchor\Repository\IssuedTrustMarkRepository;
+use SimpleSAML\Module\oidanchor\Repository\TrustMarkSubjectRepository;
 use SimpleSAML\OpenID\Algorithms\SignatureAlgorithmBag;
 use SimpleSAML\OpenID\Codebooks\TrustMarkStatusEnum;
 use SimpleSAML\OpenID\Federation;
@@ -17,6 +18,10 @@ use Throwable;
  * The persisted registry is authoritative for the status decision. When the caller supplies
  * the full Trust Mark JWT, the library is used to parse it and recover the lookup keys
  * (trust_mark_type, sub) and confirm this TA is the issuer.
+ *
+ * Since the issuance-spec model landed, a subject row may also withdraw eligibility: a mark
+ * whose subject is no longer `active` reports as revoked even if its issued row still says
+ * active (the two are kept in step by TrustMarkIssuanceService, this is the safety net).
  */
 class TrustMarkStatusService
 {
@@ -26,6 +31,7 @@ class TrustMarkStatusService
     public function __construct(
         private readonly FederationKeyService $keys,
         private readonly IssuedTrustMarkRepository $issuedRepository,
+        private readonly ?TrustMarkSubjectRepository $subjectRepository = null,
     ) {
     }
 
@@ -124,6 +130,20 @@ class TrustMarkStatusService
                 $sub,
                 iat: $row->iat,
                 exp: $row->exp,
+                trustMark: $providedJwt ?? $row->jwt,
+            );
+        }
+
+        // The issuance-spec subject withdraws eligibility independently of the issued row.
+        $subject = $this->subjectRepository?->findByTypeAndEntity($trustMarkType, $sub);
+        if ($subject !== null && $subject['status'] !== 'active') {
+            return $this->result(
+                TrustMarkStatusEnum::Revoked,
+                $trustMarkType,
+                $sub,
+                iat: $row->iat,
+                exp: $row->exp,
+                reason: sprintf('subject status is "%s"', (string) $subject['status']),
                 trustMark: $providedJwt ?? $row->jwt,
             );
         }

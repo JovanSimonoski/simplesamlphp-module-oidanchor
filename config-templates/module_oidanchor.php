@@ -124,4 +124,17 @@ return [
 
     'database_username' => null,
     'database_password' => null,
+
+    /*
+     * Federation Admin REST API (/api/v1/admin/...) — HTTP Basic credential.
+     *
+     * When both are set, the API accepts HTTP Basic auth with these values in addition to an
+     * authenticated SimpleSAMLphp admin session. This is what the Federation Gateway BFF proxy
+     * sends (it injects `Authorization: Basic base64(user:pass)` from its instance registry).
+     * Leave either empty to keep the API session-only (Basic auth disabled).
+     *
+     * Use a long random password and serve the API over TLS — Basic auth sends it on every call.
+     */
+    'api_admin_username' => null,
+    'api_admin_password' => null,
 ];

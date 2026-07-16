@@ -10,6 +10,7 @@ use RuntimeException;
 use SimpleSAML\Configuration;
 use SimpleSAML\Logger;
 use SimpleSAML\Module\oidanchor\Repository\IssuedTrustMarkRepository;
+use SimpleSAML\Module\oidanchor\Repository\TrustMarkSubjectRepository;
 use SimpleSAML\Module\oidanchor\Service\FederationKeyService;
 use SimpleSAML\Module\oidanchor\Service\TrustMarkStatusService;
 use SimpleSAML\OpenID\Codebooks\ClaimsEnum;
@@ -61,11 +62,13 @@ class TrustMarkStatus
         }
 
         try {
-            $keys = new FederationKeyService($moduleConfig);
+            $pdo  = $this->buildPdo($moduleConfig);
+            $keys = new FederationKeyService($moduleConfig, $pdo);
 
             $service = new TrustMarkStatusService(
                 $keys,
-                new IssuedTrustMarkRepository($this->buildPdo($moduleConfig)),
+                new IssuedTrustMarkRepository($pdo),
+                new TrustMarkSubjectRepository($pdo),
             );
 
             $result = $service->getStatus($trustMarkType, $sub, $trustMark);

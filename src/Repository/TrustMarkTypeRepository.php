@@ -10,7 +10,9 @@ use SimpleSAML\Module\oidanchor\Entity\TrustMarkType;
 /**
  * Data-access layer for the catalog of Trust Mark Types the TA is willing to issue.
  *
- * Schema is initialised on construction so no external migration step is needed for SQLite.
+ * Schema is initialised (and migrated) on construction so no external migration step is needed.
+ * The table gained a surrogate `id` (the API's InternalID); `trust_mark_id` (the type URL)
+ * remains unique and is still the key used by the admin UI and by issuance.
  */
 class TrustMarkTypeRepository
 {
@@ -38,6 +40,48 @@ class TrustMarkTypeRepository
                 updated_at       INTEGER
             )',
         );
+
+        $this->migrateToSurrogateId();
+    }
+
+
+    /**
+     * One-shot migration: rebuild the table with an autoincrement `id` primary key, preserving
+     * every row. Detected by the absence of the `id` column, so it is idempotent.
+     */
+    private function migrateToSurrogateId(): void
+    {
+        $columns = $this->pdo->query('PRAGMA table_info(' . self::TABLE . ')')->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($columns as $column) {
+            if (($column['name'] ?? null) === 'id') {
+                return;
+            }
+        }
+
+        $this->pdo->exec(
+            'CREATE TABLE ' . self::TABLE . '_new (
+                id               INTEGER PRIMARY KEY AUTOINCREMENT,
+                trust_mark_id    TEXT    NOT NULL UNIQUE,
+                name             TEXT    NOT NULL,
+                description      TEXT,
+                logo_uri         TEXT,
+                ref_uri          TEXT,
+                default_lifetime INTEGER,
+                extra_claims     TEXT,
+                created_at       INTEGER NOT NULL,
+                updated_at       INTEGER
+            )',
+        );
+
+        $this->pdo->exec(
+            'INSERT INTO ' . self::TABLE . '_new
+                (trust_mark_id, name, description, logo_uri, ref_uri, default_lifetime, extra_claims, created_at, updated_at)
+             SELECT trust_mark_id, name, description, logo_uri, ref_uri, default_lifetime, extra_claims, created_at, updated_at
+             FROM ' . self::TABLE . ' ORDER BY created_at ASC',
+        );
+
+        $this->pdo->exec('DROP TABLE ' . self::TABLE);
+        $this->pdo->exec('ALTER TABLE ' . self::TABLE . '_new RENAME TO ' . self::TABLE);
     }
 
 
@@ -59,12 +103,32 @@ class TrustMarkTypeRepository
     }
 
 
+    /**
+     * Find by the type identifier URL (used by the admin UI and by issuance).
+     */
     public function findById(string $trustMarkId): ?TrustMarkType
     {
         $stmt = $this->pdo->prepare(
             'SELECT * FROM ' . self::TABLE . ' WHERE trust_mark_id = ?',
         );
         $stmt->execute([$trustMarkId]);
+
+        /** @var array<string,mixed>|false $row */
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $row === false ? null : TrustMarkType::fromRow($row);
+    }
+
+
+    /**
+     * Find by the surrogate id (the API's InternalID).
+     */
+    public function findByInternalId(int $id): ?TrustMarkType
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT * FROM ' . self::TABLE . ' WHERE id = ?',
+        );
+        $stmt->execute([$id]);
 
         /** @var array<string,mixed>|false $row */
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -84,7 +148,10 @@ class TrustMarkTypeRepository
     }
 
 
-    public function create(TrustMarkType $type): void
+    /**
+     * Insert a type and return its surrogate id.
+     */
+    public function create(TrustMarkType $type): int
     {
         $stmt = $this->pdo->prepare(
             'INSERT INTO ' . self::TABLE . '
@@ -103,6 +170,8 @@ class TrustMarkTypeRepository
             $type->createdAt,
             $type->updatedAt,
         ]);
+
+        return (int) $this->pdo->lastInsertId();
     }
 
 

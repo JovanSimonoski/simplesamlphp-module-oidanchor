@@ -4,6 +4,7 @@
 
 {% block preload %}
 <link rel="stylesheet" href="{{ asset('css/admin.css', 'admin') }}">
+<link rel="stylesheet" href="{{ asset('css/oidanchor.css', 'oidanchor') }}">
 <style>
   .oidanchor-form { max-width: 780px; }
   .oidanchor-form .field { margin-bottom: 1.1em; }
@@ -34,6 +35,7 @@
       </div>
     </div>
   </div>
+  {% include '@oidanchor/admin_nav.twig' %}
 
   <h2>{{ title|e }}</h2>
 
@@ -43,7 +45,7 @@
 
   {% if types is empty %}
     <p>{% trans %}No Trust Mark types exist yet. Create one before issuing marks.{% endtrans %}</p>
-    <p><a href="{{ moduleURL('oidanchor/admin/trust-mark-types/create') }}" class="pure-button pure-button-primary">
+    <p><a href="{{ moduleURL('oidanchor/admin/trust-mark-types/create') }}" class="pure-button pure-button-red">
       {% trans %}Create Trust Mark type{% endtrans %}
     </a></p>
   {% else %}

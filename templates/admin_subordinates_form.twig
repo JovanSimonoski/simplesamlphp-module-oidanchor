@@ -4,6 +4,7 @@
 
 {% block preload %}
 <link rel="stylesheet" href="{{ asset('css/admin.css', 'admin') }}">
+<link rel="stylesheet" href="{{ asset('css/oidanchor.css', 'oidanchor') }}">
 <style>
   .oidanchor-form { max-width: 780px; }
   .oidanchor-form .field { margin-bottom: 1.1em; }
@@ -33,6 +34,7 @@
       </div>
     </div>
   </div>
+  {% include '@oidanchor/admin_nav.twig' %}
 
   <h2>{{ title|e }}</h2>
 
@@ -113,18 +115,6 @@
           Per-subordinate values take precedence per the OpenID Federation merging rules.
         </p>
       {% endif %}
-    </div>
-
-    {# Embed issued Trust Marks toggle #}
-    <div class="field">
-      <label for="include_trust_marks" style="font-weight:normal">
-        <input type="checkbox" id="include_trust_marks" name="include_trust_marks" value="1"
-               {% if formData.include_trust_marks|default('') == '1' %}checked{% endif %}>
-        {% trans %}Include issued Trust Marks in subordinate statement{% endtrans %}
-      </label>
-      <p class="field-hint">
-        {% trans %}When enabled, active Trust Marks this TA has issued for this subordinate are embedded under the trust_marks claim of its subordinate statement.{% endtrans %}
-      </p>
     </div>
 
     <div class="field">

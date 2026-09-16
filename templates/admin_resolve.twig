@@ -1,9 +1,10 @@
-{% set pagetitle = 'OIDC Federation Resolve Tester'|trans %}
+{% set pagetitle = 'OpenID Federation Resolve Tester'|trans %}
 {% set frontpage_section = 'oidanchor' %}
 {% extends "base.twig" %}
 
 {% block preload %}
 <link rel="stylesheet" href="{{ asset('css/admin.css', 'admin') }}">
+<link rel="stylesheet" href="{{ asset('css/oidanchor.css', 'oidanchor') }}">
 <style>
   .oidanchor-form { max-width: 820px; }
   .oidanchor-form .field { margin-bottom: 1em; }
@@ -35,6 +36,7 @@
       </div>
     </div>
   </div>
+  {% include '@oidanchor/admin_nav.twig' %}
 
   <h2>{% trans %}Resolve Tester{% endtrans %}</h2>
 

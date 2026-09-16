@@ -1,14 +1,11 @@
-{% set pagetitle = 'OIDC Federation Issued Trust Marks'|trans %}
+{% set pagetitle = 'OpenID Federation Issued Trust Marks'|trans %}
 {% set frontpage_section = 'oidanchor' %}
 {% extends "base.twig" %}
 
 {% block preload %}
 <link rel="stylesheet" href="{{ asset('css/admin.css', 'admin') }}">
+<link rel="stylesheet" href="{{ asset('css/oidanchor.css', 'oidanchor') }}">
 <style>
-  .oidanchor-table { width: 100%; border-collapse: collapse; margin-top: 1em; }
-  .oidanchor-table th, .oidanchor-table td { padding: .45em .7em; border: 1px solid #ddd; font-size: .9em; }
-  .oidanchor-table th { background: #f4f4f4; text-align: left; }
-  .oidanchor-table tr:hover td { background: #fafafa; }
   .badge-active  { color: #2a6b2a; font-weight: bold; }
   .badge-revoked { color: #9a3a00; font-weight: bold; }
   .oidanchor-filter { margin-top: 1em; }
@@ -32,6 +29,7 @@
       </div>
     </div>
   </div>
+  {% include '@oidanchor/admin_nav.twig' %}
 
   <h2>{% trans %}Issued Trust Marks{% endtrans %}</h2>
 
@@ -40,7 +38,7 @@
   {% endif %}
 
   <p>
-    <a href="{{ issueUrl }}" class="pure-button pure-button-primary">
+    <a href="{{ issueUrl }}" class="pure-button pure-button-red">
       + {% trans %}Issue Trust Mark{% endtrans %}
     </a>
   </p>

@@ -1,9 +1,10 @@
-{% set pagetitle = 'OIDC Federation Trust Mark'|trans %}
+{% set pagetitle = 'OpenID Federation Trust Mark'|trans %}
 {% set frontpage_section = 'oidanchor' %}
 {% extends "base.twig" %}
 
 {% block preload %}
 <link rel="stylesheet" href="{{ asset('css/admin.css', 'admin') }}">
+<link rel="stylesheet" href="{{ asset('css/oidanchor.css', 'oidanchor') }}">
 <style>
   .oidanchor-view { max-width: 900px; }
   .oidanchor-view dl { display: grid; grid-template-columns: 180px 1fr; gap: .35em 1em; }
@@ -33,6 +34,7 @@
       </div>
     </div>
   </div>
+  {% include '@oidanchor/admin_nav.twig' %}
 
   <h2>{% trans %}Trust Mark{% endtrans %} #{{ mark.id }}</h2>
 
@@ -42,7 +44,7 @@
 
   <div class="oidanchor-view">
     <dl>
-      <dt>{% trans %}Trust Mark ID{% endtrans %}</dt><dd><code>{{ mark.trustMarkId|e }}</code></dd>
+      <dt>{% trans %}Trust Mark Type{% endtrans %}</dt><dd><code>{{ mark.trustMarkId|e }}</code></dd>
       <dt>{% trans %}Subject{% endtrans %}</dt><dd><code>{{ mark.sub|e }}</code></dd>
       <dt>{% trans %}Status{% endtrans %}</dt><dd><span class="badge-{{ mark.status }}">{{ mark.status|e }}</span></dd>
       <dt>{% trans %}Issued at{% endtrans %}</dt><dd>{{ mark.iat|date('Y-m-d H:i:s') }} ({{ mark.iat }})</dd>

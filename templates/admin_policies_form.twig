@@ -4,6 +4,7 @@
 
 {% block preload %}
 <link rel="stylesheet" href="{{ asset('css/admin.css', 'admin') }}">
+<link rel="stylesheet" href="{{ asset('css/oidanchor.css', 'oidanchor') }}">
 <style>
   .oidanchor-form { max-width: 780px; }
   .oidanchor-form .field { margin-bottom: 1.1em; }
@@ -32,6 +33,7 @@
       </div>
     </div>
   </div>
+  {% include '@oidanchor/admin_nav.twig' %}
 
   <h2>{{ title|e }}</h2>
 

@@ -21,26 +21,26 @@ function oidanchor_hook_federationpage(Template $template): void
 
     $template->data['links'][] = [
         'href' => Module::getModuleURL('oidanchor/admin/subordinates'),
-        'text' => Translate::noop('OIDC Federation Subordinates'),
+        'text' => Translate::noop('OpenID Federation Subordinates'),
     ];
 
     $template->data['links'][] = [
         'href' => Module::getModuleURL('oidanchor/admin/policies'),
-        'text' => Translate::noop('OIDC Federation Metadata Policies'),
+        'text' => Translate::noop('OpenID Federation Metadata Policies'),
     ];
 
     $template->data['links'][] = [
         'href' => Module::getModuleURL('oidanchor/admin/trust-mark-types'),
-        'text' => Translate::noop('OIDC Federation Trust Mark Types'),
+        'text' => Translate::noop('OpenID Federation Trust Mark Types'),
     ];
 
     $template->data['links'][] = [
         'href' => Module::getModuleURL('oidanchor/admin/trust-marks'),
-        'text' => Translate::noop('OIDC Federation Issued Trust Marks'),
+        'text' => Translate::noop('OpenID Federation Issued Trust Marks'),
     ];
 
     $template->data['links'][] = [
         'href' => Module::getModuleURL('oidanchor/admin/resolve'),
-        'text' => Translate::noop('OIDC Federation Resolve Tester'),
+        'text' => Translate::noop('OpenID Federation Resolve Tester'),
     ];
 }

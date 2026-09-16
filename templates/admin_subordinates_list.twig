@@ -1,14 +1,11 @@
-{% set pagetitle = 'OIDC Federation Subordinates'|trans %}
+{% set pagetitle = 'OpenID Federation Subordinates'|trans %}
 {% set frontpage_section = 'oidanchor' %}
 {% extends "base.twig" %}
 
 {% block preload %}
 <link rel="stylesheet" href="{{ asset('css/admin.css', 'admin') }}">
+<link rel="stylesheet" href="{{ asset('css/oidanchor.css', 'oidanchor') }}">
 <style>
-  .oidanchor-table { width: 100%; border-collapse: collapse; margin-top: 1em; }
-  .oidanchor-table th, .oidanchor-table td { padding: .45em .7em; border: 1px solid #ddd; font-size: .9em; }
-  .oidanchor-table th { background: #f4f4f4; text-align: left; }
-  .oidanchor-table tr:hover td { background: #fafafa; }
   .badge-active   { color: #2a6b2a; font-weight: bold; }
   .badge-suspended { color: #9a3a00; font-weight: bold; }
   .flash-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: .6em 1em; margin-bottom: 1em; border-radius: 3px; }
@@ -30,15 +27,16 @@
       </div>
     </div>
   </div>
+  {% include '@oidanchor/admin_nav.twig' %}
 
-  <h2>{% trans %}OIDC Federation Subordinates{% endtrans %}</h2>
+  <h2>{% trans %}OpenID Federation Subordinates{% endtrans %}</h2>
 
   {% if flash %}
     <div class="flash-{{ flash.type }}">{{ flash.text|e }}</div>
   {% endif %}
 
   <p>
-    <a href="{{ createUrl }}" class="pure-button pure-button-primary">
+    <a href="{{ createUrl }}" class="pure-button pure-button-red">
       + {% trans %}Register new subordinate{% endtrans %}
     </a>
   </p>

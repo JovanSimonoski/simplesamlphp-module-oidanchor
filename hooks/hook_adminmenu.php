@@ -7,7 +7,7 @@ use SimpleSAML\Module;
 use SimpleSAML\XHTML\Template;
 
 /**
- * Add an "Federation TA" entry to the SimpleSAMLphp admin navigation menu.
+ * Add a "Trust Anchor" entry to the SimpleSAMLphp admin navigation menu.
  *
  * SSP's Menu::insert() calls Module::callHooks('adminmenu', $template), passing
  * the Template by reference so we can inject our entry directly into data['menu'].
@@ -23,7 +23,7 @@ function oidanchor_hook_adminmenu(Template &$template): void
     $entry = [
         'oidanchor' => [
             'url'  => Module::getModuleURL('oidanchor/admin/subordinates'),
-            'name' => Translate::noop('Federation TA'),
+            'name' => Translate::noop('Trust Anchor'),
         ],
     ];
 

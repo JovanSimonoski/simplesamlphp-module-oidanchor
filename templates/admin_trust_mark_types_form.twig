@@ -4,6 +4,7 @@
 
 {% block preload %}
 <link rel="stylesheet" href="{{ asset('css/admin.css', 'admin') }}">
+<link rel="stylesheet" href="{{ asset('css/oidanchor.css', 'oidanchor') }}">
 <style>
   .oidanchor-form { max-width: 780px; }
   .oidanchor-form .field { margin-bottom: 1.1em; }
@@ -33,6 +34,7 @@
       </div>
     </div>
   </div>
+  {% include '@oidanchor/admin_nav.twig' %}
 
   <h2>{{ title|e }}</h2>
 
@@ -44,7 +46,7 @@
     <input type="hidden" name="csrf_token" value="{{ csrfToken|e }}">
 
     <div class="field">
-      <label for="trust_mark_id">{% trans %}Trust Mark ID{% endtrans %} *</label>
+      <label for="trust_mark_id">{% trans %}Trust Mark Type{% endtrans %} *</label>
       <input type="text" id="trust_mark_id" name="trust_mark_id"
              value="{{ formData.trust_mark_id|default('')|e }}"
              {% if isEdit %}readonly{% else %}required placeholder="https://ta.example.com/marks/verified-rp"{% endif %}

@@ -26,9 +26,9 @@ class TrustMarkTypeValidator
 
         if (!$isUpdate) {
             if (empty($data['trust_mark_id'])) {
-                $errors['trust_mark_id'] = 'Trust Mark ID is required.';
+                $errors['trust_mark_id'] = 'Trust Mark Type is required.';
             } elseif (!$this->isHttpsUrl((string) $data['trust_mark_id'])) {
-                $errors['trust_mark_id'] = 'Trust Mark ID must be a valid HTTPS URL.';
+                $errors['trust_mark_id'] = 'Trust Mark Type must be a valid HTTPS URL.';
             }
         }
 

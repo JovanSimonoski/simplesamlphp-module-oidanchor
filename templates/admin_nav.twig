@@ -1,0 +1,16 @@
+{#
+  Links between the oidanchor admin pages, listed like the Tools links on the SimpleSAMLphp
+  admin Federation page (same labels as hooks/hook_federationpage.php).
+  Collapsed by default: a native <details> element, so it needs no JavaScript (the CSP blocks
+  inline scripts). The arrow styling lives in public/assets/css/oidanchor.css.
+#}
+<details class="oidanchor-menu">
+  <summary><h2>{% trans %}Menu{% endtrans %}</h2></summary>
+  <ul>
+    <li><a href="{{ moduleURL('oidanchor/admin/subordinates') }}">{{ 'OpenID Federation Subordinates'|trans }}</a></li>
+    <li><a href="{{ moduleURL('oidanchor/admin/policies') }}">{{ 'OpenID Federation Metadata Policies'|trans }}</a></li>
+    <li><a href="{{ moduleURL('oidanchor/admin/trust-mark-types') }}">{{ 'OpenID Federation Trust Mark Types'|trans }}</a></li>
+    <li><a href="{{ moduleURL('oidanchor/admin/trust-marks') }}">{{ 'OpenID Federation Issued Trust Marks'|trans }}</a></li>
+    <li><a href="{{ moduleURL('oidanchor/admin/resolve') }}">{{ 'OpenID Federation Resolve Tester'|trans }}</a></li>
+  </ul>
+</details>

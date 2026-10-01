@@ -7,7 +7,6 @@ namespace SimpleSAML\Module\oidanchor\Controller;
 use PDO;
 use PDOException;
 use RuntimeException;
-use SimpleSAML\Auth\Simple;
 use SimpleSAML\Configuration;
 use SimpleSAML\Locale\Translate;
 use SimpleSAML\Logger;
@@ -24,7 +23,6 @@ use SimpleSAML\Utils;
 use SimpleSAML\XHTML\Template;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Admin UI controller for subordinate management.

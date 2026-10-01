@@ -26,6 +26,9 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class OpenIDFederation
 {
+    use JwtResponseTrait;
+
+
     public function __construct(
         protected Configuration $config,
     ) {
@@ -45,7 +48,7 @@ class OpenIDFederation
 
         $token = $keys->signEntityStatement($claims);
 
-        return new Response($token, Response::HTTP_OK, ['Content-Type' => 'application/entity-statement+jwt']);
+        return $this->jwtResponse($token, 'application/entity-statement+jwt');
     }
 
 
@@ -146,7 +149,7 @@ class OpenIDFederation
 
         $token = (new FederationKeyService($moduleConfig, $pdo))->signEntityStatement($claims);
 
-        return new Response($token, Response::HTTP_OK, ['Content-Type' => 'application/entity-statement+jwt']);
+        return $this->jwtResponse($token, 'application/entity-statement+jwt');
     }
 
 

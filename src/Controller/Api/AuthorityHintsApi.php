@@ -19,7 +19,7 @@ class AuthorityHintsApi extends ApiController
 {
     public function list(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->json($this->repo()->findAll());
     }
@@ -27,7 +27,7 @@ class AuthorityHintsApi extends ApiController
 
     public function create(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $body = $this->decodeJson($request);
         if (!is_array($body)) {
@@ -55,7 +55,7 @@ class AuthorityHintsApi extends ApiController
 
     public function get(Request $request, string $authorityHintID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $id   = $this->internalId($authorityHintID);
         $hint = $id !== null ? $this->repo()->findById($id) : null;
@@ -70,7 +70,7 @@ class AuthorityHintsApi extends ApiController
 
     public function update(Request $request, string $authorityHintID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $id   = $this->internalId($authorityHintID);
         $hint = $id !== null ? $this->repo()->findById($id) : null;
@@ -103,7 +103,7 @@ class AuthorityHintsApi extends ApiController
 
     public function delete(Request $request, string $authorityHintID): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $id = $this->internalId($authorityHintID);
         if ($id !== null && $this->repo()->findById($id) !== null) {

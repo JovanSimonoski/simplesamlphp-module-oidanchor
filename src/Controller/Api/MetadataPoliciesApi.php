@@ -25,7 +25,7 @@ class MetadataPoliciesApi extends ApiController
 
     public function getAll(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->policyIndex();
     }
@@ -33,7 +33,7 @@ class MetadataPoliciesApi extends ApiController
 
     public function replaceAll(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->policyReplace($request);
     }
@@ -43,7 +43,7 @@ class MetadataPoliciesApi extends ApiController
 
     public function getForType(Request $request, string $entityType): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->policyForType($entityType);
     }
@@ -51,7 +51,7 @@ class MetadataPoliciesApi extends ApiController
 
     public function putForType(Request $request, string $entityType): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->policyPutType($request, $entityType);
     }
@@ -59,7 +59,7 @@ class MetadataPoliciesApi extends ApiController
 
     public function addForType(Request $request, string $entityType): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->policyAddClaims($request, $entityType);
     }
@@ -67,7 +67,7 @@ class MetadataPoliciesApi extends ApiController
 
     public function deleteForType(Request $request, string $entityType): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->policyDeleteType($entityType);
     }
@@ -77,7 +77,7 @@ class MetadataPoliciesApi extends ApiController
 
     public function getClaim(Request $request, string $entityType, string $claim): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->policyGetClaim($entityType, $claim);
     }
@@ -85,7 +85,7 @@ class MetadataPoliciesApi extends ApiController
 
     public function putClaim(Request $request, string $entityType, string $claim): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->policyPutClaim($request, $entityType, $claim);
     }
@@ -93,7 +93,7 @@ class MetadataPoliciesApi extends ApiController
 
     public function addOperators(Request $request, string $entityType, string $claim): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->policyAddOperators($request, $entityType, $claim);
     }
@@ -101,7 +101,7 @@ class MetadataPoliciesApi extends ApiController
 
     public function deleteClaim(Request $request, string $entityType, string $claim): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->policyDeleteClaim($entityType, $claim);
     }
@@ -111,7 +111,7 @@ class MetadataPoliciesApi extends ApiController
 
     public function getOperator(Request $request, string $entityType, string $claim, string $operator): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->policyGetOperator($entityType, $claim, $operator);
     }
@@ -119,7 +119,7 @@ class MetadataPoliciesApi extends ApiController
 
     public function putOperator(Request $request, string $entityType, string $claim, string $operator): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->policyPutOperator($request, $entityType, $claim, $operator);
     }
@@ -127,7 +127,7 @@ class MetadataPoliciesApi extends ApiController
 
     public function deleteOperator(Request $request, string $entityType, string $claim, string $operator): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->policyDeleteOperator($entityType, $claim, $operator);
     }

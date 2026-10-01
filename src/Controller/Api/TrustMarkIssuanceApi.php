@@ -32,7 +32,7 @@ class TrustMarkIssuanceApi extends ApiController
 
     public function listSpecs(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->json($this->specRepo()->findAll());
     }
@@ -40,7 +40,7 @@ class TrustMarkIssuanceApi extends ApiController
 
     public function createSpec(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $body = $this->decodeJson($request);
         if (!is_array($body)) {
@@ -74,7 +74,7 @@ class TrustMarkIssuanceApi extends ApiController
 
     public function getSpec(Request $request, string $trustMarkSpecID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $spec = $this->findSpec($trustMarkSpecID);
         if ($spec === null) {
@@ -90,7 +90,7 @@ class TrustMarkIssuanceApi extends ApiController
      */
     public function updateSpec(Request $request, string $trustMarkSpecID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $spec = $this->findSpec($trustMarkSpecID);
         if ($spec === null) {
@@ -140,7 +140,7 @@ class TrustMarkIssuanceApi extends ApiController
      */
     public function patchSpec(Request $request, string $trustMarkSpecID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $spec = $this->findSpec($trustMarkSpecID);
         if ($spec === null) {
@@ -178,7 +178,7 @@ class TrustMarkIssuanceApi extends ApiController
 
     public function deleteSpec(Request $request, string $trustMarkSpecID): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $spec = $this->findSpec($trustMarkSpecID);
         if ($spec === null) {
@@ -196,7 +196,7 @@ class TrustMarkIssuanceApi extends ApiController
 
     public function listSubjects(Request $request, string $trustMarkSpecID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $spec = $this->findSpec($trustMarkSpecID);
         if ($spec === null) {
@@ -217,7 +217,7 @@ class TrustMarkIssuanceApi extends ApiController
      */
     public function createSubject(Request $request, string $trustMarkSpecID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $spec = $this->findSpec($trustMarkSpecID);
         if ($spec === null) {
@@ -265,7 +265,7 @@ class TrustMarkIssuanceApi extends ApiController
 
     public function getSubject(Request $request, string $trustMarkSpecID, string $trustMarkSubjectID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         [$spec, $subject] = $this->findSpecAndSubject($trustMarkSpecID, $trustMarkSubjectID);
         if ($spec === null) {
@@ -281,7 +281,7 @@ class TrustMarkIssuanceApi extends ApiController
 
     public function updateSubject(Request $request, string $trustMarkSpecID, string $trustMarkSubjectID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         [$spec, $subject] = $this->findSpecAndSubject($trustMarkSpecID, $trustMarkSubjectID);
         if ($spec === null) {
@@ -324,7 +324,7 @@ class TrustMarkIssuanceApi extends ApiController
 
     public function deleteSubject(Request $request, string $trustMarkSpecID, string $trustMarkSubjectID): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         [$spec, $subject] = $this->findSpecAndSubject($trustMarkSpecID, $trustMarkSubjectID);
         if ($spec === null) {
@@ -351,7 +351,7 @@ class TrustMarkIssuanceApi extends ApiController
      */
     public function changeSubjectStatus(Request $request, string $trustMarkSpecID, string $trustMarkSubjectID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         [$spec, $subject] = $this->findSpecAndSubject($trustMarkSpecID, $trustMarkSubjectID);
         if ($spec === null) {
@@ -389,7 +389,7 @@ class TrustMarkIssuanceApi extends ApiController
 
     public function getSubjectClaims(Request $request, string $trustMarkSpecID, string $trustMarkSubjectID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         [$spec, $subject] = $this->findSpecAndSubject($trustMarkSpecID, $trustMarkSubjectID);
         if ($spec === null) {
@@ -407,7 +407,7 @@ class TrustMarkIssuanceApi extends ApiController
 
     public function updateSubjectClaims(Request $request, string $trustMarkSpecID, string $trustMarkSubjectID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         [$spec, $subject] = $this->findSpecAndSubject($trustMarkSpecID, $trustMarkSubjectID);
         if ($spec === null) {
@@ -434,7 +434,7 @@ class TrustMarkIssuanceApi extends ApiController
      */
     public function copySubjectClaims(Request $request, string $trustMarkSpecID, string $trustMarkSubjectID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         [$spec, $subject] = $this->findSpecAndSubject($trustMarkSpecID, $trustMarkSubjectID);
         if ($spec === null) {

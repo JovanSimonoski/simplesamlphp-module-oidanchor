@@ -23,7 +23,7 @@ class MetadataPolicyCritApi extends ApiController
 {
     public function list(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->json($this->service()->all());
     }
@@ -31,7 +31,7 @@ class MetadataPolicyCritApi extends ApiController
 
     public function replace(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $body = $this->decodeJson($request);
         if (!is_array($body)) {
@@ -52,7 +52,7 @@ class MetadataPolicyCritApi extends ApiController
 
     public function create(Request $request): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $operator = $this->decodeJson($request);
 
@@ -70,7 +70,7 @@ class MetadataPolicyCritApi extends ApiController
 
     public function delete(Request $request, string $operator): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $this->service()->remove($operator);
         Logger::info(sprintf('oidanchor: API critical metadata policy operator deleted: %s', $operator));

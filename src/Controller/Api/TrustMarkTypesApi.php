@@ -29,7 +29,7 @@ class TrustMarkTypesApi extends ApiController
 
     public function list(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->json(array_map(
             static fn(TrustMarkType $type): array => $type->toApi(),
@@ -40,7 +40,7 @@ class TrustMarkTypesApi extends ApiController
 
     public function create(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $body = $this->decodeJson($request);
         if (!is_array($body)) {
@@ -96,7 +96,7 @@ class TrustMarkTypesApi extends ApiController
 
     public function get(Request $request, string $trustMarkTypeID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $type = $this->findType($trustMarkTypeID);
         if ($type === null) {
@@ -109,7 +109,7 @@ class TrustMarkTypesApi extends ApiController
 
     public function update(Request $request, string $trustMarkTypeID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $type = $this->findType($trustMarkTypeID);
         if ($type === null) {
@@ -147,7 +147,7 @@ class TrustMarkTypesApi extends ApiController
 
     public function delete(Request $request, string $trustMarkTypeID): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $type = $this->findType($trustMarkTypeID);
         if ($type === null || $type->id === null) {
@@ -168,7 +168,7 @@ class TrustMarkTypesApi extends ApiController
 
     public function listIssuers(Request $request, string $trustMarkTypeID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $type = $this->findType($trustMarkTypeID);
         if ($type === null || $type->id === null) {
@@ -184,7 +184,7 @@ class TrustMarkTypesApi extends ApiController
      */
     public function setIssuers(Request $request, string $trustMarkTypeID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $type = $this->findType($trustMarkTypeID);
         if ($type === null || $type->id === null) {
@@ -220,7 +220,7 @@ class TrustMarkTypesApi extends ApiController
      */
     public function addIssuer(Request $request, string $trustMarkTypeID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $type = $this->findType($trustMarkTypeID);
         if ($type === null || $type->id === null) {
@@ -246,7 +246,7 @@ class TrustMarkTypesApi extends ApiController
 
     public function deleteIssuer(Request $request, string $trustMarkTypeID, string $issuerID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $type     = $this->findType($trustMarkTypeID);
         $issuerId = $this->internalId($issuerID);
@@ -269,7 +269,7 @@ class TrustMarkTypesApi extends ApiController
 
     public function getOwner(Request $request, string $trustMarkTypeID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $type = $this->findType($trustMarkTypeID);
         if ($type === null || $type->id === null) {
@@ -290,7 +290,7 @@ class TrustMarkTypesApi extends ApiController
      */
     public function createOwner(Request $request, string $trustMarkTypeID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $type = $this->findType($trustMarkTypeID);
         if ($type === null || $type->id === null) {
@@ -319,7 +319,7 @@ class TrustMarkTypesApi extends ApiController
      */
     public function updateOwner(Request $request, string $trustMarkTypeID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $type = $this->findType($trustMarkTypeID);
         if ($type === null || $type->id === null) {
@@ -348,7 +348,7 @@ class TrustMarkTypesApi extends ApiController
 
     public function deleteOwner(Request $request, string $trustMarkTypeID): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $type = $this->findType($trustMarkTypeID);
         if ($type === null || $type->id === null) {

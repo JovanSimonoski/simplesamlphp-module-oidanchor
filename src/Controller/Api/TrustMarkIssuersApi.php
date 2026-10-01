@@ -21,7 +21,7 @@ class TrustMarkIssuersApi extends ApiController
 {
     public function list(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->json($this->repo()->findAll());
     }
@@ -29,7 +29,7 @@ class TrustMarkIssuersApi extends ApiController
 
     public function create(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $body = $this->decodeJson($request);
         if (!is_array($body)) {
@@ -55,7 +55,7 @@ class TrustMarkIssuersApi extends ApiController
 
     public function get(Request $request, string $issuerID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $issuer = $this->find($issuerID);
         if ($issuer === null) {
@@ -68,7 +68,7 @@ class TrustMarkIssuersApi extends ApiController
 
     public function update(Request $request, string $issuerID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $issuer = $this->find($issuerID);
         if ($issuer === null) {
@@ -103,7 +103,7 @@ class TrustMarkIssuersApi extends ApiController
 
     public function delete(Request $request, string $issuerID): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $issuer = $this->find($issuerID);
         if ($issuer === null) {
@@ -121,7 +121,7 @@ class TrustMarkIssuersApi extends ApiController
 
     public function listTypes(Request $request, string $issuerID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $issuer = $this->find($issuerID);
         if ($issuer === null) {
@@ -137,7 +137,7 @@ class TrustMarkIssuersApi extends ApiController
      */
     public function setTypes(Request $request, string $issuerID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $issuer = $this->find($issuerID);
         if ($issuer === null) {
@@ -171,7 +171,7 @@ class TrustMarkIssuersApi extends ApiController
      */
     public function addType(Request $request, string $issuerID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $issuer = $this->find($issuerID);
         if ($issuer === null) {
@@ -197,7 +197,7 @@ class TrustMarkIssuersApi extends ApiController
 
     public function unlinkType(Request $request, string $issuerID, string $trustMarkTypeID): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $issuer = $this->find($issuerID);
         $typeId = $this->internalId($trustMarkTypeID);

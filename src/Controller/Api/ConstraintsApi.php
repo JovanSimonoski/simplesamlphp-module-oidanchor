@@ -20,7 +20,7 @@ class ConstraintsApi extends ApiController
 
     public function get(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->constraintsIndex();
     }
@@ -28,7 +28,7 @@ class ConstraintsApi extends ApiController
 
     public function update(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->constraintsReplace($request);
     }
@@ -36,7 +36,7 @@ class ConstraintsApi extends ApiController
 
     public function getMaxPathLength(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->maxPathLengthGet();
     }
@@ -44,7 +44,7 @@ class ConstraintsApi extends ApiController
 
     public function setMaxPathLength(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->maxPathLengthSet($request);
     }
@@ -52,7 +52,7 @@ class ConstraintsApi extends ApiController
 
     public function deleteMaxPathLength(Request $request): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->maxPathLengthDelete();
     }
@@ -60,7 +60,7 @@ class ConstraintsApi extends ApiController
 
     public function getNamingConstraints(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->namingConstraintsGet();
     }
@@ -68,7 +68,7 @@ class ConstraintsApi extends ApiController
 
     public function setNamingConstraints(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->namingConstraintsSet($request);
     }
@@ -76,7 +76,7 @@ class ConstraintsApi extends ApiController
 
     public function deleteNamingConstraints(Request $request): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->namingConstraintsDelete();
     }
@@ -84,7 +84,7 @@ class ConstraintsApi extends ApiController
 
     public function getAllowedEntityTypes(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->allowedEntityTypesGet();
     }
@@ -92,7 +92,7 @@ class ConstraintsApi extends ApiController
 
     public function setAllowedEntityTypes(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->allowedEntityTypesSet($request);
     }
@@ -100,7 +100,7 @@ class ConstraintsApi extends ApiController
 
     public function addAllowedEntityType(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->allowedEntityTypesAdd($request);
     }
@@ -108,7 +108,7 @@ class ConstraintsApi extends ApiController
 
     public function deleteAllowedEntityType(Request $request, string $entityType): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->allowedEntityTypeDelete($entityType);
     }

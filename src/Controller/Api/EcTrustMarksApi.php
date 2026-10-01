@@ -24,7 +24,7 @@ class EcTrustMarksApi extends ApiController
 {
     public function list(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->json(array_map(
             static fn(array $row): array => self::toApi($row),
@@ -35,7 +35,7 @@ class EcTrustMarksApi extends ApiController
 
     public function create(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $body = $this->decodeJson($request);
         if (!is_array($body)) {
@@ -60,7 +60,7 @@ class EcTrustMarksApi extends ApiController
 
     public function get(Request $request, string $trustMarkID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $row = $this->find($trustMarkID);
         if ($row === null) {
@@ -76,7 +76,7 @@ class EcTrustMarksApi extends ApiController
      */
     public function replace(Request $request, string $trustMarkID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $row = $this->find($trustMarkID);
         if ($row === null) {
@@ -117,7 +117,7 @@ class EcTrustMarksApi extends ApiController
      */
     public function patch(Request $request, string $trustMarkID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $row = $this->find($trustMarkID);
         if ($row === null) {
@@ -148,7 +148,7 @@ class EcTrustMarksApi extends ApiController
 
     public function delete(Request $request, string $trustMarkID): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $row = $this->find($trustMarkID);
         if ($row === null) {

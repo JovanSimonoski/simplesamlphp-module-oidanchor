@@ -34,7 +34,7 @@ class SubordinatesApi extends ApiController
 
     public function list(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $entityType = trim((string) $request->query->get('entity_type', '')) ?: null;
         $status     = trim((string) $request->query->get('status', '')) ?: null;
@@ -56,7 +56,7 @@ class SubordinatesApi extends ApiController
 
     public function create(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $body = $this->decodeJson($request);
         if (!is_array($body)) {
@@ -101,7 +101,7 @@ class SubordinatesApi extends ApiController
 
     public function get(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null) {
@@ -114,7 +114,7 @@ class SubordinatesApi extends ApiController
 
     public function update(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null) {
@@ -146,7 +146,7 @@ class SubordinatesApi extends ApiController
 
     public function delete(Request $request, string $subordinateID): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null) {
@@ -166,7 +166,7 @@ class SubordinatesApi extends ApiController
 
     public function changeStatus(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null) {
@@ -195,7 +195,7 @@ class SubordinatesApi extends ApiController
      */
     public function history(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null || $sub->id === null) {
@@ -235,7 +235,7 @@ class SubordinatesApi extends ApiController
      */
     public function statement(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null) {
@@ -262,7 +262,7 @@ class SubordinatesApi extends ApiController
 
     public function getJwks(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null) {
@@ -275,7 +275,7 @@ class SubordinatesApi extends ApiController
 
     public function setJwks(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null) {
@@ -301,7 +301,7 @@ class SubordinatesApi extends ApiController
 
     public function addJwk(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null) {
@@ -334,7 +334,7 @@ class SubordinatesApi extends ApiController
      */
     public function deleteJwk(Request $request, string $subordinateID, string $kid): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null) {
@@ -368,7 +368,7 @@ class SubordinatesApi extends ApiController
 
     public function getGeneralAdditionalClaims(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->additionalClaimsIndex(AdditionalClaimsRepository::SCOPE_SUBORDINATE_GENERAL);
     }
@@ -376,7 +376,7 @@ class SubordinatesApi extends ApiController
 
     public function updateGeneralAdditionalClaims(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->additionalClaimsReplace($request, AdditionalClaimsRepository::SCOPE_SUBORDINATE_GENERAL);
     }
@@ -384,7 +384,7 @@ class SubordinatesApi extends ApiController
 
     public function addGeneralAdditionalClaim(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->additionalClaimsAdd($request, AdditionalClaimsRepository::SCOPE_SUBORDINATE_GENERAL);
     }
@@ -392,7 +392,7 @@ class SubordinatesApi extends ApiController
 
     public function getGeneralAdditionalClaim(Request $request, string $additionalClaimsID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->additionalClaimGet(AdditionalClaimsRepository::SCOPE_SUBORDINATE_GENERAL, $additionalClaimsID);
     }
@@ -400,7 +400,7 @@ class SubordinatesApi extends ApiController
 
     public function updateGeneralAdditionalClaim(Request $request, string $additionalClaimsID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->additionalClaimUpdate(
             $request,
@@ -412,7 +412,7 @@ class SubordinatesApi extends ApiController
 
     public function deleteGeneralAdditionalClaim(Request $request, string $additionalClaimsID): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->additionalClaimDelete(
             AdditionalClaimsRepository::SCOPE_SUBORDINATE_GENERAL,
@@ -425,7 +425,7 @@ class SubordinatesApi extends ApiController
 
     public function getSubordinateAdditionalClaims(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null || $sub->id === null) {
@@ -438,7 +438,7 @@ class SubordinatesApi extends ApiController
 
     public function updateSubordinateAdditionalClaims(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null || $sub->id === null) {
@@ -454,7 +454,7 @@ class SubordinatesApi extends ApiController
 
     public function addSubordinateAdditionalClaims(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null || $sub->id === null) {
@@ -470,7 +470,7 @@ class SubordinatesApi extends ApiController
 
     public function getSubordinateAdditionalClaim(Request $request, string $subordinateID, string $additionalClaimsID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null || $sub->id === null) {
@@ -483,7 +483,7 @@ class SubordinatesApi extends ApiController
 
     public function updateSubordinateAdditionalClaim(Request $request, string $subordinateID, string $additionalClaimsID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null || $sub->id === null) {
@@ -504,7 +504,7 @@ class SubordinatesApi extends ApiController
 
     public function deleteSubordinateAdditionalClaim(Request $request, string $subordinateID, string $additionalClaimsID): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $sub = $this->resolveSubordinate($subordinateID);
         if ($sub === null || $sub->id === null) {

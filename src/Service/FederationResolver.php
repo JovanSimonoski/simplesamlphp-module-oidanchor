@@ -116,11 +116,20 @@ class FederationResolver
     /**
      * Build the signed Resolve Response JWT (typ: resolve-response+jwt) from a resolution result.
      * Shared by the public endpoint and the admin tester so the output is identical.
+     *
+     * @throws ResolveException when the resolved chain has already expired (would yield exp <= iat).
      */
     public function buildSignedResponse(ResolveResult $result): string
     {
         $now = time();
         $exp = min($now + $this->config()['response_lifetime'], $result->expiration);
+
+        if ($exp <= $now) {
+            throw ResolveException::invalidTrustChain(sprintf(
+                "The trust chain for '%s' has expired.",
+                $result->sub,
+            ));
+        }
 
         $payload = [
             ClaimsEnum::Iss->value        => $this->keys->entityId(),

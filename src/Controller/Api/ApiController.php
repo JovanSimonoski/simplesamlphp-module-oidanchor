@@ -8,6 +8,7 @@ use PDO;
 use PDOException;
 use RuntimeException;
 use SimpleSAML\Configuration;
+use SimpleSAML\Logger;
 use SimpleSAML\Module\oidanchor\Entity\Subordinate;
 use SimpleSAML\Module\oidanchor\Repository\SettingsRepository;
 use SimpleSAML\Module\oidanchor\Repository\SubordinateEventRepository;
@@ -69,7 +70,8 @@ abstract class ApiController
 
     /**
      * Whether the request carries HTTP Basic credentials matching the configured API credential.
-     * Returns false (session-only mode) when no credential is configured.
+     * Returns false (session-only mode) when no credential is configured, and logs a warning when
+     * only one half of it is.
      */
     protected function basicAuthMatches(Request $request): bool
     {
@@ -78,6 +80,13 @@ abstract class ApiController
         $expectedPass = (string) ($moduleConfig->getOptionalString('api_admin_password', '') ?? '');
 
         if ($expectedUser === '' || $expectedPass === '') {
+            if ($expectedUser !== '' || $expectedPass !== '') {
+                Logger::warning(
+                    'oidanchor: only one of api_admin_username / api_admin_password is set; '
+                    . 'HTTP Basic auth for the admin API is disabled until both are configured.',
+                );
+            }
+
             return false;
         }
 

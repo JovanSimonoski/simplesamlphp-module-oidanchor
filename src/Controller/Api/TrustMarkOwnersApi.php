@@ -238,7 +238,7 @@ class TrustMarkOwnersApi extends ApiController
         $delegation = null;
         try {
             $delegation = (new TrustMarkDelegationService($this->moduleConfig(), $this->buildPdo()))
-                ->mintIfOwnedByThisAnchor($type->trustMarkId, $ownerEntityId);
+                ->mintIfOwnedByThisAnchor($type->trustMarkType, $ownerEntityId);
         } catch (Throwable $e) {
             Logger::warning('oidanchor: could not mint trust mark delegation: ' . $e->getMessage());
         }

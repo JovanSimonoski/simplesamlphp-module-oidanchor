@@ -21,6 +21,7 @@ class TrustMarkIssuerRepository
 
     public function __construct(private readonly PDO $pdo)
     {
+        TrustMarkTypeColumnMigration::run($pdo);
         $this->ensureSchema();
     }
 
@@ -208,7 +209,7 @@ class TrustMarkIssuerRepository
     public function issuersByTrustMarkType(): array
     {
         $types = $this->pdo->query(
-            'SELECT id, trust_mark_id FROM oidanchor_trust_mark_types ORDER BY trust_mark_id',
+            'SELECT id, trust_mark_type FROM oidanchor_trust_mark_types ORDER BY trust_mark_type',
         )->fetchAll(PDO::FETCH_ASSOC);
 
         $out = [];
@@ -217,7 +218,7 @@ class TrustMarkIssuerRepository
                 static fn(array $issuer): string => (string) $issuer['issuer'],
                 $this->issuersOfType((int) $type['id']),
             );
-            $out[(string) $type['trust_mark_id']] = $issuers;
+            $out[(string) $type['trust_mark_type']] = $issuers;
         }
 
         return $out;

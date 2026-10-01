@@ -12,7 +12,7 @@ use PDO;
  * status. This is where revocation / suspension lives in the spec's model — the public
  * /trust_mark_status endpoint consults the subject status before reporting `active`.
  *
- * Migrated from step 7: every distinct (trust_mark_id, sub) in oidanchor_trust_marks_issued
+ * Migrated from step 7: every distinct (trust_mark_type, sub) in oidanchor_trust_marks_issued
  * gets a subject row (active marks → `active`, revoked marks → `blocked`).
  */
 class TrustMarkSubjectRepository
@@ -24,6 +24,7 @@ class TrustMarkSubjectRepository
 
     public function __construct(private readonly PDO $pdo)
     {
+        TrustMarkTypeColumnMigration::run($pdo);
         $this->ensureSchema();
     }
 
@@ -74,7 +75,7 @@ class TrustMarkSubjectRepository
                          THEN 'active' ELSE 'blocked' END,
                     MIN(i.iat)
              FROM oidanchor_trust_marks_issued i
-             JOIN oidanchor_trust_mark_specs s ON s.trust_mark_type = i.trust_mark_id
+             JOIN oidanchor_trust_mark_specs s ON s.trust_mark_type = i.trust_mark_type
              GROUP BY s.id, i.sub",
         );
     }

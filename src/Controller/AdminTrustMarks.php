@@ -47,7 +47,7 @@ class AdminTrustMarks
         $authUtils = new Utils\Auth();
         $authUtils->requireAdmin();
 
-        $filterType   = trim((string) $request->query->get('trust_mark_id', '')) ?: null;
+        $filterType   = trim((string) $request->query->get('trust_mark_type', '')) ?: null;
         $filterSub    = trim((string) $request->query->get('sub', '')) ?: null;
         $filterStatus = trim((string) $request->query->get('status', '')) ?: null;
 
@@ -59,7 +59,7 @@ class AdminTrustMarks
         $t = new Template($this->config, 'oidanchor:admin_trust_marks_list.twig');
         $t->data['marks']        = $marks;
         $t->data['types']        = $typeRepo->findAll();
-        $t->data['filter']       = ['trust_mark_id' => $filterType, 'sub' => $filterSub, 'status' => $filterStatus];
+        $t->data['filter']       = ['trust_mark_type' => $filterType, 'sub' => $filterSub, 'status' => $filterStatus];
         $t->data['issueUrl']     = Module::getModuleURL('oidanchor/admin/trust-marks/issue');
         $t->data['listUrl']      = Module::getModuleURL('oidanchor/admin/trust-marks');
         $t->data['csrfToken']    = $this->csrfToken();
@@ -81,7 +81,7 @@ class AdminTrustMarks
         $authUtils->requireAdmin();
 
         $errors   = [];
-        $formData = ['trust_mark_id' => '', 'sub' => '', 'exp' => '', 'extra_claims' => ''];
+        $formData = ['trust_mark_type' => '', 'sub' => '', 'exp' => '', 'extra_claims' => ''];
 
         if ($request->isMethod('POST')) {
             if (!$this->assertCsrf($request)) {
@@ -91,7 +91,7 @@ class AdminTrustMarks
             }
 
             $formData = [
-                'trust_mark_id' => trim((string) $request->request->get('trust_mark_id', '')),
+                'trust_mark_type' => trim((string) $request->request->get('trust_mark_type', '')),
                 'sub'           => trim((string) $request->request->get('sub', '')),
                 'exp'           => trim((string) $request->request->get('exp', '')),
                 'extra_claims'  => trim((string) $request->request->get('extra_claims', '')),
@@ -100,8 +100,8 @@ class AdminTrustMarks
             $errors = (new IssuedTrustMarkValidator())->validate($formData);
 
             $typeRepo = $this->typeRepository();
-            if (!isset($errors['trust_mark_id']) && $typeRepo->findById($formData['trust_mark_id']) === null) {
-                $errors['trust_mark_id'] = 'Unknown Trust Mark type. Create it in the catalog first.';
+            if (!isset($errors['trust_mark_type']) && $typeRepo->findById($formData['trust_mark_type']) === null) {
+                $errors['trust_mark_type'] = 'Unknown Trust Mark type. Create it in the catalog first.';
             }
 
             if ($errors === []) {
@@ -118,11 +118,11 @@ class AdminTrustMarks
                         $this->issuedRepository(),
                     );
 
-                    $mark = $issuer->issue($formData['trust_mark_id'], $formData['sub'], $exp, $extraClaims);
+                    $mark = $issuer->issue($formData['trust_mark_type'], $formData['sub'], $exp, $extraClaims);
 
                     Logger::info(sprintf(
                         'oidanchor: trust mark issued: type=%s sub=%s id=%d (admin: %s)',
-                        $formData['trust_mark_id'],
+                        $formData['trust_mark_type'],
                         $formData['sub'],
                         (int) $mark->id,
                         $this->getAdminUsername(),
@@ -142,7 +142,7 @@ class AdminTrustMarks
                         Module::getModuleURL('oidanchor/admin/trust-marks/' . (int) $mark->id . '/view'),
                     );
                 } catch (Throwable $e) {
-                    $errors['trust_mark_id'] = 'Issuance failed: ' . $e->getMessage();
+                    $errors['trust_mark_type'] = 'Issuance failed: ' . $e->getMessage();
                 }
             }
         }
@@ -236,7 +236,7 @@ class AdminTrustMarks
         Logger::info(sprintf(
             'oidanchor: trust mark revoked: id=%d type=%s sub=%s (admin: %s)',
             (int) $mark->id,
-            $mark->trustMarkId,
+            $mark->trustMarkType,
             $mark->sub,
             $this->getAdminUsername(),
         ));

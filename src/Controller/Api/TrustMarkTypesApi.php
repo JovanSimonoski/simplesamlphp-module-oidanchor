@@ -58,7 +58,7 @@ class TrustMarkTypesApi extends ApiController
         }
 
         $id = $typeRepo->create(new TrustMarkType(
-            trustMarkId:     $trustMarkType,
+            trustMarkType:   $trustMarkType,
             name:            $trustMarkType,
             description:     isset($body['description']) ? (string) $body['description'] : null,
             logoUri:         null,
@@ -126,7 +126,7 @@ class TrustMarkTypesApi extends ApiController
             : $type->description;
 
         $updated = new TrustMarkType(
-            trustMarkId:     $type->trustMarkId,
+            trustMarkType:   $type->trustMarkType,
             name:            $type->name,
             description:     $description,
             logoUri:         $type->logoUri,
@@ -137,9 +137,9 @@ class TrustMarkTypesApi extends ApiController
             updatedAt:       time(),
             id:              $type->id,
         );
-        $this->typeRepo()->update($type->trustMarkId, $updated);
+        $this->typeRepo()->update($type->trustMarkType, $updated);
 
-        Logger::info(sprintf('oidanchor: API trust mark type updated: %s', $type->trustMarkId));
+        Logger::info(sprintf('oidanchor: API trust mark type updated: %s', $type->trustMarkType));
 
         return $this->json($updated->toApi());
     }
@@ -156,9 +156,9 @@ class TrustMarkTypesApi extends ApiController
 
         $this->issuerRepo()->unlinkAllOfType($type->id);
         $this->ownerRepo()->unsetOwnerOfType($type->id);
-        $this->typeRepo()->delete($type->trustMarkId);
+        $this->typeRepo()->delete($type->trustMarkType);
 
-        Logger::info(sprintf('oidanchor: API trust mark type deleted: %s', $type->trustMarkId));
+        Logger::info(sprintf('oidanchor: API trust mark type deleted: %s', $type->trustMarkType));
 
         return $this->noContent();
     }
@@ -209,7 +209,7 @@ class TrustMarkTypesApi extends ApiController
             }
         }
 
-        Logger::info(sprintf('oidanchor: API trust mark type issuers set: %s', $type->trustMarkId));
+        Logger::info(sprintf('oidanchor: API trust mark type issuers set: %s', $type->trustMarkType));
 
         return $this->json($this->issuerRepo()->issuersOfType($type->id));
     }
@@ -238,7 +238,7 @@ class TrustMarkTypesApi extends ApiController
             return $this->badRequest($e->getMessage());
         }
 
-        Logger::info(sprintf('oidanchor: API trust mark type issuer added: %s', $type->trustMarkId));
+        Logger::info(sprintf('oidanchor: API trust mark type issuer added: %s', $type->trustMarkType));
 
         return $this->json($this->issuerRepo()->issuersOfType($type->id), JsonResponse::HTTP_CREATED);
     }
@@ -259,7 +259,7 @@ class TrustMarkTypesApi extends ApiController
         }
 
         $this->issuerRepo()->unlink($type->id, $issuerId);
-        Logger::info(sprintf('oidanchor: API trust mark type issuer removed: %s', $type->trustMarkId));
+        Logger::info(sprintf('oidanchor: API trust mark type issuer removed: %s', $type->trustMarkType));
 
         return $this->json($this->issuerRepo()->issuersOfType($type->id));
     }
@@ -308,7 +308,7 @@ class TrustMarkTypesApi extends ApiController
             return $this->badRequest($e->getMessage());
         }
 
-        Logger::info(sprintf('oidanchor: API trust mark owner set for type: %s', $type->trustMarkId));
+        Logger::info(sprintf('oidanchor: API trust mark owner set for type: %s', $type->trustMarkType));
 
         return $this->json($this->ownerRepo()->findOwnerOfType($type->id), JsonResponse::HTTP_CREATED);
     }
@@ -340,7 +340,7 @@ class TrustMarkTypesApi extends ApiController
             return $this->badRequest($e->getMessage());
         }
 
-        Logger::info(sprintf('oidanchor: API trust mark owner updated for type: %s', $type->trustMarkId));
+        Logger::info(sprintf('oidanchor: API trust mark owner updated for type: %s', $type->trustMarkType));
 
         return $this->json($this->ownerRepo()->findOwnerOfType($type->id));
     }
@@ -360,7 +360,7 @@ class TrustMarkTypesApi extends ApiController
         }
 
         $this->ownerRepo()->unsetOwnerOfType($type->id);
-        Logger::info(sprintf('oidanchor: API trust mark owner removed from type: %s', $type->trustMarkId));
+        Logger::info(sprintf('oidanchor: API trust mark owner removed from type: %s', $type->trustMarkType));
 
         return $this->noContent();
     }
@@ -442,7 +442,7 @@ class TrustMarkTypesApi extends ApiController
         if ($owner !== null && $type !== null) {
             try {
                 $delegation = $this->delegationService()->mintIfOwnedByThisAnchor(
-                    $type->trustMarkId,
+                    $type->trustMarkType,
                     (string) $owner['entity_id'],
                 );
             } catch (Throwable $e) {

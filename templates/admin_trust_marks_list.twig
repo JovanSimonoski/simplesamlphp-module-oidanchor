@@ -44,10 +44,10 @@
   </p>
 
   <form method="get" action="{{ listUrl }}" class="pure-form oidanchor-filter">
-    <select name="trust_mark_id">
+    <select name="trust_mark_type">
       <option value="">{% trans %}all types{% endtrans %}</option>
       {% for type in types %}
-        <option value="{{ type.trustMarkId|e }}" {% if filter.trust_mark_id == type.trustMarkId %}selected{% endif %}>
+        <option value="{{ type.trustMarkType|e }}" {% if filter.trust_mark_type == type.trustMarkType %}selected{% endif %}>
           {{ type.name|e }}
         </option>
       {% endfor %}
@@ -81,7 +81,7 @@
         {% for mark in marks %}
           <tr>
             <td>{{ mark.id }}</td>
-            <td><code>{{ mark.trustMarkId|e }}</code></td>
+            <td><code>{{ mark.trustMarkType|e }}</code></td>
             <td><code>{{ mark.sub|e }}</code></td>
             <td><span class="badge-{{ mark.status }}">{{ mark.status|e }}</span></td>
             <td>{{ mark.iat|date('Y-m-d H:i') }}</td>

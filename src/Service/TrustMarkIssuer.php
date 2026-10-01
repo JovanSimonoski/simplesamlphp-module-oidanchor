@@ -67,7 +67,7 @@ class TrustMarkIssuer
         $payload[ClaimsEnum::Iss->value]           = $this->keys->entityId();
         $payload[ClaimsEnum::Sub->value]           = $sub;
         $payload[ClaimsEnum::Iat->value]           = $now;
-        $payload[ClaimsEnum::TrustMarkType->value] = $type->trustMarkId;
+        $payload[ClaimsEnum::TrustMarkType->value] = $type->trustMarkType;
 
         if ($exp !== null) {
             $payload[ClaimsEnum::Exp->value] = $exp;
@@ -77,7 +77,7 @@ class TrustMarkIssuer
 
         $mark = new IssuedTrustMark(
             id:               null,
-            trustMarkId:      $type->trustMarkId,
+            trustMarkType:    $type->trustMarkType,
             sub:              $sub,
             jwt:              $jwt,
             iat:              $now,
@@ -91,7 +91,7 @@ class TrustMarkIssuer
 
         return new IssuedTrustMark(
             id:               $id,
-            trustMarkId:      $mark->trustMarkId,
+            trustMarkType:    $mark->trustMarkType,
             sub:              $mark->sub,
             jwt:              $mark->jwt,
             iat:              $mark->iat,

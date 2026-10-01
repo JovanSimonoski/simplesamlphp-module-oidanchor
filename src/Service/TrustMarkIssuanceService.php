@@ -119,7 +119,7 @@ class TrustMarkIssuanceService
 
         $mark = new IssuedTrustMark(
             id:               null,
-            trustMarkId:      $trustMarkType,
+            trustMarkType:    $trustMarkType,
             sub:              $sub,
             jwt:              $jwt,
             iat:              $now,
@@ -133,7 +133,7 @@ class TrustMarkIssuanceService
 
         return new IssuedTrustMark(
             id:               $id,
-            trustMarkId:      $mark->trustMarkId,
+            trustMarkType:    $mark->trustMarkType,
             sub:              $mark->sub,
             jwt:              $mark->jwt,
             iat:              $mark->iat,

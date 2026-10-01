@@ -32,7 +32,7 @@ class EntityConfigurationApi extends ApiController
      */
     public function get(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $moduleConfig = $this->moduleConfig();
         $pdo          = $this->buildPdo();
@@ -51,7 +51,7 @@ class EntityConfigurationApi extends ApiController
      */
     public function getEntityConfigurationLifetime(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $moduleConfig = $this->moduleConfig();
         $pdo          = $this->buildPdo();
@@ -77,7 +77,7 @@ class EntityConfigurationApi extends ApiController
      */
     public function getSubordinateLifetime(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->json(
             $this->settings()->getInt(SettingsRepository::SUBORDINATE_STATEMENT_LIFETIME)
@@ -100,7 +100,7 @@ class EntityConfigurationApi extends ApiController
 
     public function getMetadata(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $moduleConfig = $this->moduleConfig();
         $pdo          = $this->buildPdo();
@@ -115,7 +115,7 @@ class EntityConfigurationApi extends ApiController
 
     public function updateMetadata(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->metadataReplace($request);
     }
@@ -123,7 +123,7 @@ class EntityConfigurationApi extends ApiController
 
     public function getEntityTypedMetadata(Request $request, string $entityType): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->metadataForType($entityType);
     }
@@ -131,7 +131,7 @@ class EntityConfigurationApi extends ApiController
 
     public function changeEntityTypedMetadata(Request $request, string $entityType): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->metadataPutType($request, $entityType);
     }
@@ -139,7 +139,7 @@ class EntityConfigurationApi extends ApiController
 
     public function addMetadataClaims(Request $request, string $entityType): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->metadataAddClaims($request, $entityType);
     }
@@ -147,7 +147,7 @@ class EntityConfigurationApi extends ApiController
 
     public function deleteEntityTypedMetadata(Request $request, string $entityType): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->metadataDeleteType($entityType);
     }
@@ -155,7 +155,7 @@ class EntityConfigurationApi extends ApiController
 
     public function getMetadataClaim(Request $request, string $entityType, string $claim): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->metadataGetClaim($entityType, $claim);
     }
@@ -163,7 +163,7 @@ class EntityConfigurationApi extends ApiController
 
     public function changeMetadataClaim(Request $request, string $entityType, string $claim): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->metadataPutClaim($request, $entityType, $claim);
     }
@@ -171,7 +171,7 @@ class EntityConfigurationApi extends ApiController
 
     public function deleteMetadataClaim(Request $request, string $entityType, string $claim): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->metadataDeleteClaim($entityType, $claim);
     }
@@ -181,7 +181,7 @@ class EntityConfigurationApi extends ApiController
 
     public function getAdditionalClaims(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->additionalClaimsIndex(AdditionalClaimsRepository::SCOPE_ENTITY_CONFIGURATION);
     }
@@ -189,7 +189,7 @@ class EntityConfigurationApi extends ApiController
 
     public function updateAdditionalClaims(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->additionalClaimsReplace($request, AdditionalClaimsRepository::SCOPE_ENTITY_CONFIGURATION);
     }
@@ -197,7 +197,7 @@ class EntityConfigurationApi extends ApiController
 
     public function addAdditionalClaims(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->additionalClaimsAdd($request, AdditionalClaimsRepository::SCOPE_ENTITY_CONFIGURATION);
     }
@@ -205,7 +205,7 @@ class EntityConfigurationApi extends ApiController
 
     public function getAdditionalClaim(Request $request, string $additionalClaimsID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->additionalClaimGet(AdditionalClaimsRepository::SCOPE_ENTITY_CONFIGURATION, $additionalClaimsID);
     }
@@ -213,7 +213,7 @@ class EntityConfigurationApi extends ApiController
 
     public function updateAdditionalClaim(Request $request, string $additionalClaimsID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->additionalClaimUpdate(
             $request,
@@ -225,7 +225,7 @@ class EntityConfigurationApi extends ApiController
 
     public function deleteAdditionalClaim(Request $request, string $additionalClaimsID): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->additionalClaimDelete(
             AdditionalClaimsRepository::SCOPE_ENTITY_CONFIGURATION,
@@ -238,7 +238,7 @@ class EntityConfigurationApi extends ApiController
 
     private function writeLifetime(Request $request, string $settingKey): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $raw = trim($this->bodyString($request), " \t\n\r\0\x0B\"");
         if ($raw === '' || !ctype_digit($raw)) {

@@ -47,7 +47,7 @@ abstract class ApiController
      * SimpleSAMLphp login page: the gateway proxy follows redirects, so a redirect would make it
      * capture the HTML login page as the API response instead of a clean 401.
      */
-    protected function requireAdmin(): void
+    protected function requireAdmin(Request $request): void
     {
         // Check HTTP Basic FIRST. It reads only the request header + config and never touches an
         // SSP session — important when this instance is served over plain HTTP behind the gateway
@@ -55,7 +55,7 @@ abstract class ApiController
         // throws a CriticalConfigurationError ("Setting secure cookie on plain HTTP …") for any
         // Host other than localhost. So the gateway path authenticates without ever starting a
         // session. The session check remains as a fallback for the HTTPS-served Twig admin UI.
-        if ($this->basicAuthMatches()) {
+        if ($this->basicAuthMatches($request)) {
             return;
         }
 
@@ -71,7 +71,7 @@ abstract class ApiController
      * Whether the request carries HTTP Basic credentials matching the configured API credential.
      * Returns false (session-only mode) when no credential is configured.
      */
-    protected function basicAuthMatches(): bool
+    protected function basicAuthMatches(Request $request): bool
     {
         $moduleConfig = $this->moduleConfig();
         $expectedUser = (string) ($moduleConfig->getOptionalString('api_admin_username', '') ?? '');
@@ -81,7 +81,7 @@ abstract class ApiController
             return false;
         }
 
-        $credentials = $this->basicCredentials();
+        $credentials = $this->basicCredentials($request);
         if ($credentials === null) {
             return false;
         }
@@ -97,30 +97,20 @@ abstract class ApiController
 
 
     /**
-     * Extract HTTP Basic credentials from the request, coping with the SAPIs that do not populate
-     * PHP_AUTH_* (CGI/FastCGI, or an Apache rewrite that hides the header under REDIRECT_*).
+     * Extract HTTP Basic credentials from the request. Symfony's ServerBag already copes with the
+     * SAPIs that do not populate PHP_AUTH_* (CGI/FastCGI, or an Apache rewrite that hides the
+     * header under REDIRECT_*) by decoding the Authorization header into PHP_AUTH_USER/PW.
      *
      * @return array{0: string, 1: string}|null [username, password], or null when absent/malformed.
      */
-    protected function basicCredentials(): ?array
+    protected function basicCredentials(Request $request): ?array
     {
-        if (isset($_SERVER['PHP_AUTH_USER'])) {
-            return [(string) $_SERVER['PHP_AUTH_USER'], (string) ($_SERVER['PHP_AUTH_PW'] ?? '')];
-        }
-
-        $header = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
-        if (!is_string($header) || stripos($header, 'Basic ') !== 0) {
+        $user = $request->getUser();
+        if ($user === null) {
             return null;
         }
 
-        $decoded = base64_decode(substr($header, 6), true);
-        if ($decoded === false || !str_contains($decoded, ':')) {
-            return null;
-        }
-
-        [$user, $pass] = explode(':', $decoded, 2);
-
-        return [$user, $pass];
+        return [$user, (string) $request->getPassword()];
     }
 
 

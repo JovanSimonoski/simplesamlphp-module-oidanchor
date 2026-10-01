@@ -25,7 +25,7 @@ class SubordinateConstraintsApi extends ApiController
 
     public function get(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -37,7 +37,7 @@ class SubordinateConstraintsApi extends ApiController
 
     public function update(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -52,7 +52,7 @@ class SubordinateConstraintsApi extends ApiController
      */
     public function copyFromGeneral(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -67,7 +67,7 @@ class SubordinateConstraintsApi extends ApiController
 
     public function delete(Request $request, string $subordinateID): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -79,7 +79,7 @@ class SubordinateConstraintsApi extends ApiController
 
     public function getMaxPathLength(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -91,7 +91,7 @@ class SubordinateConstraintsApi extends ApiController
 
     public function setMaxPathLength(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -103,7 +103,7 @@ class SubordinateConstraintsApi extends ApiController
 
     public function deleteMaxPathLength(Request $request, string $subordinateID): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -115,7 +115,7 @@ class SubordinateConstraintsApi extends ApiController
 
     public function getNamingConstraints(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -127,7 +127,7 @@ class SubordinateConstraintsApi extends ApiController
 
     public function setNamingConstraints(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -139,7 +139,7 @@ class SubordinateConstraintsApi extends ApiController
 
     public function deleteNamingConstraints(Request $request, string $subordinateID): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -151,7 +151,7 @@ class SubordinateConstraintsApi extends ApiController
 
     public function getAllowedEntityTypes(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -163,7 +163,7 @@ class SubordinateConstraintsApi extends ApiController
 
     public function setAllowedEntityTypes(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -175,7 +175,7 @@ class SubordinateConstraintsApi extends ApiController
 
     public function addAllowedEntityType(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -187,7 +187,7 @@ class SubordinateConstraintsApi extends ApiController
 
     public function deleteAllowedEntityType(Request $request, string $subordinateID, string $entityType): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);

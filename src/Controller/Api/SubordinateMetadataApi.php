@@ -23,7 +23,7 @@ class SubordinateMetadataApi extends ApiController
 
     public function getMetadata(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -35,7 +35,7 @@ class SubordinateMetadataApi extends ApiController
 
     public function updateMetadata(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -47,7 +47,7 @@ class SubordinateMetadataApi extends ApiController
 
     public function getEntityTypedMetadata(Request $request, string $subordinateID, string $entityType): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -59,7 +59,7 @@ class SubordinateMetadataApi extends ApiController
 
     public function changeEntityTypedMetadata(Request $request, string $subordinateID, string $entityType): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -71,7 +71,7 @@ class SubordinateMetadataApi extends ApiController
 
     public function addMetadataClaims(Request $request, string $subordinateID, string $entityType): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -83,7 +83,7 @@ class SubordinateMetadataApi extends ApiController
 
     public function deleteEntityTypedMetadata(Request $request, string $subordinateID, string $entityType): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -95,7 +95,7 @@ class SubordinateMetadataApi extends ApiController
 
     public function getMetadataClaim(Request $request, string $subordinateID, string $entityType, string $claim): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -107,7 +107,7 @@ class SubordinateMetadataApi extends ApiController
 
     public function changeMetadataClaim(Request $request, string $subordinateID, string $entityType, string $claim): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -119,7 +119,7 @@ class SubordinateMetadataApi extends ApiController
 
     public function deleteMetadataClaim(Request $request, string $subordinateID, string $entityType, string $claim): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);

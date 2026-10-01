@@ -24,7 +24,7 @@ class KeysApi extends ApiController
      */
     public function publishedJwks(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->json($this->kms()->publicJwks());
     }
@@ -35,7 +35,7 @@ class KeysApi extends ApiController
      */
     public function listKeys(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->json(array_map(
             static fn(FederationKey $key): array => $key->toPublicKeyEntry(),
@@ -49,7 +49,7 @@ class KeysApi extends ApiController
      */
     public function addKey(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $body = $this->decodeJson($request);
         if (!is_array($body) || !isset($body['key']) || !is_array($body['key'])) {
@@ -78,7 +78,7 @@ class KeysApi extends ApiController
      */
     public function updateKeyMetadata(Request $request, string $kid): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $body = $this->decodeJson($request);
         if (!is_array($body)) {
@@ -112,7 +112,7 @@ class KeysApi extends ApiController
      */
     public function rotateKey(Request $request, string $kid): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $body = $this->decodeJson($request);
         if (!is_array($body) || !isset($body['key']) || !is_array($body['key'])) {
@@ -147,7 +147,7 @@ class KeysApi extends ApiController
      */
     public function deleteKey(Request $request, string $kid): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $revoke = filter_var($request->query->get('revoke', 'false'), FILTER_VALIDATE_BOOLEAN);
         $reason = trim((string) $request->query->get('reason', '')) ?: null;
@@ -173,7 +173,7 @@ class KeysApi extends ApiController
      */
     public function kmsInfo(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->json($this->kms()->kmsInfo());
     }
@@ -184,7 +184,7 @@ class KeysApi extends ApiController
      */
     public function updateAlg(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $alg = trim($this->bodyString($request), " \t\n\r\0\x0B\"");
         if ($alg === '') {
@@ -208,7 +208,7 @@ class KeysApi extends ApiController
      */
     public function updateRsaKeyLen(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $raw = trim($this->bodyString($request));
         if ($raw === '' || !ctype_digit($raw)) {
@@ -230,7 +230,7 @@ class KeysApi extends ApiController
      */
     public function getRotationOptions(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->json($this->kms()->rotationOptions());
     }
@@ -259,7 +259,7 @@ class KeysApi extends ApiController
      */
     public function triggerRotation(Request $request): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $revoke = filter_var($request->query->get('revoke', 'false'), FILTER_VALIDATE_BOOLEAN);
         $reason = trim((string) $request->query->get('reason', '')) ?: null;
@@ -278,7 +278,7 @@ class KeysApi extends ApiController
 
     private function writeRotationOptions(Request $request, bool $merge): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $body = $this->decodeJson($request);
         if (!is_array($body)) {

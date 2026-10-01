@@ -23,7 +23,7 @@ class TrustMarkOwnersApi extends ApiController
 {
     public function list(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         return $this->json($this->repo()->findAll());
     }
@@ -31,7 +31,7 @@ class TrustMarkOwnersApi extends ApiController
 
     public function create(Request $request): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $body = $this->decodeJson($request);
         if (!is_array($body)) {
@@ -61,7 +61,7 @@ class TrustMarkOwnersApi extends ApiController
 
     public function get(Request $request, string $ownerID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $owner = $this->find($ownerID);
         if ($owner === null) {
@@ -74,7 +74,7 @@ class TrustMarkOwnersApi extends ApiController
 
     public function update(Request $request, string $ownerID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $owner = $this->find($ownerID);
         if ($owner === null) {
@@ -110,7 +110,7 @@ class TrustMarkOwnersApi extends ApiController
 
     public function delete(Request $request, string $ownerID): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $owner = $this->find($ownerID);
         if ($owner === null) {
@@ -128,7 +128,7 @@ class TrustMarkOwnersApi extends ApiController
 
     public function listTypes(Request $request, string $ownerID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $owner = $this->find($ownerID);
         if ($owner === null) {
@@ -144,7 +144,7 @@ class TrustMarkOwnersApi extends ApiController
      */
     public function setTypes(Request $request, string $ownerID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $owner = $this->find($ownerID);
         if ($owner === null) {
@@ -180,7 +180,7 @@ class TrustMarkOwnersApi extends ApiController
      */
     public function addType(Request $request, string $ownerID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $owner = $this->find($ownerID);
         if ($owner === null) {
@@ -205,7 +205,7 @@ class TrustMarkOwnersApi extends ApiController
 
     public function unlinkType(Request $request, string $ownerID, string $trustMarkTypeID): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         $owner  = $this->find($ownerID);
         $typeId = $this->internalId($trustMarkTypeID);

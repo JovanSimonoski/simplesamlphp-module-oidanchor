@@ -28,7 +28,7 @@ class SubordinateMetadataPoliciesApi extends ApiController
 
     public function getAll(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -40,7 +40,7 @@ class SubordinateMetadataPoliciesApi extends ApiController
 
     public function replaceAll(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -55,7 +55,7 @@ class SubordinateMetadataPoliciesApi extends ApiController
      */
     public function copyFromGeneral(Request $request, string $subordinateID): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -74,7 +74,7 @@ class SubordinateMetadataPoliciesApi extends ApiController
 
     public function deleteAll(Request $request, string $subordinateID): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -90,7 +90,7 @@ class SubordinateMetadataPoliciesApi extends ApiController
 
     public function getForType(Request $request, string $subordinateID, string $entityType): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -102,7 +102,7 @@ class SubordinateMetadataPoliciesApi extends ApiController
 
     public function putForType(Request $request, string $subordinateID, string $entityType): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -114,7 +114,7 @@ class SubordinateMetadataPoliciesApi extends ApiController
 
     public function addForType(Request $request, string $subordinateID, string $entityType): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -126,7 +126,7 @@ class SubordinateMetadataPoliciesApi extends ApiController
 
     public function deleteForType(Request $request, string $subordinateID, string $entityType): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -140,7 +140,7 @@ class SubordinateMetadataPoliciesApi extends ApiController
 
     public function getClaim(Request $request, string $subordinateID, string $entityType, string $claim): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -152,7 +152,7 @@ class SubordinateMetadataPoliciesApi extends ApiController
 
     public function putClaim(Request $request, string $subordinateID, string $entityType, string $claim): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -164,7 +164,7 @@ class SubordinateMetadataPoliciesApi extends ApiController
 
     public function addOperators(Request $request, string $subordinateID, string $entityType, string $claim): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -176,7 +176,7 @@ class SubordinateMetadataPoliciesApi extends ApiController
 
     public function deleteClaim(Request $request, string $subordinateID, string $entityType, string $claim): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -190,7 +190,7 @@ class SubordinateMetadataPoliciesApi extends ApiController
 
     public function getOperator(Request $request, string $subordinateID, string $entityType, string $claim, string $operator): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -202,7 +202,7 @@ class SubordinateMetadataPoliciesApi extends ApiController
 
     public function putOperator(Request $request, string $subordinateID, string $entityType, string $claim, string $operator): JsonResponse
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);
@@ -214,7 +214,7 @@ class SubordinateMetadataPoliciesApi extends ApiController
 
     public function deleteOperator(Request $request, string $subordinateID, string $entityType, string $claim, string $operator): Response
     {
-        $this->requireAdmin();
+        $this->requireAdmin($request);
 
         if (!$this->bind($subordinateID)) {
             return $this->subordinateNotFound($subordinateID);

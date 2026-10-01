@@ -1,0 +1,27 @@
+# Plain-HTTP (port 80) SimpleSAMLphp vhost.
+#
+# The stock image serves SimpleSAMLphp only on the 443 vhost (its port-80 vhost points at
+# /var/www/html). Mount this file over sites-enabled/000-default.conf to also serve SSP over
+# plain HTTP, so a same-network client can reach the Federation Admin API without dealing with
+# the self-signed TLS cert.
+#
+#   INTERNAL / DEV USE ONLY. HTTP carries the API's Basic credential in clear text — only expose
+#   this port on a trusted Docker network (e.g. to the Federation Gateway BFF), never publicly.
+#
+# It mirrors the 443 vhost (ssp.conf): same alias to /var/simplesamlphp/public and the same
+# ssp-override.cf include, which provides AllowEncodedSlashes (entity IDs in path params) and the
+# Authorization-header passthrough that HTTP Basic auth depends on.
+<VirtualHost *:80>
+    PassEnv SSP_APACHE_ALIAS
+
+    DocumentRoot /var/www/
+    Alias /${SSP_APACHE_ALIAS} /var/simplesamlphp/public/
+
+    RewriteEngine On
+
+    <Directory /var/simplesamlphp/public>
+        Require all granted
+    </Directory>
+
+    IncludeOptional sites-enabled/ssp-override.cf
+</VirtualHost>

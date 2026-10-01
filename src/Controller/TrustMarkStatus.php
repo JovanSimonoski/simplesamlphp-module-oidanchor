@@ -33,6 +33,9 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class TrustMarkStatus
 {
+    use JwtResponseTrait;
+
+
     public function __construct(
         protected Configuration $config,
     ) {
@@ -102,10 +105,9 @@ class TrustMarkStatus
                 $result['status'],
             ));
 
-            return new Response(
+            return $this->jwtResponse(
                 $token,
-                Response::HTTP_OK,
-                ['Content-Type' => 'application/' . JwtTypesEnum::TrustMarkStatusResponseJwt->value],
+                'application/' . JwtTypesEnum::TrustMarkStatusResponseJwt->value,
             );
         } catch (Throwable $e) {
             Logger::error('oidanchor: trust_mark_status failed: ' . $e->getMessage());

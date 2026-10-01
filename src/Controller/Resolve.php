@@ -30,6 +30,9 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class Resolve
 {
+    use JwtResponseTrait;
+
+
     public function __construct(
         protected Configuration $config,
     ) {
@@ -85,10 +88,9 @@ class Resolve
                 count($result->warnings),
             ));
 
-            return new Response(
+            return $this->jwtResponse(
                 $token,
-                Response::HTTP_OK,
-                ['Content-Type' => 'application/' . FederationKeyService::RESOLVE_RESPONSE_TYP],
+                'application/' . FederationKeyService::RESOLVE_RESPONSE_TYP,
             );
         } catch (ResolveException $e) {
             Logger::info(sprintf('oidanchor: resolve sub=%s -> %s (%s)', $sub, $e->errorCode, $e->getMessage()));

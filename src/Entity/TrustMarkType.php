@@ -7,7 +7,7 @@ namespace SimpleSAML\Module\oidanchor\Entity;
 /**
  * A Trust Mark Type the TA is willing to issue.
  *
- * The trust_mark_id is the type identifier URL (it becomes the trust_mark_type claim
+ * The trust_mark_type is the type identifier URL (it becomes the trust_mark_type claim
  * of every issued Trust Mark JWT). `id` is the surrogate key exposed as the API's
  * InternalID. extra_claims is an optional JSON object merged into every issued mark
  * of this type (superseded by the richer issuance-spec model, retained for the UI).
@@ -18,7 +18,7 @@ class TrustMarkType
      * @param array<string,mixed>|null $extraClaims
      */
     public function __construct(
-        public readonly string $trustMarkId,
+        public readonly string $trustMarkType,
         public readonly string $name,
         public readonly ?string $description,
         public readonly ?string $logoUri,
@@ -38,7 +38,7 @@ class TrustMarkType
     public static function fromRow(array $row): self
     {
         return new self(
-            trustMarkId:     (string) $row['trust_mark_id'],
+            trustMarkType:   (string) $row['trust_mark_type'],
             name:            (string) $row['name'],
             description:     isset($row['description']) ? (string) $row['description'] : null,
             logoUri:         isset($row['logo_uri']) ? (string) $row['logo_uri'] : null,
@@ -63,7 +63,7 @@ class TrustMarkType
     {
         $data = [
             'id'              => $this->id,
-            'trust_mark_type' => $this->trustMarkId,
+            'trust_mark_type' => $this->trustMarkType,
         ];
 
         if ($this->description !== null) {

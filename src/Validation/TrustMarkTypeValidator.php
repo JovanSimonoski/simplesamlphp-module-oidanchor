@@ -17,7 +17,7 @@ class TrustMarkTypeValidator
 
     /**
      * @param array<string,mixed> $data
-     * @param bool $isUpdate Skip the trust_mark_id checks on updates (it is immutable).
+     * @param bool $isUpdate Skip the trust_mark_type checks on updates (it is immutable).
      * @return array<string,string>
      */
     public function validate(array $data, bool $isUpdate = false): array
@@ -25,10 +25,10 @@ class TrustMarkTypeValidator
         $errors = [];
 
         if (!$isUpdate) {
-            if (empty($data['trust_mark_id'])) {
-                $errors['trust_mark_id'] = 'Trust Mark Type is required.';
-            } elseif (!$this->isHttpsUrl((string) $data['trust_mark_id'])) {
-                $errors['trust_mark_id'] = 'Trust Mark Type must be a valid HTTPS URL.';
+            if (empty($data['trust_mark_type'])) {
+                $errors['trust_mark_type'] = 'Trust Mark Type is required.';
+            } elseif (!$this->isHttpsUrl((string) $data['trust_mark_type'])) {
+                $errors['trust_mark_type'] = 'Trust Mark Type must be a valid HTTPS URL.';
             }
         }
 

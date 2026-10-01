@@ -53,18 +53,18 @@
     <input type="hidden" name="csrf_token" value="{{ csrfToken|e }}">
 
     <div class="field">
-      <label for="trust_mark_id">{% trans %}Trust Mark type{% endtrans %} *</label>
-      <select id="trust_mark_id" name="trust_mark_id"
-              class="pure-input-1{% if errors.trust_mark_id is defined %} pure-input-error{% endif %}">
+      <label for="trust_mark_type">{% trans %}Trust Mark type{% endtrans %} *</label>
+      <select id="trust_mark_type" name="trust_mark_type"
+              class="pure-input-1{% if errors.trust_mark_type is defined %} pure-input-error{% endif %}">
         <option value="">{% trans %}select a type{% endtrans %}</option>
         {% for type in types %}
-          <option value="{{ type.trustMarkId|e }}"
-                  {% if formData.trust_mark_id|default('') == type.trustMarkId %}selected{% endif %}>
-            {{ type.name|e }} — {{ type.trustMarkId|e }}
+          <option value="{{ type.trustMarkType|e }}"
+                  {% if formData.trust_mark_type|default('') == type.trustMarkType %}selected{% endif %}>
+            {{ type.name|e }} — {{ type.trustMarkType|e }}
           </option>
         {% endfor %}
       </select>
-      {% if errors.trust_mark_id is defined %}<p class="field-error">{{ errors.trust_mark_id|e }}</p>{% endif %}
+      {% if errors.trust_mark_type is defined %}<p class="field-error">{{ errors.trust_mark_type|e }}</p>{% endif %}
     </div>
 
     <div class="field">

@@ -44,7 +44,7 @@
 
   <div class="oidanchor-view">
     <dl>
-      <dt>{% trans %}Trust Mark Type{% endtrans %}</dt><dd><code>{{ mark.trustMarkId|e }}</code></dd>
+      <dt>{% trans %}Trust Mark Type{% endtrans %}</dt><dd><code>{{ mark.trustMarkType|e }}</code></dd>
       <dt>{% trans %}Subject{% endtrans %}</dt><dd><code>{{ mark.sub|e }}</code></dd>
       <dt>{% trans %}Status{% endtrans %}</dt><dd><span class="badge-{{ mark.status }}">{{ mark.status|e }}</span></dd>
       <dt>{% trans %}Issued at{% endtrans %}</dt><dd>{{ mark.iat|date('Y-m-d H:i:s') }} ({{ mark.iat }})</dd>

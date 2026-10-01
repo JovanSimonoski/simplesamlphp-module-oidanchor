@@ -50,7 +50,7 @@ class AdminTrustMarkTypes
         // Active-mark counts so the admin can see which types are in use before deleting.
         $activeCounts = [];
         foreach ($types as $type) {
-            $activeCounts[$type->trustMarkId] = $issuedRepo->countActiveByType($type->trustMarkId);
+            $activeCounts[$type->trustMarkType] = $issuedRepo->countActiveByType($type->trustMarkType);
         }
 
         $t = new Template($this->config, 'oidanchor:admin_trust_mark_types_list.twig');
@@ -89,8 +89,8 @@ class AdminTrustMarkTypes
             [$typeRepo] = $this->getRepositories();
             $errors = (new TrustMarkTypeValidator())->validate($formData);
 
-            if ($errors === [] && $typeRepo->exists($formData['trust_mark_id'])) {
-                $errors['trust_mark_id'] = 'A Trust Mark type with this ID already exists. Use Edit to update it.';
+            if ($errors === [] && $typeRepo->exists($formData['trust_mark_type'])) {
+                $errors['trust_mark_type'] = 'A Trust Mark type with this ID already exists. Use Edit to update it.';
             }
 
             if ($errors === []) {
@@ -98,11 +98,11 @@ class AdminTrustMarkTypes
 
                 Logger::info(sprintf(
                     'oidanchor: trust mark type created: %s (admin: %s)',
-                    $formData['trust_mark_id'],
+                    $formData['trust_mark_type'],
                     $this->getAdminUsername(),
                 ));
 
-                $this->pushFlash('success', sprintf('Trust Mark type "%s" created.', $formData['trust_mark_id']));
+                $this->pushFlash('success', sprintf('Trust Mark type "%s" created.', $formData['trust_mark_type']));
 
                 return new RedirectResponse(Module::getModuleURL('oidanchor/admin/trust-mark-types'));
             }
@@ -119,16 +119,16 @@ class AdminTrustMarkTypes
     }
 
 
-    public function edit(Request $request, string $trustMarkId): Template|RedirectResponse
+    public function edit(Request $request, string $trustMarkType): Template|RedirectResponse
     {
         $authUtils = new Utils\Auth();
         $authUtils->requireAdmin();
 
         [$typeRepo] = $this->getRepositories();
-        $type = $typeRepo->findById($trustMarkId);
+        $type = $typeRepo->findById($trustMarkType);
 
         if ($type === null) {
-            $this->pushFlash('error', sprintf('Trust Mark type "%s" not found.', $trustMarkId));
+            $this->pushFlash('error', sprintf('Trust Mark type "%s" not found.', $trustMarkType));
 
             return new RedirectResponse(Module::getModuleURL('oidanchor/admin/trust-mark-types'));
         }
@@ -144,36 +144,36 @@ class AdminTrustMarkTypes
             }
 
             $formData                  = $this->extractFormData($request);
-            $formData['trust_mark_id'] = $trustMarkId;
+            $formData['trust_mark_type'] = $trustMarkType;
             $errors = (new TrustMarkTypeValidator())->validate($formData, isUpdate: true);
 
             if ($errors === []) {
-                $typeRepo->update($trustMarkId, $this->toEntity($formData, $type->createdAt));
+                $typeRepo->update($trustMarkType, $this->toEntity($formData, $type->createdAt));
 
                 Logger::info(sprintf(
                     'oidanchor: trust mark type updated: %s (admin: %s)',
-                    $trustMarkId,
+                    $trustMarkType,
                     $this->getAdminUsername(),
                 ));
 
-                $this->pushFlash('success', sprintf('Trust Mark type "%s" updated.', $trustMarkId));
+                $this->pushFlash('success', sprintf('Trust Mark type "%s" updated.', $trustMarkType));
 
                 return new RedirectResponse(Module::getModuleURL('oidanchor/admin/trust-mark-types'));
             }
         }
 
         return $this->renderForm(
-            sprintf('Edit Trust Mark type: %s', $trustMarkId),
+            sprintf('Edit Trust Mark type: %s', $trustMarkType),
             true,
             $formData,
             $errors,
-            Module::getModuleURL('oidanchor/admin/trust-mark-types/' . urlencode($trustMarkId) . '/edit'),
+            Module::getModuleURL('oidanchor/admin/trust-mark-types/' . urlencode($trustMarkType) . '/edit'),
             'Save changes',
         );
     }
 
 
-    public function delete(Request $request, string $trustMarkId): RedirectResponse
+    public function delete(Request $request, string $trustMarkType): RedirectResponse
     {
         $authUtils = new Utils\Auth();
         $authUtils->requireAdmin();
@@ -186,22 +186,22 @@ class AdminTrustMarkTypes
 
         [$typeRepo] = $this->getRepositories();
 
-        if ($typeRepo->findById($trustMarkId) === null) {
-            $this->pushFlash('error', sprintf('Trust Mark type "%s" not found.', $trustMarkId));
+        if ($typeRepo->findById($trustMarkType) === null) {
+            $this->pushFlash('error', sprintf('Trust Mark type "%s" not found.', $trustMarkType));
 
             return new RedirectResponse(Module::getModuleURL('oidanchor/admin/trust-mark-types'));
         }
 
         // Issued marks are intentionally left intact (status history); only the catalog entry goes.
-        $typeRepo->delete($trustMarkId);
+        $typeRepo->delete($trustMarkType);
 
         Logger::info(sprintf(
             'oidanchor: trust mark type deleted: %s (admin: %s)',
-            $trustMarkId,
+            $trustMarkType,
             $this->getAdminUsername(),
         ));
 
-        $this->pushFlash('success', sprintf('Trust Mark type "%s" deleted.', $trustMarkId));
+        $this->pushFlash('success', sprintf('Trust Mark type "%s" deleted.', $trustMarkType));
 
         return new RedirectResponse(Module::getModuleURL('oidanchor/admin/trust-mark-types'));
     }
@@ -248,7 +248,7 @@ class AdminTrustMarkTypes
     private function emptyFormData(): array
     {
         return [
-            'trust_mark_id'    => '',
+            'trust_mark_type'  => '',
             'name'             => '',
             'description'      => '',
             'logo_uri'         => '',
@@ -265,7 +265,7 @@ class AdminTrustMarkTypes
     private function extractFormData(Request $request): array
     {
         return [
-            'trust_mark_id'    => trim((string) $request->request->get('trust_mark_id', '')),
+            'trust_mark_type'  => trim((string) $request->request->get('trust_mark_type', '')),
             'name'             => trim((string) $request->request->get('name', '')),
             'description'      => trim((string) $request->request->get('description', '')),
             'logo_uri'         => trim((string) $request->request->get('logo_uri', '')),
@@ -282,7 +282,7 @@ class AdminTrustMarkTypes
     private function entityToFormData(TrustMarkType $type): array
     {
         return [
-            'trust_mark_id'    => $type->trustMarkId,
+            'trust_mark_type'  => $type->trustMarkType,
             'name'             => $type->name,
             'description'      => $type->description ?? '',
             'logo_uri'         => $type->logoUri ?? '',
@@ -305,7 +305,7 @@ class AdminTrustMarkTypes
             : null;
 
         return new TrustMarkType(
-            trustMarkId:     $formData['trust_mark_id'],
+            trustMarkType:   $formData['trust_mark_type'],
             name:            $formData['name'],
             description:     $formData['description'] !== '' ? $formData['description'] : null,
             logoUri:         $formData['logo_uri'] !== '' ? $formData['logo_uri'] : null,

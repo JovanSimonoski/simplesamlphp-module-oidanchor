@@ -46,13 +46,13 @@
     <input type="hidden" name="csrf_token" value="{{ csrfToken|e }}">
 
     <div class="field">
-      <label for="trust_mark_id">{% trans %}Trust Mark Type{% endtrans %} *</label>
-      <input type="text" id="trust_mark_id" name="trust_mark_id"
-             value="{{ formData.trust_mark_id|default('')|e }}"
+      <label for="trust_mark_type">{% trans %}Trust Mark Type{% endtrans %} *</label>
+      <input type="text" id="trust_mark_type" name="trust_mark_type"
+             value="{{ formData.trust_mark_type|default('')|e }}"
              {% if isEdit %}readonly{% else %}required placeholder="https://ta.example.com/marks/verified-rp"{% endif %}
-             class="pure-input-1{% if errors.trust_mark_id is defined %} pure-input-error{% endif %}">
-      {% if errors.trust_mark_id is defined %}
-        <p class="field-error">{{ errors.trust_mark_id|e }}</p>
+             class="pure-input-1{% if errors.trust_mark_type is defined %} pure-input-error{% endif %}">
+      {% if errors.trust_mark_type is defined %}
+        <p class="field-error">{{ errors.trust_mark_type|e }}</p>
       {% else %}
         <p class="field-hint">{% trans %}The HTTPS URL identifying this Trust Mark Type (becomes the trust_mark_type claim).{% endtrans %}</p>
       {% endif %}

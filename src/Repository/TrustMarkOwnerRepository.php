@@ -21,6 +21,7 @@ class TrustMarkOwnerRepository
 
     public function __construct(private readonly PDO $pdo)
     {
+        TrustMarkTypeColumnMigration::run($pdo);
         $this->ensureSchema();
     }
 
@@ -217,17 +218,17 @@ class TrustMarkOwnerRepository
     public function ownersByTrustMarkType(): array
     {
         $stmt = $this->pdo->query(
-            'SELECT t.trust_mark_id, o.entity_id, o.jwks
+            'SELECT t.trust_mark_type, o.entity_id, o.jwks
              FROM ' . self::LINK_TABLE . ' l
              JOIN ' . self::TABLE . ' o ON o.id = l.owner_id
              JOIN oidanchor_trust_mark_types t ON t.id = l.trust_mark_type_id
-             ORDER BY t.trust_mark_id',
+             ORDER BY t.trust_mark_type',
         );
 
         $out = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
             $jwks = json_decode((string) $row['jwks'], true);
-            $out[(string) $row['trust_mark_id']] = [
+            $out[(string) $row['trust_mark_type']] = [
                 'entity_id' => (string) $row['entity_id'],
                 'jwks'      => is_array($jwks) ? $jwks : ['keys' => []],
             ];

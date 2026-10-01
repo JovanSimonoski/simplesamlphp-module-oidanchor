@@ -57,10 +57,10 @@
       </thead>
       <tbody>
         {% for type in types %}
-          {%- set encodedId = type.trustMarkId|url_encode -%}
-          {%- set count = activeCounts[type.trustMarkId]|default(0) -%}
+          {%- set encodedId = type.trustMarkType|url_encode -%}
+          {%- set count = activeCounts[type.trustMarkType]|default(0) -%}
           <tr>
-            <td><code>{{ type.trustMarkId|e }}</code></td>
+            <td><code>{{ type.trustMarkType|e }}</code></td>
             <td>{{ type.name|e }}</td>
             <td>{{ type.defaultLifetime ? type.defaultLifetime ~ 's' : '-' }}</td>
             <td>
@@ -76,7 +76,7 @@
                     style="display:inline">
                 <input type="hidden" name="csrf_token" value="{{ csrfToken|e }}">
                 <button type="submit" class="pure-button pure-button-red"
-                        onclick="return confirm('Delete type {{ type.trustMarkId|e('js') }}?{% if count > 0 %} {{ count }} active issued mark(s) will remain and keep their status history.{% endif %}')">
+                        onclick="return confirm('Delete type {{ type.trustMarkType|e('js') }}?{% if count > 0 %} {{ count }} active issued mark(s) will remain and keep their status history.{% endif %}')">
                   {% trans %}Delete{% endtrans %}
                 </button>
               </form>

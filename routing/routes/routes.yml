@@ -150,31 +150,31 @@ oidanchor-admin-trust-mark-types-create:
   }
   methods: [GET, POST]
 
-# Edit an existing Trust Mark type. {trustMarkId} is the URL-encoded type identifier.
+# Edit an existing Trust Mark type. {trustMarkType} is the URL-encoded type identifier.
 oidanchor-admin-trust-mark-types-edit:
-  path: /admin/trust-mark-types/{trustMarkId}/edit
+  path: /admin/trust-mark-types/{trustMarkType}/edit
   defaults: {
     _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminTrustMarkTypes::edit'
   }
   requirements:
-    trustMarkId: '.+'
+    trustMarkType: '.+'
   methods: [GET, POST]
 
 # Delete a Trust Mark type (POST only).
 oidanchor-admin-trust-mark-types-delete:
-  path: /admin/trust-mark-types/{trustMarkId}/delete
+  path: /admin/trust-mark-types/{trustMarkType}/delete
   defaults: {
     _controller: 'SimpleSAML\Module\oidanchor\Controller\AdminTrustMarkTypes::delete'
   }
   requirements:
-    trustMarkId: '.+'
+    trustMarkType: '.+'
   methods: [POST]
 
 # ============================================================
 # Admin UI routes — issued Trust Marks (require admin session)
 # ============================================================
 
-# List issued Trust Marks (supports ?trust_mark_id, ?sub, ?status filters).
+# List issued Trust Marks (supports ?trust_mark_type, ?sub, ?status filters).
 oidanchor-admin-trust-marks-list:
   path: /admin/trust-marks
   defaults: {

@@ -7,7 +7,7 @@ namespace SimpleSAML\Module\oidanchor\Validation;
 /**
  * Validates Trust Mark issuance admin input. Returns field => error-message pairs; empty means valid.
  *
- * Whether the referenced trust_mark_id exists in the catalog is checked by the controller
+ * Whether the referenced trust_mark_type exists in the catalog is checked by the controller
  * (it owns the repository); this class validates the shape of the submitted values.
  */
 class IssuedTrustMarkValidator
@@ -20,8 +20,8 @@ class IssuedTrustMarkValidator
     {
         $errors = [];
 
-        if (empty($data['trust_mark_id'])) {
-            $errors['trust_mark_id'] = 'Trust Mark type is required.';
+        if (empty($data['trust_mark_type'])) {
+            $errors['trust_mark_type'] = 'Trust Mark type is required.';
         }
 
         if (empty($data['sub'])) {

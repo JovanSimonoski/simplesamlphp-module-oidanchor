@@ -22,6 +22,7 @@ class TrustMarkSpecRepository
 
     public function __construct(private readonly PDO $pdo)
     {
+        TrustMarkTypeColumnMigration::run($pdo);
         $this->ensureSchema();
     }
 
@@ -64,9 +65,9 @@ class TrustMarkSpecRepository
         }
 
         $rows = $this->pdo->query(
-            'SELECT t.trust_mark_id, t.description, t.logo_uri, t.ref_uri, t.default_lifetime, t.extra_claims
+            'SELECT t.trust_mark_type, t.description, t.logo_uri, t.ref_uri, t.default_lifetime, t.extra_claims
              FROM oidanchor_trust_mark_types t
-             LEFT JOIN ' . self::TABLE . ' s ON s.trust_mark_type = t.trust_mark_id
+             LEFT JOIN ' . self::TABLE . ' s ON s.trust_mark_type = t.trust_mark_type
              WHERE s.id IS NULL',
         )->fetchAll(PDO::FETCH_ASSOC);
 
@@ -77,7 +78,7 @@ class TrustMarkSpecRepository
                  VALUES (?, ?, ?, ?, ?, ?, 0, ?)',
             );
             $stmt->execute([
-                $row['trust_mark_id'],
+                $row['trust_mark_type'],
                 $row['description'],
                 $row['default_lifetime'],
                 $row['ref_uri'],

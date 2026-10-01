@@ -7,7 +7,7 @@ namespace SimpleSAML\Module\oidanchor\Entity;
 /**
  * A single Trust Mark the TA has issued.
  *
- * Rows are append-mostly: re-issuing a mark for the same (trust_mark_id, sub) creates a
+ * Rows are append-mostly: re-issuing a mark for the same (trust_mark_type, sub) creates a
  * new row, and revocation flips the status of an existing row rather than deleting it,
  * so the status endpoint can give honest historical answers.
  */
@@ -15,7 +15,7 @@ class IssuedTrustMark
 {
     public function __construct(
         public readonly ?int $id,
-        public readonly string $trustMarkId,
+        public readonly string $trustMarkType,
         public readonly string $sub,
         public readonly string $jwt,
         public readonly int $iat,
@@ -34,7 +34,7 @@ class IssuedTrustMark
     {
         return new self(
             id:               isset($row['id']) ? (int) $row['id'] : null,
-            trustMarkId:      (string) $row['trust_mark_id'],
+            trustMarkType:    (string) $row['trust_mark_type'],
             sub:              (string) $row['sub'],
             jwt:              (string) $row['jwt'],
             iat:              (int) $row['iat'],

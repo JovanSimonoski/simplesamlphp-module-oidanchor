@@ -21,6 +21,7 @@ class IssuedTrustMarkRepository
 
     public function __construct(private readonly PDO $pdo)
     {
+        TrustMarkTypeColumnMigration::run($pdo);
         $this->ensureSchema();
     }
 
@@ -30,7 +31,7 @@ class IssuedTrustMarkRepository
         $this->pdo->exec(
             'CREATE TABLE IF NOT EXISTS ' . self::TABLE . ' (
                 id                INTEGER PRIMARY KEY AUTOINCREMENT,
-                trust_mark_id     TEXT    NOT NULL,
+                trust_mark_type   TEXT    NOT NULL,
                 sub               TEXT    NOT NULL,
                 jwt               TEXT    NOT NULL,
                 iat               INTEGER NOT NULL,
@@ -44,7 +45,7 @@ class IssuedTrustMarkRepository
         try {
             $this->pdo->exec(
                 'CREATE INDEX IF NOT EXISTS idx_tm_issued_lookup
-                    ON ' . self::TABLE . ' (trust_mark_id, sub, status)',
+                    ON ' . self::TABLE . ' (trust_mark_type, sub, status)',
             );
         } catch (PDOException) {
             // Index already exists — safe to ignore.
@@ -57,14 +58,14 @@ class IssuedTrustMarkRepository
      *
      * @return IssuedTrustMark[]
      */
-    public function findAll(?string $trustMarkId = null, ?string $sub = null, ?string $status = null): array
+    public function findAll(?string $trustMarkType = null, ?string $sub = null, ?string $status = null): array
     {
         $where  = [];
         $params = [];
 
-        if ($trustMarkId !== null && $trustMarkId !== '') {
-            $where[]  = 'trust_mark_id = ?';
-            $params[] = $trustMarkId;
+        if ($trustMarkType !== null && $trustMarkType !== '') {
+            $where[]  = 'trust_mark_type = ?';
+            $params[] = $trustMarkType;
         }
 
         if ($sub !== null && $sub !== '') {
@@ -111,14 +112,14 @@ class IssuedTrustMarkRepository
      * Most recent issued row for a (type, sub) pair regardless of status.
      * Used by the status endpoint, which must be able to report 'revoked' / 'expired'.
      */
-    public function findLatest(string $trustMarkId, string $sub): ?IssuedTrustMark
+    public function findLatest(string $trustMarkType, string $sub): ?IssuedTrustMark
     {
         $stmt = $this->pdo->prepare(
             'SELECT * FROM ' . self::TABLE . '
-             WHERE trust_mark_id = ? AND sub = ?
+             WHERE trust_mark_type = ? AND sub = ?
              ORDER BY id DESC LIMIT 1',
         );
-        $stmt->execute([$trustMarkId, $sub]);
+        $stmt->execute([$trustMarkType, $sub]);
 
         /** @var array<string,mixed>|false $row */
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -130,14 +131,14 @@ class IssuedTrustMarkRepository
     /**
      * Most recent active row for a (type, sub) pair.
      */
-    public function findActive(string $trustMarkId, string $sub): ?IssuedTrustMark
+    public function findActive(string $trustMarkType, string $sub): ?IssuedTrustMark
     {
         $stmt = $this->pdo->prepare(
             'SELECT * FROM ' . self::TABLE . "
-             WHERE trust_mark_id = ? AND sub = ? AND status = 'active'
+             WHERE trust_mark_type = ? AND sub = ? AND status = 'active'
              ORDER BY id DESC LIMIT 1",
         );
-        $stmt->execute([$trustMarkId, $sub]);
+        $stmt->execute([$trustMarkType, $sub]);
 
         /** @var array<string,mixed>|false $row */
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -174,12 +175,12 @@ class IssuedTrustMarkRepository
     {
         $stmt = $this->pdo->prepare(
             'INSERT INTO ' . self::TABLE . '
-                (trust_mark_id, sub, jwt, iat, exp, status, revoked_at, revocation_reason)
+                (trust_mark_type, sub, jwt, iat, exp, status, revoked_at, revocation_reason)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
         );
 
         $stmt->execute([
-            $mark->trustMarkId,
+            $mark->trustMarkType,
             $mark->sub,
             $mark->jwt,
             $mark->iat,
@@ -207,12 +208,12 @@ class IssuedTrustMarkRepository
     /**
      * Count active issued marks referencing a given type (used to warn before type deletion).
      */
-    public function countActiveByType(string $trustMarkId): int
+    public function countActiveByType(string $trustMarkType): int
     {
         $stmt = $this->pdo->prepare(
-            'SELECT COUNT(*) FROM ' . self::TABLE . " WHERE trust_mark_id = ? AND status = 'active'",
+            'SELECT COUNT(*) FROM ' . self::TABLE . " WHERE trust_mark_type = ? AND status = 'active'",
         );
-        $stmt->execute([$trustMarkId]);
+        $stmt->execute([$trustMarkType]);
 
         return (int) $stmt->fetchColumn();
     }

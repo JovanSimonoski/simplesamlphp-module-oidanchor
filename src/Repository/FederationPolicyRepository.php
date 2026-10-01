@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace SimpleSAML\Module\oidanchor\Repository;
 
 use PDO;
-use PDOException;
 use SimpleSAML\Module\oidanchor\Entity\FederationPolicy;
 
 class FederationPolicyRepository

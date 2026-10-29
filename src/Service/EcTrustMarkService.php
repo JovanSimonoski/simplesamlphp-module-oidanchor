@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SimpleSAML\Module\oidanchor\Service;
 
+use SimpleSAML\Configuration;
 use SimpleSAML\Logger;
 use SimpleSAML\Module\oidanchor\Repository\EcTrustMarkRepository;
 use SimpleSAML\OpenID\Algorithms\SignatureAlgorithmBag;
@@ -14,13 +15,16 @@ use SimpleSAML\OpenID\SupportedAlgorithms;
 use Throwable;
 
 /**
- * Materialises the TA's own trust marks (Entity Configuration Trust Marks) into the
- * `trust_marks` claim of the entity configuration.
+ * The TA's own trust marks (Entity Configuration Trust Marks) and the `trust_marks` claim.
  *
  * Three variants per the spec: a directly supplied JWT, an externally fetched mark
  * (type + issuer, refreshed via the library's TrustMarkFetcher against the issuer's
- * federation_trust_mark_endpoint), and a self-issued mark (signed here with the TA key
- * via the library's TrustMarkFactory; always refreshed based on its configured lifetime).
+ * federation_trust_mark_endpoint), and a self-issued mark (signed here with the TA key).
+ *
+ * Reading and refreshing are deliberately separate. {@see claimValues()} runs on the public
+ * Entity Configuration request and only serves what is stored — no outbound HTTP, no signing,
+ * no writes. Fetching and self-issuance happen in {@see refresh()} / {@see refreshAll()}, which
+ * run from the cron listener and when an admin edits a mark.
  */
 class EcTrustMarkService
 {
@@ -33,32 +37,26 @@ class EcTrustMarkService
     public function __construct(
         private readonly FederationKeyService $keys,
         private readonly EcTrustMarkRepository $repository,
+        private readonly ?Configuration $moduleConfig = null,
     ) {
     }
 
 
     /**
-     * Build the `trust_marks` claim entries. Rows without a usable JWT are skipped.
+     * Build the `trust_marks` claim entries from the stored marks. Rows without a usable JWT
+     * (missing, or expired beyond the refresh grace period) are skipped.
      *
      * @return list<array<string,mixed>>
      */
     public function claimValues(): array
     {
         $entries = [];
+        $now     = time();
 
         foreach ($this->repository->findAll() as $row) {
-            try {
-                $jwt = $this->materialize($row);
-            } catch (Throwable $e) {
-                Logger::warning(sprintf(
-                    'oidanchor: could not materialise EC trust mark #%d: %s',
-                    $row['id'],
-                    $e->getMessage(),
-                ));
-                continue;
-            }
-
+            $jwt  = $this->current($row, $now);
             $type = $row['trust_mark_type'];
+
             if ($jwt === null || $type === null) {
                 continue;
             }
@@ -71,64 +69,135 @@ class EcTrustMarkService
 
 
     /**
-     * Resolve the current JWT for a stored row, refreshing / self-issuing when due.
+     * Refresh every stored mark that is due.
      *
-     * @param array<string,mixed> $row
+     * @param bool $reissueSelfIssued Re-sign self-issued marks even when not due (after a key rotation).
+     * @return array{refreshed: int, failed: int}
      */
-    public function materialize(array $row): ?string
+    public function refreshAll(bool $reissueSelfIssued = false): array
     {
-        if (is_array($row['self_issuance_spec'])) {
-            return $this->selfIssued($row);
-        }
+        $counts = ['refreshed' => 0, 'failed' => 0];
 
-        $jwt = $row['trust_mark'];
-        $exp = $jwt !== null ? $this->expOf($jwt) : null;
-        $now = time();
-
-        $minLifetime = $row['min_lifetime'] ?? 0;
-        $grace       = $row['refresh_grace_period'] ?? 0;
-
-        $isStale = $jwt === null
-            || ($exp !== null && $exp - $now < $minLifetime);
-
-        if ($row['refresh'] && $isStale && $this->refreshAllowed($row, $now)) {
-            $fresh = $this->fetchExternal($row);
-            if ($fresh !== null) {
-                $this->repository->update($row['id'], ['trust_mark' => $fresh, 'last_refresh_at' => $now]);
-
-                return $fresh;
+        foreach ($this->repository->findAll() as $row) {
+            $result = $this->refresh($row, $reissueSelfIssued && is_array($row['self_issuance_spec']));
+            if ($result !== null) {
+                $counts[$result ? 'refreshed' : 'failed']++;
             }
         }
 
-        // Never embed a mark that is past its exp and beyond the refresh grace window.
-        if ($jwt !== null && $exp !== null && $exp + $grace <= $now && $exp <= $now) {
-            return null;
+        return $counts;
+    }
+
+
+    /**
+     * Refresh one stored mark when it is due (or when forced): re-sign a self-issued mark, or
+     * fetch an external one from its issuer. Every attempt is recorded in last_refresh_at, so
+     * refresh_rate_limit also throttles retries against an issuer that keeps failing.
+     *
+     * @param array<string,mixed> $row
+     * @return bool|null True when a new JWT was stored, false when an attempt failed, null when not due.
+     */
+    public function refresh(array $row, bool $force = false): ?bool
+    {
+        $now = time();
+
+        if (is_array($row['self_issuance_spec'])) {
+            if (!$force && !$this->selfIssuedDue($row, $now)) {
+                return null;
+            }
+
+            try {
+                $jwt = $this->selfIssue($row, $now);
+            } catch (Throwable $e) {
+                Logger::warning(sprintf('oidanchor: could not self-issue EC trust mark #%d: %s', $row['id'], $e->getMessage()));
+                $jwt = null;
+            }
+        } else {
+            if (!$row['refresh'] || !$this->externalDue($row, $now) || !$this->refreshAllowed($row, $now)) {
+                return null;
+            }
+
+            $jwt = $this->fetchExternal($row);
         }
 
-        return $jwt;
+        $this->repository->update($row['id'], $jwt !== null
+            ? ['trust_mark' => $jwt, 'last_refresh_at' => $now]
+            : ['last_refresh_at' => $now]);
+
+        return $jwt !== null;
     }
 
 
     // -------------------------------------------------------------------------
 
     /**
+     * The stored JWT, unless it is past its exp and beyond the refresh grace window.
+     *
      * @param array<string,mixed> $row
      */
-    private function selfIssued(array $row): ?string
+    private function current(array $row, int $now): ?string
     {
-        $spec     = (array) $row['self_issuance_spec'];
-        $lifetime = is_int($spec['lifetime'] ?? null) && $spec['lifetime'] > 0
-            ? $spec['lifetime']
-            : self::DEFAULT_SELF_ISSUED_LIFETIME;
-
-        $now         = time();
-        $lastRefresh = $row['last_refresh_at'] ?? 0;
-
-        // Re-issue halfway through the lifetime so the published mark never goes stale.
-        if ($row['trust_mark'] !== null && $lastRefresh + intdiv($lifetime, 2) > $now) {
-            return $row['trust_mark'];
+        $jwt = $row['trust_mark'];
+        if ($jwt === null) {
+            return null;
         }
 
+        $exp   = $this->expOf($jwt);
+        $grace = $row['refresh_grace_period'] ?? 0;
+
+        return $exp !== null && $exp + $grace <= $now ? null : $jwt;
+    }
+
+
+    /**
+     * Self-issued marks are re-issued halfway through their lifetime so the published mark never goes stale.
+     *
+     * @param array<string,mixed> $row
+     */
+    private function selfIssuedDue(array $row, int $now): bool
+    {
+        $lastRefresh = $row['last_refresh_at'] ?? 0;
+
+        return $row['trust_mark'] === null
+            || $lastRefresh + intdiv($this->selfIssuedLifetime($row), 2) <= $now;
+    }
+
+
+    /**
+     * @param array<string,mixed> $row
+     */
+    private function externalDue(array $row, int $now): bool
+    {
+        $jwt = $row['trust_mark'];
+        if ($jwt === null) {
+            return true;
+        }
+
+        $exp = $this->expOf($jwt);
+
+        return $exp !== null && $exp - $now < ($row['min_lifetime'] ?? 0);
+    }
+
+
+    /**
+     * @param array<string,mixed> $row
+     */
+    private function selfIssuedLifetime(array $row): int
+    {
+        $spec = (array) $row['self_issuance_spec'];
+
+        return is_int($spec['lifetime'] ?? null) && $spec['lifetime'] > 0
+            ? $spec['lifetime']
+            : self::DEFAULT_SELF_ISSUED_LIFETIME;
+    }
+
+
+    /**
+     * @param array<string,mixed> $row
+     */
+    private function selfIssue(array $row, int $now): ?string
+    {
+        $spec     = (array) $row['self_issuance_spec'];
         $type     = $row['trust_mark_type'];
         $entityId = $this->keys->entityId();
         if ($type === null) {
@@ -149,13 +218,10 @@ class EcTrustMarkService
         $payload[ClaimsEnum::Iss->value]           = $entityId;
         $payload[ClaimsEnum::Sub->value]           = $entityId;
         $payload[ClaimsEnum::Iat->value]           = $now;
-        $payload[ClaimsEnum::Exp->value]           = $now + $lifetime;
+        $payload[ClaimsEnum::Exp->value]           = $now + $this->selfIssuedLifetime($row);
         $payload[ClaimsEnum::TrustMarkType->value] = $type;
 
-        $jwt = $this->keys->signTrustMark($payload);
-        $this->repository->update($row['id'], ['trust_mark' => $jwt, 'last_refresh_at' => $now]);
-
-        return $jwt;
+        return $this->keys->signTrustMark($payload);
     }
 
 
@@ -232,7 +298,11 @@ class EcTrustMarkService
     private function federation(): Federation
     {
         return $this->federation ??= new Federation(
-            new SupportedAlgorithms(new SignatureAlgorithmBag($this->keys->algorithm())),
+            supportedAlgorithms: new SupportedAlgorithms(new SignatureAlgorithmBag($this->keys->algorithm())),
+            client: FederationHttpClient::create(
+                $this->moduleConfig ?? Configuration::loadFromArray([]),
+                'oidanchor-trust-mark-refresh/1.0 (+' . $this->keys->entityId() . ')',
+            ),
         );
     }
 }

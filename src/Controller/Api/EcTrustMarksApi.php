@@ -6,9 +6,12 @@ namespace SimpleSAML\Module\oidanchor\Controller\Api;
 
 use SimpleSAML\Logger;
 use SimpleSAML\Module\oidanchor\Repository\EcTrustMarkRepository;
+use SimpleSAML\Module\oidanchor\Service\EcTrustMarkService;
+use SimpleSAML\Module\oidanchor\Service\FederationKeyService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 /**
  * REST API for the trust marks the TA holds and publishes in its own entity configuration.
@@ -17,6 +20,9 @@ use Symfony\Component\HttpFoundation\Response;
  *  1. trust_mark_type + trust_mark_issuer — fetched from the issuer (optionally refreshed),
  *  2. trust_mark — a JWT supplied directly,
  *  3. self_issuance_spec — the TA issues the mark to itself (always refreshed).
+ *
+ * A mark is fetched / self-issued right after it is created or edited; afterwards the cron
+ * listener keeps it fresh. The public entity configuration only ever serves the stored JWT.
  *
  * @see \SimpleSAML\Module\oidanchor\Service\EcTrustMarkService for materialisation into the claim.
  */
@@ -53,6 +59,7 @@ class EcTrustMarksApi extends ApiController
 
         $id = $this->repo()->create($this->normalize($body));
         Logger::info(sprintf('oidanchor: API entity configuration trust mark created: %s', $type ?? 'jwt'));
+        $this->refreshNow($id);
 
         return $this->json(self::toApi($this->repo()->findById($id)), JsonResponse::HTTP_CREATED);
     }
@@ -107,6 +114,7 @@ class EcTrustMarksApi extends ApiController
 
         $this->repo()->update($row['id'], $fields);
         Logger::info(sprintf('oidanchor: API entity configuration trust mark replaced: %d', $row['id']));
+        $this->refreshNow($row['id']);
 
         return $this->json(self::toApi($this->repo()->findById($row['id'])));
     }
@@ -141,6 +149,7 @@ class EcTrustMarksApi extends ApiController
 
         $this->repo()->update($row['id'], $fields);
         Logger::info(sprintf('oidanchor: API entity configuration trust mark patched: %d', $row['id']));
+        $this->refreshNow($row['id']);
 
         return $this->json(self::toApi($this->repo()->findById($row['id'])));
     }
@@ -254,6 +263,29 @@ class EcTrustMarksApi extends ApiController
         $out['refresh'] = (bool) $row['refresh'];
 
         return $out;
+    }
+
+
+    /**
+     * Self-issue or fetch a just-edited mark straight away rather than waiting for the next
+     * cron run. Best-effort: a failure is logged and the cron run retries.
+     */
+    private function refreshNow(int $id): void
+    {
+        $pdo  = $this->buildPdo();
+        $repo = new EcTrustMarkRepository($pdo);
+        $row  = $repo->findById($id);
+        if ($row === null) {
+            return;
+        }
+
+        $moduleConfig = $this->moduleConfig();
+
+        try {
+            (new EcTrustMarkService(new FederationKeyService($moduleConfig, $pdo), $repo, $moduleConfig))->refresh($row);
+        } catch (Throwable $e) {
+            Logger::warning(sprintf('oidanchor: immediate refresh of EC trust mark #%d failed: %s', $id, $e->getMessage()));
+        }
     }
 
 

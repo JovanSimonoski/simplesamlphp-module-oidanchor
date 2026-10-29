@@ -57,8 +57,10 @@ class KeyManagementService
     // -------------------------------------------------------------------------
 
     /**
-     * The current signing key context. Bootstraps the store from the config file key and
-     * applies interval-based rotation when due.
+     * The current signing key context. Bootstraps the store from the config file key.
+     *
+     * Never rotates: this runs on every signing request, including the unauthenticated public
+     * endpoints. Interval-based rotation is applied by {@see rotateIfDue()} from the cron listener.
      *
      * @return array{
      *     signingKey: \SimpleSAML\OpenID\Jwk\JwkDecorator,
@@ -70,7 +72,6 @@ class KeyManagementService
     public function activeSigningContext(): array
     {
         $key = $this->ensureActiveSigningKey();
-        $key = $this->maybeAutoRotate($key);
 
         if ($key->privateJwk === null) {
             throw new RuntimeException('oidanchor: active signing key has no private material.');
@@ -410,18 +411,21 @@ class KeyManagementService
 
     /**
      * Interval-based rotation: when enabled and the active key is older than the interval,
-     * rotate on access (the module has no scheduler, so rotation is applied opportunistically).
+     * rotate it. Called from the cron listener, never from a request path.
+     *
+     * @return \SimpleSAML\Module\oidanchor\Entity\FederationKey|null The new signing key, or null when not due.
      */
-    private function maybeAutoRotate(FederationKey $active): FederationKey
+    public function rotateIfDue(): ?FederationKey
     {
+        $active  = $this->ensureActiveSigningKey();
         $options = $this->rotationOptions();
         if (!$options['enabled'] || $options['interval'] < 1) {
-            return $active;
+            return null;
         }
 
         $issuedAt = $active->iat ?? $active->createdAt;
         if ($issuedAt + $options['interval'] > time()) {
-            return $active;
+            return null;
         }
 
         return $this->rotateSigningKey(false, 'automatic rotation');
@@ -431,20 +435,32 @@ class KeyManagementService
     private function rotateSigningKey(bool $revokeOld, ?string $reason): FederationKey
     {
         $repo    = $this->keyRepo();
-        $old     = $repo->findActiveSigningKey();
         $alg     = SignatureAlgorithmEnum::from($this->configuredAlgorithm());
-        $keyData = $this->generateKeyData($alg);
+        $keyData = $this->generateKeyData($alg); // slow for RSA: done before taking the write lock
 
         $decorator = (new Jwk())->jwkDecoratorFactory()->fromData($keyData);
-        $new       = $this->storeSigningKey($decorator, $alg->value);
 
-        if ($old !== null) {
-            if ($revokeOld) {
-                $repo->revoke($old->kid, $reason);
-            } else {
-                $overlap = $this->rotationOptions()['overlap'];
-                $repo->markExpired($old->kid, time() + max(0, $overlap));
+        // Activating the new key and retiring the old one must not be split by a failure,
+        // otherwise two keys are left active.
+        $this->pdo->beginTransaction();
+        try {
+            $old = $repo->findActiveSigningKey();
+            $new = $this->storeSigningKey($decorator, $alg->value);
+
+            if ($old !== null) {
+                if ($revokeOld) {
+                    $repo->revoke($old->kid, $reason);
+                } else {
+                    $overlap = $this->rotationOptions()['overlap'];
+                    $repo->markExpired($old->kid, time() + max(0, $overlap));
+                }
             }
+
+            $this->pdo->commit();
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+
+            throw $e;
         }
 
         Logger::info(sprintf(

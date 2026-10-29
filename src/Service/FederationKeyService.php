@@ -256,7 +256,10 @@ class FederationKeyService
     }
 
 
-    private function pdoConnection(): PDO
+    /**
+     * The module database connection (the injected one, or one opened from the module config).
+     */
+    public function pdoConnection(): PDO
     {
         if ($this->pdo !== null) {
             return $this->pdo;

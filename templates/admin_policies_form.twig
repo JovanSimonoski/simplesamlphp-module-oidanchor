@@ -42,6 +42,7 @@
   {% endif %}
 
   <form method="post" action="{{ actionUrl }}" class="pure-form pure-form-stacked oidanchor-form">
+    <input type="hidden" name="csrf_token" value="{{ csrfToken|e }}">
 
     {# Entity Type - dropdown on create, readonly label on edit #}
     <div class="field">

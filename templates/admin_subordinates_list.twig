@@ -75,6 +75,7 @@
                 <form method="post"
                       action="{{ moduleURL('oidanchor/admin/subordinates/' ~ encodedId ~ '/status') }}"
                       style="display:inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrfToken|e }}">
                   <input type="hidden" name="status" value="suspended">
                   <button type="submit" class="pure-button"
                           onclick="return confirm('Suspend this subordinate?')">
@@ -85,6 +86,7 @@
                 <form method="post"
                       action="{{ moduleURL('oidanchor/admin/subordinates/' ~ encodedId ~ '/status') }}"
                       style="display:inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrfToken|e }}">
                   <input type="hidden" name="status" value="active">
                   <button type="submit" class="pure-button">{% trans %}Activate{% endtrans %}</button>
                 </form>
@@ -93,6 +95,7 @@
               <form method="post"
                     action="{{ moduleURL('oidanchor/admin/subordinates/' ~ encodedId ~ '/delete') }}"
                     style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrfToken|e }}">
                 <button type="submit" class="pure-button pure-button-red"
                         onclick="return confirm('Delete subordinate {{ sub.entityId|e('js') }}? This cannot be undone.')">
                   {% trans %}Delete{% endtrans %}

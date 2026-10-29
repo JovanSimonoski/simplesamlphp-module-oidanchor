@@ -24,9 +24,14 @@ use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Admin UI controller for federation-wide metadata policy management.
+ *
+ * All methods require admin authentication; state-changing methods require a valid CSRF token.
  */
 class AdminPolicies
 {
+    use AdminCsrfTrait;
+
+
     private const string FLASH_KEY = 'oidanchor_policies_flash';
 
 
@@ -57,6 +62,7 @@ class AdminPolicies
         $t->data['createUrl']   = Module::getModuleURL('oidanchor/admin/policies/create');
         $t->data['logouturl']   = $authUtils->getAdminLogoutURL();
         $t->data['flash']       = $this->popFlash();
+        $t->data['csrfToken']   = $this->csrfToken();
 
         $t->getLocalization()->addModuleDomain('oidanchor');
 
@@ -82,6 +88,10 @@ class AdminPolicies
         ];
 
         if ($request->isMethod('POST')) {
+            if (!$this->assertCsrf($request)) {
+                return $this->csrfFailure();
+            }
+
             $formData  = $this->extractFormData($request);
             $repo      = $this->getRepository();
             $validator = new MetadataPolicyValidator();
@@ -148,6 +158,10 @@ class AdminPolicies
         $formData = [];
 
         if ($request->isMethod('POST')) {
+            if (!$this->assertCsrf($request)) {
+                return $this->csrfFailure();
+            }
+
             $formData              = $this->extractFormData($request);
             $formData['entity_type'] = $entityType;
             $validator             = new MetadataPolicyValidator();
@@ -199,6 +213,10 @@ class AdminPolicies
         $authUtils = new Utils\Auth();
         $authUtils->requireAdmin();
 
+        if (!$this->assertCsrf($request)) {
+            return $this->csrfFailure();
+        }
+
         $repo = $this->getRepository();
 
         if ($repo->findByEntityType($entityType) === null) {
@@ -224,6 +242,14 @@ class AdminPolicies
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
+
+    private function csrfFailure(): RedirectResponse
+    {
+        $this->pushFlash('error', 'Invalid or missing CSRF token. Please try again.');
+
+        return new RedirectResponse(Module::getModuleURL('oidanchor/admin/policies'));
+    }
+
 
     private function getRepository(): FederationPolicyRepository
     {
@@ -331,6 +357,7 @@ class AdminPolicies
         $t->data['listUrl']     = Module::getModuleURL('oidanchor/admin/policies');
         $t->data['logouturl']   = $authUtils->getAdminLogoutURL();
         $t->data['flash']       = $this->popFlash();
+        $t->data['csrfToken']   = $this->csrfToken();
 
         $t->getLocalization()->addModuleDomain('oidanchor');
 

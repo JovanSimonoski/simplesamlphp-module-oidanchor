@@ -68,7 +68,7 @@ oidanchor-admin-subordinates-delete:
     entityId: '.+'
   methods: [POST]
 
-# Set subordinate status (POST only). Expects ?status=active|suspended in body.
+# Set subordinate status (POST only, CSRF-protected). Expects status=active|suspended in the body.
 oidanchor-admin-subordinates-status:
   path: /admin/subordinates/{entityId}/status
   defaults: {

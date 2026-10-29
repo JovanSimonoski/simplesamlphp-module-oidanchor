@@ -113,8 +113,7 @@ class EntityConfigurationService
     public function lifetime(Configuration $moduleConfig, PDO $pdo): int
     {
         return (new SettingsRepository($pdo))->getInt(SettingsRepository::ENTITY_CONFIGURATION_LIFETIME)
-            ?? $moduleConfig->getOptionalInteger('entity_configuration_lifetime', 86400)
-            ?? 86400;
+            ?? $moduleConfig->getOptionalInteger('entity_configuration_lifetime', 86400);
     }
 
 
@@ -175,7 +174,7 @@ class EntityConfigurationService
         }
 
         /** @var list<string> $configured */
-        $configured = $moduleConfig->getOptionalArray('authority_hints', []) ?? [];
+        $configured = $moduleConfig->getOptionalArray('authority_hints', []);
 
         return $configured;
     }

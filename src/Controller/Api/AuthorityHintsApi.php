@@ -75,7 +75,7 @@ class AuthorityHintsApi extends ApiController
         $id   = $this->internalId($authorityHintID);
         $hint = $id !== null ? $this->repo()->findById($id) : null;
 
-        if ($hint === null || $id === null) {
+        if ($hint === null) {
             return $this->notFound(sprintf('Authority hint "%s" not found.', $authorityHintID));
         }
 

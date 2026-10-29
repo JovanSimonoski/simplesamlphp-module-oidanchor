@@ -127,7 +127,7 @@ trait AdditionalClaimsTrait
         $id  = $this->internalId($claimId);
         $row = $id !== null ? $this->claimsRepo()->findById($scope, $id, $subordinateId) : null;
 
-        if ($row === null || $id === null) {
+        if ($row === null) {
             return $this->notFound(sprintf('Additional claim "%s" not found.', $claimId));
         }
 
@@ -161,7 +161,7 @@ trait AdditionalClaimsTrait
         $id  = $this->internalId($claimId);
         $row = $id !== null ? $this->claimsRepo()->findById($scope, $id, $subordinateId) : null;
 
-        if ($row === null || $id === null) {
+        if ($row === null) {
             return $this->notFound(sprintf('Additional claim "%s" not found.', $claimId));
         }
 

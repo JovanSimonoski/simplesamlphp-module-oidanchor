@@ -153,7 +153,7 @@ class ConstraintsService
                     throw new InvalidArgumentException(sprintf('naming_constraints.%s must contain non-empty strings.', $member));
                 }
             }
-            $out[$member] = array_values($value[$member]);
+            $out[$member] = $value[$member];
         }
 
         return $out;

@@ -44,7 +44,7 @@ class TrustMarkType
             logoUri:         isset($row['logo_uri']) ? (string) $row['logo_uri'] : null,
             refUri:          isset($row['ref_uri']) ? (string) $row['ref_uri'] : null,
             defaultLifetime: isset($row['default_lifetime']) ? (int) $row['default_lifetime'] : null,
-            extraClaims:     isset($row['extra_claims']) && $row['extra_claims'] !== null
+            extraClaims:     isset($row['extra_claims'])
                                 ? json_decode((string) $row['extra_claims'], true)
                                 : null,
             createdAt:       (int) $row['created_at'],

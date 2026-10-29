@@ -213,7 +213,7 @@ class SubordinateConstraintsApi extends ApiController
      */
     protected function readConstraints(): array
     {
-        return $this->subordinate?->constraints ?? [];
+        return $this->subordinate->constraints ?? [];
     }
 
 

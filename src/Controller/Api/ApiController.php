@@ -76,8 +76,8 @@ abstract class ApiController
     protected function basicAuthMatches(Request $request): bool
     {
         $moduleConfig = $this->moduleConfig();
-        $expectedUser = (string) ($moduleConfig->getOptionalString('api_admin_username', '') ?? '');
-        $expectedPass = (string) ($moduleConfig->getOptionalString('api_admin_password', '') ?? '');
+        $expectedUser = (string) $moduleConfig->getOptionalString('api_admin_username', '');
+        $expectedPass = (string) $moduleConfig->getOptionalString('api_admin_password', '');
 
         if ($expectedUser === '' || $expectedPass === '') {
             if ($expectedUser !== '' || $expectedPass !== '') {
@@ -243,6 +243,18 @@ abstract class ApiController
     protected function subordinateNotFound(string $subordinateID): JsonResponse
     {
         return $this->notFound(sprintf('Subordinate "%s" not found.', $subordinateID));
+    }
+
+
+    /**
+     * Whether a decoded JSON value is an object. An empty object decodes to [], which
+     * array_is_list() reports as a list, so it is accepted explicitly.
+     *
+     * @phpstan-assert-if-true array<mixed> $value
+     */
+    protected function isJsonObject(mixed $value): bool
+    {
+        return is_array($value) && ($value === [] || !array_is_list($value));
     }
 
 

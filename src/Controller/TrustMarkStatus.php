@@ -77,7 +77,7 @@ class TrustMarkStatus
             $result = $service->getStatus($trustMarkType, $sub, $trustMark);
 
             $now      = time();
-            $lifetime = $moduleConfig->getOptionalInteger('trust_mark_status_response_lifetime', 600) ?? 600;
+            $lifetime = $moduleConfig->getOptionalInteger('trust_mark_status_response_lifetime', 600);
 
             $payload = [
                 ClaimsEnum::Iss->value    => $keys->entityId(),

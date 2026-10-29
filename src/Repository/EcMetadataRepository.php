@@ -106,7 +106,7 @@ class EcMetadataRepository
         }
 
         foreach ($document as $entityType => $metadata) {
-            $this->upsert((string) $entityType, is_array($metadata) ? $metadata : []);
+            $this->upsert((string) $entityType, $metadata);
         }
     }
 

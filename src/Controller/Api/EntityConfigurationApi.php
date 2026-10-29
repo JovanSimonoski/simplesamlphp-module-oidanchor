@@ -82,8 +82,7 @@ class EntityConfigurationApi extends ApiController
 
         return $this->json(
             $this->settings()->getInt(SettingsRepository::SUBORDINATE_STATEMENT_LIFETIME)
-                ?? $this->moduleConfig()->getOptionalInteger('subordinate_statement_lifetime', 86400)
-                ?? 86400,
+                ?? $this->moduleConfig()->getOptionalInteger('subordinate_statement_lifetime', 86400),
         );
     }
 

@@ -98,7 +98,12 @@ class KeysApi extends ApiController
             return $this->badRequest('nbf and exp must be unix timestamps (or null).');
         }
 
-        $key = $this->kms()->updateKeyValidity($kid, $nbf, $exp, $setNbf, $setExp);
+        try {
+            $key = $this->kms()->updateKeyValidity($kid, $nbf, $exp, $setNbf, $setExp);
+        } catch (InvalidArgumentException $e) {
+            return $this->badRequest($e->getMessage());
+        }
+
         if ($key === null) {
             return $this->notFound(sprintf('Key "%s" not found.', $kid));
         }

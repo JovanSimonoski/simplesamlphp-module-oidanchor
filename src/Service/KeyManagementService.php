@@ -174,11 +174,30 @@ class KeyManagementService
     }
 
 
+    /**
+     * @throws \InvalidArgumentException When the change would make the active signing key unpublishable.
+     */
     public function updateKeyValidity(string $kid, ?int $nbf, ?int $exp, bool $setNbf, bool $setExp): ?FederationKey
     {
         $repo = $this->keyRepo();
-        if ($repo->findByKid($kid) === null) {
+        $key  = $repo->findByKid($kid);
+        if ($key === null) {
             return null;
+        }
+
+        // The signer and the published JWKS select keys differently: findActiveSigningKey() ignores
+        // nbf/exp, isPublishable() does not. An exp or a future nbf on the active signing key would
+        // drop it from the JWKS while it keeps signing, so nothing it signs could be verified.
+        $active = $repo->findActiveSigningKey();
+        if ($active !== null && $active->kid === $kid) {
+            $newNbf = $setNbf ? $nbf : $key->nbf;
+            $newExp = $setExp ? $exp : $key->exp;
+
+            if ($newExp !== null || ($newNbf !== null && $newNbf > time())) {
+                throw new InvalidArgumentException(
+                    'The active signing key cannot be given an exp or a future nbf; rotate it first (POST /kms/rotate).',
+                );
+            }
         }
 
         $repo->updateValidity($kid, $nbf, $exp, $setNbf, $setExp);

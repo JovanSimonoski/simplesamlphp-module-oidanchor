@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace SimpleSAML\Test\Module\oidanchor\Service;
 
+use InvalidArgumentException;
+use Jose\Component\KeyManagement\JWKFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use SimpleSAML\Module\oidanchor\Entity\FederationKey;
 use SimpleSAML\Module\oidanchor\Repository\FederationKeyRepository;
 use SimpleSAML\Module\oidanchor\Service\KeyManagementService;
@@ -103,6 +106,66 @@ final class KeyManagementServiceTest extends TestCase
         $this->assertNotSame($old, $ctx['kid']);
         $this->assertSame('ES256', $ctx['algorithm']->value);
         $this->assertSame('ES256', self::decodeJwt($this->keys($config)->signEntityStatement($this->minimalStatement()))['header']['alg']);
+    }
+
+
+    /**
+     * @return array<string,array{?int, ?int, bool, bool}>
+     */
+    public static function unpublishableValidity(): array
+    {
+        return [
+            'past exp'   => [null, time() - 60, false, true],
+            'future exp' => [null, time() + 3600, false, true],
+            'future nbf' => [time() + 3600, null, true, false],
+        ];
+    }
+
+
+    #[DataProvider('unpublishableValidity')]
+    public function testActiveSigningKeyCannotBeMadeUnpublishable(?int $nbf, ?int $exp, bool $setNbf, bool $setExp): void
+    {
+        $kms = $this->kms();
+        $kid = $kms->activeSigningContext()['kid'];
+
+        try {
+            $kms->updateKeyValidity($kid, $nbf, $exp, $setNbf, $setExp);
+            $this->fail('Expected the validity change to be rejected.');
+        } catch (InvalidArgumentException) {
+            // expected
+        }
+
+        $this->assertSame([$kid], array_column($kms->publicJwks()['keys'], 'kid'));
+    }
+
+
+    public function testActiveSigningKeyValidityCanBeClearedOrBackdated(): void
+    {
+        $kms = $this->kms();
+        $kid = $kms->activeSigningContext()['kid'];
+
+        $key = $kms->updateKeyValidity($kid, time() - 60, null, true, true);
+
+        $this->assertNotNull($key);
+        $this->assertTrue($key->isPublishable(time()));
+    }
+
+
+    public function testOtherKeysMayBeGivenAnExp(): void
+    {
+        $kms = $this->kms();
+        $kms->activeSigningContext();
+        $kms->addPublicKey(
+            JWKFactory::createECKey('P-256', ['kid' => 'external-1', 'use' => 'sig'])->toPublic()->all(),
+            null,
+            null,
+            null,
+        );
+
+        $key = $kms->updateKeyValidity('external-1', null, time() - 60, false, true);
+
+        $this->assertNotNull($key);
+        $this->assertNotContains('external-1', array_column($kms->publicJwks()['keys'], 'kid'));
     }
 
 

@@ -182,12 +182,24 @@ class FederationKeyRepository
     }
 
 
-    public function updateAlg(string $kid, string $alg): void
+    /**
+     * Change a key's algorithm. The JWK material is rewritten in the same statement because
+     * web-token refuses to sign with a key whose `alg` member names a different algorithm.
+     *
+     * @param array<string,mixed>|null $privateJwk
+     * @param array<string,mixed> $publicJwk
+     */
+    public function updateAlg(string $kid, string $alg, ?array $privateJwk, array $publicJwk): void
     {
         $stmt = $this->pdo->prepare(
-            'UPDATE ' . self::TABLE . ' SET alg = ? WHERE kid = ?',
+            'UPDATE ' . self::TABLE . ' SET alg = ?, private_jwk = ?, public_jwk = ? WHERE kid = ?',
         );
-        $stmt->execute([$alg, $kid]);
+        $stmt->execute([
+            $alg,
+            $privateJwk !== null ? json_encode($privateJwk, JSON_UNESCAPED_SLASHES) : null,
+            json_encode($publicJwk, JSON_UNESCAPED_SLASHES),
+            $kid,
+        ]);
     }
 
 

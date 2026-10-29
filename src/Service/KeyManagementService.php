@@ -274,7 +274,8 @@ class KeyManagementService
     /**
      * Switch the signing algorithm. When the current signing key cannot serve the new
      * algorithm (different kty / curve), a new signing key is generated immediately and
-     * the old one is rotated out, so the change takes effect without restarts.
+     * the old one is rotated out, so the change takes effect without restarts. When it can
+     * (e.g. RS256 -> PS256), the key is kept and the `alg` in its JWK material is rewritten too.
      *
      * The spec's SignatureAlgorithm enum also lists the symmetric HS* algorithms; the library's
      * SignatureAlgorithmEnum does not model them (they cannot produce a public JWKS), so they
@@ -301,7 +302,12 @@ class KeyManagementService
 
         $active = $this->ensureActiveSigningKey();
         if ($this->keyServesAlgorithm($active, $enum)) {
-            $this->keyRepo()->updateAlg($active->kid, $enum->value);
+            $this->keyRepo()->updateAlg(
+                $active->kid,
+                $enum->value,
+                $active->privateJwk !== null ? self::withAlg($active->privateJwk, $enum) : null,
+                self::withAlg($active->publicJwk, $enum),
+            );
         } else {
             $this->rotateSigningKey(false, sprintf('algorithm switched to %s', $enum->value));
         }
@@ -535,6 +541,23 @@ class KeyManagementService
         };
 
         return $jwk->all();
+    }
+
+
+    /**
+     * Rewrite the JWK `alg` member, when present. Material without one (the imported config
+     * key) is usable with any algorithm of its family and is left as is.
+     *
+     * @param array<string,mixed> $jwk
+     * @return array<string,mixed>
+     */
+    private static function withAlg(array $jwk, SignatureAlgorithmEnum $alg): array
+    {
+        if (array_key_exists('alg', $jwk)) {
+            $jwk['alg'] = $alg->value;
+        }
+
+        return $jwk;
     }
 
 

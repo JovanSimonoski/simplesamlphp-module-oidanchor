@@ -19,6 +19,8 @@ class TrustMarkSubjectRepository
 {
     private const string TABLE = 'oidanchor_trust_mark_subjects';
 
+    private const string SPECS_TABLE = 'oidanchor_trust_mark_specs';
+
     public const array STATUSES = ['active', 'blocked', 'pending', 'inactive'];
 
 
@@ -55,14 +57,7 @@ class TrustMarkSubjectRepository
      */
     private function migrateFromIssuedMarks(): void
     {
-        $issuedExists = $this->pdo
-            ->query("SELECT 1 FROM sqlite_master WHERE type='table' AND name='oidanchor_trust_marks_issued'")
-            ->fetchColumn();
-        $specsExist = $this->pdo
-            ->query("SELECT 1 FROM sqlite_master WHERE type='table' AND name='oidanchor_trust_mark_specs'")
-            ->fetchColumn();
-
-        if ($issuedExists === false || $specsExist === false) {
+        if (!$this->tableExists('oidanchor_trust_marks_issued') || !$this->tableExists(self::SPECS_TABLE)) {
             return;
         }
 
@@ -121,14 +116,19 @@ class TrustMarkSubjectRepository
 
     /**
      * Look up a subject by the trust mark type URL — the path the public status endpoint takes.
+     * Subjects only exist under a spec, so there is none when no spec has ever been created.
      *
      * @return array<string,mixed>|null
      */
     public function findByTypeAndEntity(string $trustMarkType, string $entityId): ?array
     {
+        if (!$this->tableExists(self::SPECS_TABLE)) {
+            return null;
+        }
+
         $stmt = $this->pdo->prepare(
             'SELECT sub.* FROM ' . self::TABLE . ' sub
-             JOIN oidanchor_trust_mark_specs s ON s.id = sub.spec_id
+             JOIN ' . self::SPECS_TABLE . ' s ON s.id = sub.spec_id
              WHERE s.trust_mark_type = ? AND sub.entity_id = ?',
         );
         $stmt->execute([$trustMarkType, $entityId]);
@@ -246,5 +246,14 @@ class TrustMarkSubjectRepository
         }
 
         return $out;
+    }
+
+
+    private function tableExists(string $table): bool
+    {
+        $stmt = $this->pdo->prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name = ?");
+        $stmt->execute([$table]);
+
+        return $stmt->fetchColumn() !== false;
     }
 }

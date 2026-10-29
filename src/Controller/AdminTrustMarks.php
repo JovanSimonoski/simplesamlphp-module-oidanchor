@@ -33,7 +33,7 @@ use Throwable;
  */
 class AdminTrustMarks
 {
-    private const FLASH_KEY = 'oidanchor_tm_flash';
+    private const string FLASH_KEY = 'oidanchor_tm_flash';
 
 
     public function __construct(

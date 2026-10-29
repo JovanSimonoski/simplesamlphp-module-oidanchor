@@ -25,7 +25,7 @@ use Throwable;
  */
 class TrustMarkIssuanceApi extends ApiController
 {
-    private const ELIGIBILITY_MODES = ['db_only', 'check_only', 'db_or_check', 'db_and_check', 'custom'];
+    private const array ELIGIBILITY_MODES = ['db_only', 'check_only', 'db_or_check', 'db_and_check', 'custom'];
 
 
     // ---- issuance specs ------------------------------------------------------
@@ -508,7 +508,8 @@ class TrustMarkIssuanceApi extends ApiController
             }
         }
 
-        if (array_key_exists('additional_claims', $body)
+        if (
+            array_key_exists('additional_claims', $body)
             && ($body['additional_claims'] !== null && !is_array($body['additional_claims']))
         ) {
             return 'additional_claims must be a JSON object.';

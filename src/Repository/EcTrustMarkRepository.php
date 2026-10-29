@@ -14,7 +14,7 @@ use PDO;
  */
 class EcTrustMarkRepository
 {
-    private const TABLE = 'oidanchor_ec_trust_marks';
+    private const string TABLE = 'oidanchor_ec_trust_marks';
 
 
     public function __construct(private readonly PDO $pdo)

@@ -18,6 +18,7 @@ class SubordinateMetadataApi extends ApiController
 {
     use MetadataDocumentTrait;
 
+
     private ?Subordinate $subordinate = null;
 
 

@@ -13,7 +13,7 @@ use PDO;
  */
 class EcMetadataRepository
 {
-    private const TABLE = 'oidanchor_ec_metadata';
+    private const string TABLE = 'oidanchor_ec_metadata';
 
 
     public function __construct(private readonly PDO $pdo)

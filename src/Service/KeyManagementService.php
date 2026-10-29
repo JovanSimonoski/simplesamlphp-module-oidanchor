@@ -34,10 +34,11 @@ use SimpleSAML\OpenID\Jwk\JwkDecorator;
  */
 class KeyManagementService
 {
-    private const DEFAULT_RSA_KEY_LEN = 2048;
+    private const int DEFAULT_RSA_KEY_LEN = 2048;
 
     /** Default overlap (seconds) during which a rotated-out key stays published. */
-    private const DEFAULT_ROTATION_OVERLAP = 0;
+    private const int DEFAULT_ROTATION_OVERLAP = 0;
+
 
     private ?SettingsRepository $settings = null;
 
@@ -60,10 +61,10 @@ class KeyManagementService
      * applies interval-based rotation when due.
      *
      * @return array{
-     *     signingKey: JwkDecorator,
+     *     signingKey: \SimpleSAML\OpenID\Jwk\JwkDecorator,
      *     kid: string,
      *     publicJwkData: array<string,mixed>,
-     *     algorithm: SignatureAlgorithmEnum
+     *     algorithm: \SimpleSAML\OpenID\Algorithms\SignatureAlgorithmEnum
      * }
      */
     public function activeSigningContext(): array
@@ -113,7 +114,7 @@ class KeyManagementService
     // -------------------------------------------------------------------------
 
     /**
-     * @return FederationKey[]
+     * @return \SimpleSAML\Module\oidanchor\Entity\FederationKey[]
      */
     public function listKeys(): array
     {
@@ -135,7 +136,7 @@ class KeyManagementService
      * Add an externally-held public key to the published set.
      *
      * @param array<string,mixed> $jwkData
-     * @throws InvalidArgumentException When the JWK is invalid or the kid already exists.
+     * @throws \InvalidArgumentException When the JWK is invalid or the kid already exists.
      */
     public function addPublicKey(array $jwkData, ?int $iat, ?int $nbf, ?int $exp): FederationKey
     {
@@ -193,7 +194,7 @@ class KeyManagementService
      * triggerRotation() for that.
      *
      * @param array<string,mixed> $newJwkData
-     * @throws InvalidArgumentException
+     * @throws \InvalidArgumentException
      */
     public function rotateKey(string $kid, array $newJwkData, ?int $iat, ?int $nbf, ?int $exp, ?int $oldKeyExp): ?FederationKey
     {
@@ -220,7 +221,7 @@ class KeyManagementService
     /**
      * Delete or revoke a key entry. Returns false when the kid does not exist.
      *
-     * @throws InvalidArgumentException When targeting the active signing key.
+     * @throws \InvalidArgumentException When targeting the active signing key.
      */
     public function deleteKey(string $kid, bool $revoke, ?string $reason): bool
     {
@@ -278,7 +279,7 @@ class KeyManagementService
      * SignatureAlgorithmEnum does not model them (they cannot produce a public JWKS), so they
      * are rejected here along with `none`.
      *
-     * @throws InvalidArgumentException For algorithms the federation cannot sign with.
+     * @throws \InvalidArgumentException For algorithms the federation cannot sign with.
      */
     public function setAlgorithm(string $alg): void
     {
@@ -309,7 +310,7 @@ class KeyManagementService
 
 
     /**
-     * @throws InvalidArgumentException
+     * @throws \InvalidArgumentException
      */
     public function setRsaKeyLen(int $bits): void
     {
@@ -340,7 +341,7 @@ class KeyManagementService
     /**
      * @param array<string,mixed> $options Full replacement (PUT) or partial (PATCH via $merge).
      * @return array{enabled: bool, interval: int, overlap: int}
-     * @throws InvalidArgumentException
+     * @throws \InvalidArgumentException
      */
     public function setRotationOptions(array $options, bool $merge): array
     {
@@ -541,7 +542,7 @@ class KeyManagementService
 
     /**
      * @param array<string,mixed> $jwkData
-     * @throws InvalidArgumentException
+     * @throws \InvalidArgumentException
      */
     private function parsePublicJwk(array $jwkData): JwkDecorator
     {

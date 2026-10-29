@@ -14,11 +14,13 @@ use PDO;
  */
 class AdditionalClaimsRepository
 {
-    private const TABLE = 'oidanchor_additional_claims';
+    private const string TABLE = 'oidanchor_additional_claims';
 
-    public const SCOPE_ENTITY_CONFIGURATION = 'entity_configuration';
-    public const SCOPE_SUBORDINATE_GENERAL  = 'subordinate_general';
-    public const SCOPE_SUBORDINATE          = 'subordinate';
+    public const string SCOPE_ENTITY_CONFIGURATION = 'entity_configuration';
+
+    public const string SCOPE_SUBORDINATE_GENERAL  = 'subordinate_general';
+
+    public const string SCOPE_SUBORDINATE          = 'subordinate';
 
 
     public function __construct(private readonly PDO $pdo)
@@ -124,7 +126,7 @@ class AdditionalClaimsRepository
     /**
      * Insert a claim row; returns the new row id.
      *
-     * @throws InvalidArgumentException When the claim name already exists in the scope.
+     * @throws \InvalidArgumentException When the claim name already exists in the scope.
      */
     public function create(string $scope, string $claim, mixed $value, bool $crit, ?int $subordinateId = null): int
     {

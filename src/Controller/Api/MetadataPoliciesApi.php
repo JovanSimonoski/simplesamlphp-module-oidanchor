@@ -21,6 +21,7 @@ class MetadataPoliciesApi extends ApiController
 {
     use MetadataPolicyDocumentTrait;
 
+
     // ---- whole collection -------------------------------------------------
 
     public function getAll(Request $request): JsonResponse

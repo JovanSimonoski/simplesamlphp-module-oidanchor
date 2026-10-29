@@ -33,7 +33,7 @@ class TrustMarkIssuer
      *                  is applied as a duration from now; if that is also null, the mark has no exp.
      * @param array<string,mixed> $extraClaims Per-issuance claims merged on top of the type's extra_claims.
      *
-     * @throws RuntimeException When the type does not exist.
+     * @throws \RuntimeException When the type does not exist.
      */
     public function issue(string $trustMarkType, string $sub, ?int $exp = null, array $extraClaims = []): IssuedTrustMark
     {

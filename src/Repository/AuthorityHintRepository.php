@@ -12,7 +12,7 @@ use PDO;
  */
 class AuthorityHintRepository
 {
-    private const TABLE = 'oidanchor_authority_hints';
+    private const string TABLE = 'oidanchor_authority_hints';
 
 
     public function __construct(private readonly PDO $pdo)
@@ -90,7 +90,7 @@ class AuthorityHintRepository
 
 
     /**
-     * @throws InvalidArgumentException When the entity_id is already present.
+     * @throws \InvalidArgumentException When the entity_id is already present.
      */
     public function create(string $entityId, ?string $description): int
     {

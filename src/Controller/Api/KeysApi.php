@@ -91,7 +91,8 @@ class KeysApi extends ApiController
         $nbf = $setNbf ? $this->optionalTimestamp($body, 'nbf') : null;
         $exp = $setExp ? $this->optionalTimestamp($body, 'exp') : null;
 
-        if (($setNbf && $nbf === null && $body['nbf'] !== null)
+        if (
+            ($setNbf && $nbf === null && $body['nbf'] !== null)
             || ($setExp && $exp === null && $body['exp'] !== null)
         ) {
             return $this->badRequest('nbf and exp must be unix timestamps (or null).');

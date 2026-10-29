@@ -10,7 +10,7 @@ use Throwable;
 
 class SubordinateValidator
 {
-    private const VALID_STATUSES = ['active', 'suspended'];
+    private const array VALID_STATUSES = ['active', 'suspended'];
 
 
     /**

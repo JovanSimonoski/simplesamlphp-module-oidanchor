@@ -16,15 +16,21 @@ use PDO;
  */
 class SettingsRepository
 {
-    private const TABLE = 'oidanchor_settings';
+    private const string TABLE = 'oidanchor_settings';
 
-    public const ENTITY_CONFIGURATION_LIFETIME = 'entity_configuration_lifetime';
-    public const SUBORDINATE_STATEMENT_LIFETIME = 'subordinate_statement_lifetime';
-    public const SIGNING_ALGORITHM = 'signing_algorithm';
-    public const RSA_KEY_LEN = 'rsa_key_len';
-    public const KMS_ROTATION = 'kms_rotation';
-    public const METADATA_POLICY_CRIT = 'metadata_policy_crit';
-    public const GENERAL_CONSTRAINTS = 'general_constraints';
+    public const string ENTITY_CONFIGURATION_LIFETIME = 'entity_configuration_lifetime';
+
+    public const string SUBORDINATE_STATEMENT_LIFETIME = 'subordinate_statement_lifetime';
+
+    public const string SIGNING_ALGORITHM = 'signing_algorithm';
+
+    public const string RSA_KEY_LEN = 'rsa_key_len';
+
+    public const string KMS_ROTATION = 'kms_rotation';
+
+    public const string METADATA_POLICY_CRIT = 'metadata_policy_crit';
+
+    public const string GENERAL_CONSTRAINTS = 'general_constraints';
 
 
     public function __construct(private readonly PDO $pdo)

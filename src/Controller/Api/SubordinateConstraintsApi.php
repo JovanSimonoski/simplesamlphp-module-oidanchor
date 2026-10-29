@@ -20,6 +20,7 @@ class SubordinateConstraintsApi extends ApiController
 {
     use ConstraintsTrait;
 
+
     private ?Subordinate $subordinate = null;
 
 

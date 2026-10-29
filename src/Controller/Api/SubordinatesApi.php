@@ -26,10 +26,12 @@ class SubordinatesApi extends ApiController
 {
     use AdditionalClaimsTrait;
 
-    private const STATUSES = ['active', 'blocked', 'pending', 'inactive'];
 
-    private const HISTORY_DEFAULT_LIMIT = 50;
-    private const HISTORY_MAX_LIMIT = 100;
+    private const array STATUSES = ['active', 'blocked', 'pending', 'inactive'];
+
+    private const int HISTORY_DEFAULT_LIMIT = 50;
+
+    private const int HISTORY_MAX_LIMIT = 100;
 
 
     public function list(Request $request): JsonResponse

@@ -21,6 +21,7 @@ class SubordinateMetadataPoliciesApi extends ApiController
 {
     use MetadataPolicyDocumentTrait;
 
+
     private ?Subordinate $subordinate = null;
 
 

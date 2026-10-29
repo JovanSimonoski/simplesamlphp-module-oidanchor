@@ -38,7 +38,7 @@ class FederationResolver
 
 
     /**
-     * @throws ResolveException
+     * @throws \SimpleSAML\Module\oidanchor\Exception\ResolveException
      */
     public function resolve(string $sub, string $trustAnchor, ?string $entityType = null): ResolveResult
     {
@@ -117,7 +117,7 @@ class FederationResolver
      * Build the signed Resolve Response JWT (typ: resolve-response+jwt) from a resolution result.
      * Shared by the public endpoint and the admin tester so the output is identical.
      *
-     * @throws ResolveException when the resolved chain has already expired (would yield exp <= iat).
+     * @throws \SimpleSAML\Module\oidanchor\Exception\ResolveException when the resolved chain has already expired (would yield exp <= iat).
      */
     public function buildSignedResponse(ResolveResult $result): string
     {
@@ -175,7 +175,7 @@ class FederationResolver
 
 
     /**
-     * @throws ResolveException
+     * @throws \SimpleSAML\Module\oidanchor\Exception\ResolveException
      */
     private function assertLocalAnchorKeys(TrustChain $chain): void
     {
@@ -203,7 +203,7 @@ class FederationResolver
 
     /**
      * @return array<string,array<string,mixed>>
-     * @throws ResolveException
+     * @throws \SimpleSAML\Module\oidanchor\Exception\ResolveException
      */
     private function resolveMetadata(TrustChain $chain, ?string $entityType): array
     {

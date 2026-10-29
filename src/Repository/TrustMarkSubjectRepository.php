@@ -17,9 +17,9 @@ use PDO;
  */
 class TrustMarkSubjectRepository
 {
-    private const TABLE = 'oidanchor_trust_mark_subjects';
+    private const string TABLE = 'oidanchor_trust_mark_subjects';
 
-    public const STATUSES = ['active', 'blocked', 'pending', 'inactive'];
+    public const array STATUSES = ['active', 'blocked', 'pending', 'inactive'];
 
 
     public function __construct(private readonly PDO $pdo)
@@ -142,7 +142,7 @@ class TrustMarkSubjectRepository
 
     /**
      * @param array<string,mixed>|null $additionalClaims
-     * @throws InvalidArgumentException When the entity is already a subject of the spec.
+     * @throws \InvalidArgumentException When the entity is already a subject of the spec.
      */
     public function create(
         int $specId,

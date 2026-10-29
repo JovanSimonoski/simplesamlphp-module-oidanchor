@@ -18,6 +18,7 @@ class ConstraintsApi extends ApiController
 {
     use ConstraintsTrait;
 
+
     public function get(Request $request): JsonResponse
     {
         $this->requireAdmin($request);

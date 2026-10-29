@@ -15,10 +15,10 @@ use SimpleSAML\Module\oidanchor\Repository\TrustMarkSubjectRepository;
 use SimpleSAML\Module\oidanchor\Service\FederationKeyService;
 use SimpleSAML\Module\oidanchor\Service\FederationResolver;
 use SimpleSAML\Module\oidanchor\Service\TrustMarkStatusService;
-use Throwable;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 /**
  * Public Resolve endpoint.

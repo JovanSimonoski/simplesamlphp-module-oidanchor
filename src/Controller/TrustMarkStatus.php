@@ -15,10 +15,10 @@ use SimpleSAML\Module\oidanchor\Service\FederationKeyService;
 use SimpleSAML\Module\oidanchor\Service\TrustMarkStatusService;
 use SimpleSAML\OpenID\Codebooks\ClaimsEnum;
 use SimpleSAML\OpenID\Codebooks\JwtTypesEnum;
-use Throwable;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 /**
  * Public Trust Mark Status endpoint.

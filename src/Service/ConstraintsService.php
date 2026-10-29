@@ -23,11 +23,13 @@ use SimpleSAML\Module\oidanchor\Repository\SubordinateRepository;
  */
 class ConstraintsService
 {
-    public const MAX_PATH_LENGTH = 'max_path_length';
-    public const NAMING_CONSTRAINTS = 'naming_constraints';
-    public const ALLOWED_ENTITY_TYPES = 'allowed_entity_types';
+    public const string MAX_PATH_LENGTH = 'max_path_length';
 
-    public const CLAIM = 'constraints';
+    public const string NAMING_CONSTRAINTS = 'naming_constraints';
+
+    public const string ALLOWED_ENTITY_TYPES = 'allowed_entity_types';
+
+    public const string CLAIM = 'constraints';
 
 
     public function __construct(private readonly PDO $pdo)
@@ -99,7 +101,7 @@ class ConstraintsService
      * Validate a whole Constraints object.
      *
      * @param array<string,mixed> $constraints
-     * @throws InvalidArgumentException
+     * @throws \InvalidArgumentException
      */
     public function validate(array $constraints): void
     {
@@ -116,7 +118,7 @@ class ConstraintsService
 
 
     /**
-     * @throws InvalidArgumentException
+     * @throws \InvalidArgumentException
      */
     public static function validateMaxPathLength(mixed $value): int
     {
@@ -130,7 +132,7 @@ class ConstraintsService
 
     /**
      * @return array<string,list<string>>
-     * @throws InvalidArgumentException
+     * @throws \InvalidArgumentException
      */
     public static function validateNamingConstraints(mixed $value): array
     {
@@ -160,7 +162,7 @@ class ConstraintsService
 
     /**
      * @return list<string>
-     * @throws InvalidArgumentException
+     * @throws \InvalidArgumentException
      */
     public static function validateAllowedEntityTypes(mixed $value): array
     {

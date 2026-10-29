@@ -9,7 +9,7 @@ use SimpleSAML\Module\oidanchor\Entity\FederationPolicy;
 
 class FederationPolicyRepository
 {
-    private const TABLE = 'oidanchor_metadata_policies';
+    private const string TABLE = 'oidanchor_metadata_policies';
 
 
     public function __construct(private readonly PDO $pdo)
@@ -32,7 +32,7 @@ class FederationPolicyRepository
 
 
     /**
-     * @return FederationPolicy[]
+     * @return \SimpleSAML\Module\oidanchor\Entity\FederationPolicy[]
      */
     public function findAll(): array
     {

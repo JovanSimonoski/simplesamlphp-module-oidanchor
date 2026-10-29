@@ -27,7 +27,7 @@ use Symfony\Component\HttpFoundation\Request;
  */
 class AdminPolicies
 {
-    private const FLASH_KEY = 'oidanchor_policies_flash';
+    private const string FLASH_KEY = 'oidanchor_policies_flash';
 
 
     public function __construct(

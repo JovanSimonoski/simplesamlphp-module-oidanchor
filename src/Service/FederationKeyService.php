@@ -13,7 +13,6 @@ use SimpleSAML\OpenID\Algorithms\SignatureAlgorithmEnum;
 use SimpleSAML\OpenID\Codebooks\ClaimsEnum;
 use SimpleSAML\OpenID\Codebooks\JwtTypesEnum;
 use SimpleSAML\OpenID\Federation;
-use SimpleSAML\OpenID\Jwk\JwkDecorator;
 use SimpleSAML\OpenID\Serializers\JwsSerializerEnum;
 use SimpleSAML\OpenID\SupportedAlgorithms;
 
@@ -35,14 +34,15 @@ class FederationKeyService
      * Resolve Response JOSE `typ`. The library has no JwtTypesEnum case for it
      * (OpenID Federation 1.0 §8.2: media type application/resolve-response+jwt).
      */
-    public const RESOLVE_RESPONSE_TYP = 'resolve-response+jwt';
+    public const string RESOLVE_RESPONSE_TYP = 'resolve-response+jwt';
+
 
     /**
      * @var array{
-     *     signingKey: JwkDecorator,
+     *     signingKey: \SimpleSAML\OpenID\Jwk\JwkDecorator,
      *     kid: string,
      *     publicJwkData: array<string,mixed>,
-     *     algorithm: SignatureAlgorithmEnum
+     *     algorithm: \SimpleSAML\OpenID\Algorithms\SignatureAlgorithmEnum
      * }|null
      */
     private ?array $context = null;
@@ -244,10 +244,10 @@ class FederationKeyService
      * The active signing context from the DB-backed key store (memoised per request).
      *
      * @return array{
-     *     signingKey: JwkDecorator,
+     *     signingKey: \SimpleSAML\OpenID\Jwk\JwkDecorator,
      *     kid: string,
      *     publicJwkData: array<string,mixed>,
-     *     algorithm: SignatureAlgorithmEnum
+     *     algorithm: \SimpleSAML\OpenID\Algorithms\SignatureAlgorithmEnum
      * }
      */
     private function context(): array

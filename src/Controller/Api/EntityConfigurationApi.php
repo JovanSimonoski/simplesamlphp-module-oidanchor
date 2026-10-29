@@ -27,6 +27,7 @@ class EntityConfigurationApi extends ApiController
     use AdditionalClaimsTrait;
     use MetadataDocumentTrait;
 
+
     /**
      * GET /entity-configuration — the entity configuration claim set as JSON.
      */

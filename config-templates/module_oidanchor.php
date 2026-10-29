@@ -147,4 +147,15 @@ return [
      */
     'api_admin_username' => null,
     'api_admin_password' => null,
+
+    /*
+     * Extra origins (scheme://host[:port]) trusted for session-authenticated API writes.
+     *
+     * When the API is called with the SimpleSAMLphp admin session cookie instead of HTTP Basic,
+     * POST/PUT/PATCH/DELETE requests are only accepted from this module's own origin (checked via
+     * the Origin / Sec-Fetch-Site headers), which blocks cross-site request forgery. List an origin
+     * here only if a reverse proxy makes the browser-facing origin differ from the one the module
+     * sees, e.g. ['https://federation.example.org'].
+     */
+    'api_allowed_origins' => [],
 ];

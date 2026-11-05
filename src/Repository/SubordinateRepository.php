@@ -60,6 +60,9 @@ class SubordinateRepository
         }
 
         $this->migrateToSurrogateId();
+
+        // The admin UI used to write `suspended`, outside the shared vocabulary; it means `blocked`.
+        $this->pdo->exec('UPDATE ' . self::TABLE . " SET status = 'blocked' WHERE status = 'suspended'");
     }
 
 

@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace SimpleSAML\Module\oidanchor\Validation;
 
+use SimpleSAML\Module\oidanchor\Entity\SubordinateStatus;
 use SimpleSAML\OpenID\Codebooks\EntityTypesEnum;
 use SimpleSAML\OpenID\Jwks\Factories\JwksDecoratorFactory;
 use Throwable;
 
 class SubordinateValidator
 {
-    private const array VALID_STATUSES = ['active', 'suspended'];
-
-
     /**
      * Validate subordinate data. Returns field => error-message pairs; empty means valid.
      *
@@ -63,8 +61,8 @@ class SubordinateValidator
             }
         }
 
-        if (isset($data['status']) && !in_array($data['status'], self::VALID_STATUSES, true)) {
-            $errors['status'] = 'Status must be one of: ' . implode(', ', self::VALID_STATUSES) . '.';
+        if (isset($data['status']) && SubordinateStatus::tryFrom((string) $data['status']) === null) {
+            $errors['status'] = 'Status must be one of: ' . implode(', ', SubordinateStatus::values()) . '.';
         }
 
         return $errors;

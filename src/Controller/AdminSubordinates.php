@@ -13,6 +13,7 @@ use SimpleSAML\Logger;
 use SimpleSAML\Module;
 use SimpleSAML\Module\admin\Controller\Menu;
 use SimpleSAML\Module\oidanchor\Entity\Subordinate;
+use SimpleSAML\Module\oidanchor\Entity\SubordinateStatus;
 use SimpleSAML\Module\oidanchor\Repository\SubordinateEventRepository;
 use SimpleSAML\Module\oidanchor\Repository\SubordinateRepository;
 use SimpleSAML\Module\oidanchor\Service\SubordinateService;
@@ -230,7 +231,7 @@ class AdminSubordinates
 
 
     /**
-     * Set subordinate status (POST only). Expects status=active|suspended in the body.
+     * Set subordinate status (POST only). Expects status=active|blocked in the body.
      */
     public function setStatus(Request $request, string $entityId): RedirectResponse
     {
@@ -250,12 +251,16 @@ class AdminSubordinates
             return new RedirectResponse(Module::getModuleURL('oidanchor/admin/subordinates'));
         }
 
-        if ($status === 'suspended') {
-            $service->suspend($entityId);
-            $verb = 'suspended';
-        } else {
+        if ($status === SubordinateStatus::Blocked->value) {
+            $service->block($entityId);
+            $verb = 'blocked';
+        } elseif ($status === SubordinateStatus::Active->value) {
             $service->activate($entityId);
             $verb = 'activated';
+        } else {
+            $this->pushFlash('error', sprintf('Invalid status "%s".', $status));
+
+            return new RedirectResponse(Module::getModuleURL('oidanchor/admin/subordinates'));
         }
 
         $adminUser = $this->getAdminUsername();

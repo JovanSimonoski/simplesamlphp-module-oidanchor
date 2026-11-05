@@ -7,7 +7,8 @@
 <link rel="stylesheet" href="{{ asset('css/oidanchor.css', 'oidanchor') }}">
 <style>
   .badge-active   { color: #2a6b2a; font-weight: bold; }
-  .badge-suspended { color: #9a3a00; font-weight: bold; }
+  .badge-blocked, .badge-inactive { color: #9a3a00; font-weight: bold; }
+  .badge-pending { color: #6b6b00; font-weight: bold; }
   .flash-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: .6em 1em; margin-bottom: 1em; border-radius: 3px; }
   .flash-error   { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: .6em 1em; margin-bottom: 1em; border-radius: 3px; }
 </style>
@@ -76,10 +77,10 @@
                       action="{{ moduleURL('oidanchor/admin/subordinates/' ~ encodedId ~ '/status') }}"
                       style="display:inline">
                   <input type="hidden" name="csrf_token" value="{{ csrfToken|e }}">
-                  <input type="hidden" name="status" value="suspended">
+                  <input type="hidden" name="status" value="blocked">
                   <button type="submit" class="pure-button"
-                          onclick="return confirm('Suspend this subordinate?')">
-                    {% trans %}Suspend{% endtrans %}
+                          onclick="return confirm('Block this subordinate? It will no longer be served by the federation endpoints.')">
+                    {% trans %}Block{% endtrans %}
                   </button>
                 </form>
               {% else %}

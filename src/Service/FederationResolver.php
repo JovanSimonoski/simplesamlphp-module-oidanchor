@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace SimpleSAML\Module\oidanchor\Service;
 
-use GuzzleHttp\Client;
 use SimpleSAML\Configuration;
 use SimpleSAML\Module\oidanchor\Exception\ResolveException;
 use SimpleSAML\OpenID\Algorithms\SignatureAlgorithmBag;
@@ -154,20 +153,14 @@ class FederationResolver
 
     private function buildFederation(InMemoryCache $cache): Federation
     {
-        $config = $this->config();
-
-        $client = new Client([
-            'connect_timeout' => $config['http_connect_timeout'],
-            'timeout'         => $config['http_read_timeout'],
-            'allow_redirects' => ['max' => 1, 'strict' => true, 'referer' => false, 'protocols' => ['https']],
-            'verify'          => $config['http_verify_tls'],
-            'http_errors'     => true,
-            'headers'         => ['User-Agent' => 'oidanchor-resolve/1.0 (+' . $this->keys->entityId() . ')'],
-        ]);
+        $client = FederationHttpClient::create(
+            $this->moduleConfig,
+            'oidanchor-resolve/1.0 (+' . $this->keys->entityId() . ')',
+        );
 
         return new Federation(
             supportedAlgorithms: new SupportedAlgorithms(new SignatureAlgorithmBag($this->keys->algorithm())),
-            maxTrustChainDepth: $config['max_chain_depth'],
+            maxTrustChainDepth: $this->config()['max_chain_depth'],
             cache: $cache,
             client: $client,
         );
@@ -356,21 +349,18 @@ class FederationResolver
 
 
     /**
-     * @return array{
-     *     max_chain_depth:int, http_connect_timeout:int, http_read_timeout:int,
-     *     response_lifetime:int, http_verify_tls:bool
-     * }
+     * Resolver tuning. The HTTP settings in the same `resolve` block are read by
+     * {@see FederationHttpClient}.
+     *
+     * @return array{max_chain_depth:int, response_lifetime:int}
      */
     private function config(): array
     {
         $r = $this->moduleConfig->getOptionalArray('resolve', []);
 
         return [
-            'max_chain_depth'      => (int) ($r['max_chain_depth'] ?? 6),
-            'http_connect_timeout' => (int) ($r['http_connect_timeout'] ?? 5),
-            'http_read_timeout'    => (int) ($r['http_read_timeout'] ?? 5),
-            'response_lifetime'    => (int) ($r['response_lifetime'] ?? 600),
-            'http_verify_tls'      => array_key_exists('http_verify_tls', $r) ? (bool) $r['http_verify_tls'] : true,
+            'max_chain_depth'   => (int) ($r['max_chain_depth'] ?? 6),
+            'response_lifetime' => (int) ($r['response_lifetime'] ?? 600),
         ];
     }
 }

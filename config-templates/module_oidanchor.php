@@ -88,14 +88,15 @@ return [
     'trust_mark_status_response_lifetime' => 600,
 
     /*
-     * Resolve endpoint (/oidanchor/resolve) settings.
+     * Resolve endpoint (/oidanchor/resolve) settings. The http_* settings also apply to the
+     * other outbound federation fetches (refreshing externally issued trust marks).
      */
     'resolve' => [
         // Maximum trust-chain depth the resolver will walk before failing (cycle/abuse guard).
         'max_chain_depth'      => 6,
-        // cURL/Guzzle connect timeout, in seconds, for each entity-statement fetch.
+        // cURL/Guzzle connect timeout, in seconds, for each outbound fetch.
         'http_connect_timeout' => 5,
-        // Read timeout, in seconds, for each entity-statement fetch.
+        // Read timeout, in seconds, for each outbound fetch.
         'http_read_timeout'    => 5,
         // Lifetime in seconds applied to the exp claim of the signed Resolve Response JWT
         // (capped by the trust chain's own expiration).
@@ -105,6 +106,15 @@ return [
         // Leave true in production.
         'http_verify_tls'      => true,
     ],
+
+    /*
+     * The SimpleSAMLphp cron tag on which periodic maintenance runs: interval-based signing-key
+     * rotation (KMS rotation options) and refreshing / re-issuing the trust marks published in
+     * this TA's own Entity Configuration. None of this happens on public requests, so the cron
+     * module must be enabled and run for this tag (it should run more often than the shortest
+     * trust mark lifetime / rotation interval).
+     */
+    'cron_tag' => 'hourly',
 
     /*
      * Enable/disable the federation_fetch endpoint.

@@ -16,7 +16,7 @@ class ResolveResult
 {
     /**
      * @param string $sub Resolved entity.
-     * @param TrustChain $trustChain The verified trust chain (leaf → trust anchor).
+     * @param \SimpleSAML\OpenID\Federation\TrustChain $trustChain The verified trust chain (leaf → trust anchor).
      * @param list<string> $trustChainTokens Compact JWS strings of the chain, leaf-first.
      * @param array<string,array<string,mixed>> $metadata Policy-applied metadata, keyed by entity type.
      * @param list<array{trust_mark_type:string,trust_mark:string}> $trustMarks Validated Trust Marks.

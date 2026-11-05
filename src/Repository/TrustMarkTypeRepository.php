@@ -16,7 +16,7 @@ use SimpleSAML\Module\oidanchor\Entity\TrustMarkType;
  */
 class TrustMarkTypeRepository
 {
-    private const TABLE = 'oidanchor_trust_mark_types';
+    private const string TABLE = 'oidanchor_trust_mark_types';
 
 
     public function __construct(private readonly PDO $pdo)
@@ -87,7 +87,7 @@ class TrustMarkTypeRepository
 
 
     /**
-     * @return TrustMarkType[]
+     * @return \SimpleSAML\Module\oidanchor\Entity\TrustMarkType[]
      */
     public function findAll(): array
     {

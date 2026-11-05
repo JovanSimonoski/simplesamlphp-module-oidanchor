@@ -34,8 +34,8 @@ class TrustMarkIssuanceService
     /**
      * Issue (or return a cached) Trust Mark for a subject of an issuance spec.
      *
-     * @throws RuntimeException When the spec is unknown.
-     * @throws InvalidArgumentException When the subject is not eligible.
+     * @throws \RuntimeException When the spec is unknown.
+     * @throws \InvalidArgumentException When the subject is not eligible.
      */
     public function issueForSubject(int $specId, int $subjectId): IssuedTrustMark
     {
@@ -54,7 +54,7 @@ class TrustMarkIssuanceService
     /**
      * @param array<string,mixed> $spec
      * @param array<string,mixed> $subject
-     * @throws InvalidArgumentException When the subject's status is not `active`.
+     * @throws \InvalidArgumentException When the subject's status is not `active`.
      */
     public function issue(array $spec, array $subject): IssuedTrustMark
     {
@@ -75,7 +75,8 @@ class TrustMarkIssuanceService
         $cacheTtl = (int) ($spec['cache_ttl'] ?? 0);
         if ($cacheTtl > 0) {
             $existing = $issuedRepo->findActive($trustMarkType, $sub);
-            if ($existing !== null
+            if (
+                $existing !== null
                 && $existing->iat + $cacheTtl > $now
                 && ($existing->exp === null || $existing->exp > $now)
             ) {

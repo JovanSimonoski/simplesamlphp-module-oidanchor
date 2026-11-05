@@ -40,7 +40,7 @@ class MetadataPolicyCritService
      *
      * @param array<mixed> $operators
      * @return list<string>
-     * @throws InvalidArgumentException When an operator is unknown or the list is malformed.
+     * @throws \InvalidArgumentException When an operator is unknown or the list is malformed.
      */
     public function replace(array $operators): array
     {
@@ -63,7 +63,7 @@ class MetadataPolicyCritService
     /**
      * Add one operator. Returns false when it was already present.
      *
-     * @throws InvalidArgumentException When the operator is unknown.
+     * @throws \InvalidArgumentException When the operator is unknown.
      */
     public function add(mixed $operator): bool
     {
@@ -93,7 +93,7 @@ class MetadataPolicyCritService
 
 
     /**
-     * @throws InvalidArgumentException
+     * @throws \InvalidArgumentException
      */
     private static function assertKnownOperator(mixed $operator): string
     {

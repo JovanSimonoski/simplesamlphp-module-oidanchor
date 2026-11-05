@@ -17,7 +17,7 @@ use SimpleSAML\Module\oidanchor\Entity\Subordinate;
  */
 class SubordinateRepository
 {
-    private const TABLE = 'oidanchor_subordinates';
+    private const string TABLE = 'oidanchor_subordinates';
 
 
     public function __construct(private readonly PDO $pdo)
@@ -112,7 +112,7 @@ class SubordinateRepository
     /**
      * Return all registered subordinates regardless of status, ordered by registration time.
      *
-     * @return Subordinate[]
+     * @return \SimpleSAML\Module\oidanchor\Entity\Subordinate[]
      */
     public function findAll(): array
     {

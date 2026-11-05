@@ -14,10 +14,10 @@ use PDO;
  */
 class SubordinateEventRepository
 {
-    private const TABLE = 'oidanchor_subordinate_events';
+    private const string TABLE = 'oidanchor_subordinate_events';
 
     /** Spec SubordinateEvent.type vocabulary. */
-    public const TYPES = [
+    public const array TYPES = [
         'created', 'deleted', 'status_updated', 'updated',
         'jwk_added', 'jwk_removed', 'jwks_replaced',
         'metadata_updated', 'metadata_deleted',

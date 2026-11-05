@@ -242,8 +242,10 @@ class EcTrustMarksApi extends ApiController
     {
         $out = ['id' => $row['id']];
 
-        foreach (['trust_mark_type', 'trust_mark_issuer', 'trust_mark', 'min_lifetime',
-                  'refresh_grace_period', 'refresh_rate_limit', 'self_issuance_spec'] as $field) {
+        foreach (
+            ['trust_mark_type', 'trust_mark_issuer', 'trust_mark', 'min_lifetime',
+                  'refresh_grace_period', 'refresh_rate_limit', 'self_issuance_spec'] as $field
+        ) {
             if (($row[$field] ?? null) !== null) {
                 $out[$field] = $row[$field];
             }

@@ -24,7 +24,8 @@ use Throwable;
 class TrustMarkDelegationService
 {
     /** Default delegation validity when the TA mints one for itself. */
-    private const DEFAULT_LIFETIME = 31536000;
+    private const int DEFAULT_LIFETIME = 31536000;
+
 
     private ?Federation $federation = null;
 
@@ -76,7 +77,7 @@ class TrustMarkDelegationService
      * Parse a supplied delegation JWT and check it authorises $issuer for $trustMarkType.
      *
      * @return array{iss: string, sub: string, trust_mark_type: string}
-     * @throws InvalidArgumentException When the JWT cannot be parsed or does not match.
+     * @throws \InvalidArgumentException When the JWT cannot be parsed or does not match.
      */
     public function validate(string $delegationJwt, string $trustMarkType, string $issuer): array
     {

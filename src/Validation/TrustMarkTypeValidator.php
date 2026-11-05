@@ -12,7 +12,7 @@ class TrustMarkTypeValidator
     /**
      * Claim names the issuer controls — they must not be overridden via a type's extra_claims.
      */
-    public const RESERVED_CLAIMS = ['iss', 'sub', 'iat', 'exp', 'id', 'trust_mark_id', 'trust_mark_type'];
+    public const array RESERVED_CLAIMS = ['iss', 'sub', 'iat', 'exp', 'id', 'trust_mark_id', 'trust_mark_type'];
 
 
     /**

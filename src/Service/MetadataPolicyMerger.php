@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace SimpleSAML\Module\oidanchor\Service;
 
 use SimpleSAML\OpenID\Codebooks\EntityTypesEnum;
-use SimpleSAML\OpenID\Exceptions\MetadataPolicyException;
 use SimpleSAML\OpenID\Federation\MetadataPolicyResolver;
 use SimpleSAML\OpenID\Helpers;
 
@@ -36,7 +35,7 @@ class MetadataPolicyMerger
      * @param array<string,mixed>|null $federationPolicy Federation-wide policy (full format, may be null).
      * @param array<string,mixed>|null $subordinatePolicy Per-subordinate policy (full format, may be null).
      * @return array<string,mixed>|null Merged metadata_policy claim, or null if nothing to embed.
-     * @throws MetadataPolicyException If the two policies are incompatible (e.g. empty one_of intersection).
+     * @throws \SimpleSAML\OpenID\Exceptions\MetadataPolicyException If the two policies are incompatible (e.g. empty one_of intersection).
      */
     public function merge(?array $federationPolicy, ?array $subordinatePolicy): ?array
     {

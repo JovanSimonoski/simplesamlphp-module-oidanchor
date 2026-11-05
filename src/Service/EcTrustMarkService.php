@@ -24,7 +24,8 @@ use Throwable;
  */
 class EcTrustMarkService
 {
-    private const DEFAULT_SELF_ISSUED_LIFETIME = 86400;
+    private const int DEFAULT_SELF_ISSUED_LIFETIME = 86400;
+
 
     private ?Federation $federation = null;
 

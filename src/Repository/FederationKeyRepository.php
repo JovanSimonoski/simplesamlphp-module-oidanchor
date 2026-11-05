@@ -16,7 +16,7 @@ use SimpleSAML\Module\oidanchor\Entity\FederationKey;
  */
 class FederationKeyRepository
 {
-    private const TABLE = 'oidanchor_federation_keys';
+    private const string TABLE = 'oidanchor_federation_keys';
 
 
     public function __construct(private readonly PDO $pdo)
@@ -50,7 +50,7 @@ class FederationKeyRepository
     /**
      * All keys, newest first.
      *
-     * @return FederationKey[]
+     * @return \SimpleSAML\Module\oidanchor\Entity\FederationKey[]
      */
     public function findAll(): array
     {

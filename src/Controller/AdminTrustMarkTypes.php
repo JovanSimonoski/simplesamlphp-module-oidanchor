@@ -29,7 +29,7 @@ use Symfony\Component\HttpFoundation\Request;
  */
 class AdminTrustMarkTypes
 {
-    private const FLASH_KEY = 'oidanchor_tm_types_flash';
+    private const string FLASH_KEY = 'oidanchor_tm_types_flash';
 
 
     public function __construct(
@@ -212,7 +212,7 @@ class AdminTrustMarkTypes
     // -------------------------------------------------------------------------
 
     /**
-     * @return array{0: TrustMarkTypeRepository, 1: IssuedTrustMarkRepository}
+     * @return array{0: \SimpleSAML\Module\oidanchor\Repository\TrustMarkTypeRepository, 1: \SimpleSAML\Module\oidanchor\Repository\IssuedTrustMarkRepository}
      */
     private function getRepositories(): array
     {

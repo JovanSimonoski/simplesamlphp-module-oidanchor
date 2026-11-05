@@ -16,7 +16,7 @@ use SimpleSAML\Module\oidanchor\Entity\IssuedTrustMark;
  */
 class IssuedTrustMarkRepository
 {
-    private const TABLE = 'oidanchor_trust_marks_issued';
+    private const string TABLE = 'oidanchor_trust_marks_issued';
 
 
     public function __construct(private readonly PDO $pdo)
@@ -56,7 +56,7 @@ class IssuedTrustMarkRepository
     /**
      * Return issued marks, optionally filtered by type, subject and/or status, newest first.
      *
-     * @return IssuedTrustMark[]
+     * @return \SimpleSAML\Module\oidanchor\Entity\IssuedTrustMark[]
      */
     public function findAll(?string $trustMarkType = null, ?string $sub = null, ?string $status = null): array
     {
@@ -150,7 +150,7 @@ class IssuedTrustMarkRepository
     /**
      * All active, unexpired marks held by a subject — used to embed in subordinate statements.
      *
-     * @return IssuedTrustMark[]
+     * @return \SimpleSAML\Module\oidanchor\Entity\IssuedTrustMark[]
      */
     public function findActiveBySub(string $sub): array
     {

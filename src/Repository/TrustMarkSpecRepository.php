@@ -17,7 +17,7 @@ use PDO;
  */
 class TrustMarkSpecRepository
 {
-    private const TABLE = 'oidanchor_trust_mark_specs';
+    private const string TABLE = 'oidanchor_trust_mark_specs';
 
 
     public function __construct(private readonly PDO $pdo)
@@ -136,7 +136,7 @@ class TrustMarkSpecRepository
 
     /**
      * @param array<string,mixed> $data
-     * @throws InvalidArgumentException When a spec for the type already exists.
+     * @throws \InvalidArgumentException When a spec for the type already exists.
      */
     public function create(array $data): int
     {

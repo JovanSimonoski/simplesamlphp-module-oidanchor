@@ -37,7 +37,7 @@ class SubordinateService
     /**
      * Return all subordinates (any status) for admin display.
      *
-     * @return Subordinate[]
+     * @return \SimpleSAML\Module\oidanchor\Entity\Subordinate[]
      */
     public function findAll(): array
     {

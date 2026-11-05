@@ -17,9 +17,10 @@ use WeakMap;
  */
 final class TrustMarkTypeColumnMigration
 {
-    private const TABLES = ['oidanchor_trust_marks_issued', 'oidanchor_trust_mark_types'];
+    private const array TABLES = ['oidanchor_trust_marks_issued', 'oidanchor_trust_mark_types'];
 
-    /** @var WeakMap<PDO, true>|null Connections already migrated in this request. */
+
+    /** @var \WeakMap<\PDO, true>|null Connections already migrated in this request. */
     private static ?WeakMap $done = null;
 
 

@@ -15,8 +15,9 @@ use PDO;
  */
 class TrustMarkIssuerRepository
 {
-    private const TABLE = 'oidanchor_trust_mark_issuers';
-    private const LINK_TABLE = 'oidanchor_trust_mark_type_issuers';
+    private const string TABLE = 'oidanchor_trust_mark_issuers';
+
+    private const string LINK_TABLE = 'oidanchor_trust_mark_type_issuers';
 
 
     public function __construct(private readonly PDO $pdo)
@@ -95,7 +96,7 @@ class TrustMarkIssuerRepository
 
 
     /**
-     * @throws InvalidArgumentException When the issuer is already registered.
+     * @throws \InvalidArgumentException When the issuer is already registered.
      */
     public function create(string $issuer, ?string $description): int
     {

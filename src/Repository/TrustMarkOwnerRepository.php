@@ -15,8 +15,9 @@ use PDO;
  */
 class TrustMarkOwnerRepository
 {
-    private const TABLE = 'oidanchor_trust_mark_owners';
-    private const LINK_TABLE = 'oidanchor_trust_mark_type_owner';
+    private const string TABLE = 'oidanchor_trust_mark_owners';
+
+    private const string LINK_TABLE = 'oidanchor_trust_mark_type_owner';
 
 
     public function __construct(private readonly PDO $pdo)
@@ -97,7 +98,7 @@ class TrustMarkOwnerRepository
 
     /**
      * @param array<string,mixed> $jwks
-     * @throws InvalidArgumentException When the entity_id is already registered as an owner.
+     * @throws \InvalidArgumentException When the entity_id is already registered as an owner.
      */
     public function create(string $entityId, array $jwks, ?string $description): int
     {

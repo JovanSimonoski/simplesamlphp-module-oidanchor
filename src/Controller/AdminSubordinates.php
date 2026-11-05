@@ -31,7 +31,7 @@ use Symfony\Component\HttpFoundation\Request;
  */
 class AdminSubordinates
 {
-    private const FLASH_KEY = 'oidanchor_flash';
+    private const string FLASH_KEY = 'oidanchor_flash';
 
 
     public function __construct(

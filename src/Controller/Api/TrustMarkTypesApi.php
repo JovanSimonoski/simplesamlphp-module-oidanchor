@@ -372,7 +372,7 @@ class TrustMarkTypesApi extends ApiController
      * Link an existing issuer (issuer_id) or create one (issuer [+ description]).
      *
      * @param array<string,mixed> $data
-     * @throws InvalidArgumentException
+     * @throws \InvalidArgumentException
      */
     private function resolveOrCreateIssuer(array $data, int $typeId): void
     {
@@ -407,7 +407,7 @@ class TrustMarkTypesApi extends ApiController
      * the owner, a delegation JWT is minted so it can be presented on issuance.
      *
      * @param array<string,mixed> $data
-     * @throws InvalidArgumentException
+     * @throws \InvalidArgumentException
      */
     private function resolveOrCreateOwner(array $data, int $typeId): void
     {

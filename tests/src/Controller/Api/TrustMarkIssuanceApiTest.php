@@ -9,6 +9,7 @@ use SimpleSAML\Configuration;
 use SimpleSAML\Module\oidanchor\Controller\Api\TrustMarkIssuanceApi;
 use SimpleSAML\Module\oidanchor\Repository\IssuedTrustMarkRepository;
 use SimpleSAML\Module\oidanchor\Repository\TrustMarkSpecRepository;
+use SimpleSAML\Module\oidanchor\Repository\TrustMarkSubjectRepository;
 use SimpleSAML\Test\Module\oidanchor\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -80,6 +81,59 @@ final class TrustMarkIssuanceApiTest extends TestCase
 
         $this->assertNull($this->issued()->findActive(self::TYPE, self::OLD));
         $this->assertNull($this->issued()->findActive(self::TYPE, self::NEW));
+    }
+
+
+    public function testFailedIssuanceOnCreateIsReportedAndCreatesNothing(): void
+    {
+        $this->breakSigning();
+
+        $response = $this->api()->createSubject($this->request('POST', ['entity_id' => self::OLD, 'status' => 'active']), $this->specId);
+
+        $this->assertSame(500, $response->getStatusCode());
+        $this->assertNull((new TrustMarkSubjectRepository($this->pdo))->findByTypeAndEntity(self::TYPE, self::OLD));
+    }
+
+
+    public function testFailedIssuanceOnActivationLeavesTheStatusUnchanged(): void
+    {
+        $created = $this->api()->createSubject($this->request('POST', ['entity_id' => self::OLD, 'status' => 'pending']), $this->specId);
+        $this->assertSame(201, $created->getStatusCode());
+        $subjectId = (string) json_decode((string) $created->getContent(), true)['id'];
+
+        $this->breakSigning();
+        $request = Request::create('/api/v1/admin/trust-marks/issuance', 'PUT', server: [
+            'PHP_AUTH_USER' => 'gateway',
+            'PHP_AUTH_PW'   => 's3cret',
+        ], content: 'active');
+
+        $response = $this->api()->changeSubjectStatus($request, $this->specId, $subjectId);
+
+        $this->assertSame(500, $response->getStatusCode());
+        $this->assertSame(
+            'pending',
+            (new TrustMarkSubjectRepository($this->pdo))->findByTypeAndEntity(self::TYPE, self::OLD)['status'] ?? null,
+        );
+        $this->assertNull($this->issued()->findActive(self::TYPE, self::OLD));
+    }
+
+
+    /**
+     * Point the module at a signing key file that is not a key. Nothing has signed yet, so the
+     * key store is empty and the next issuance tries (and fails) to import it.
+     */
+    private function breakSigning(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'oidanchor-bad-key-');
+        $this->assertIsString($file);
+        file_put_contents($file, 'not a PEM key');
+        register_shutdown_function(static fn() => @unlink($file));
+
+        $config = Configuration::getConfig('module_oidanchor.php')->toArray();
+        Configuration::setPreLoadedConfig(
+            Configuration::loadFromArray(['signing_key_file' => $file] + $config),
+            'module_oidanchor.php',
+        );
     }
 
 

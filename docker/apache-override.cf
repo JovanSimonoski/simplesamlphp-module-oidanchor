@@ -4,7 +4,11 @@
 AllowEncodedSlashes NoDecode
 
 RewriteEngine On
-RewriteRule ^/.well-known/openid-federation(.*) /${SSP_APACHE_ALIAS}module.php/oidanchor/openid-federation.php$1 [PT]
+# Serve the federation endpoints at the host root, where the Entity Configuration advertises
+# them (base_url + '/federation/fetch' etc.) and where federation clients look for the
+# well-known Entity Configuration. Each maps to the module route of the same name; the
+# query string is passed through unchanged.
+RewriteRule ^/(\.well-known/openid-federation|federation/fetch|federation/list|resolve|trust_mark_status)$ /${SSP_APACHE_ALIAS}module.php/oidanchor/$1 [PT]
 
 # Leave Authorization header with Bearer tokens available in requests.
 # Solution 1:

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SimpleSAML\Module\oidanchor\Repository;
 
 use PDO;
+use SimpleSAML\Module\oidanchor\Database\Upsert;
 
 /**
  * Stored metadata for the TA's own entity configuration, one JSON document per entity type.
@@ -77,17 +78,9 @@ class EcMetadataRepository
      */
     public function upsert(string $entityType, array $metadata): void
     {
-        $stmt = $this->pdo->prepare(
-            'INSERT INTO ' . self::TABLE . ' (entity_type, metadata, updated_at)
-             VALUES (?, ?, ?)
-             ON CONFLICT(entity_type) DO UPDATE SET
-                 metadata   = excluded.metadata,
-                 updated_at = excluded.updated_at',
-        );
-        $stmt->execute([
-            $entityType,
-            json_encode($metadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
-            time(),
+        Upsert::run($this->pdo, self::TABLE, ['entity_type' => $entityType], [
+            'metadata'   => json_encode($metadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            'updated_at' => time(),
         ]);
     }
 

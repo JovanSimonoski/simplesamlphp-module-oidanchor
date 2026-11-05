@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SimpleSAML\Module\oidanchor\Repository;
 
 use PDO;
+use SimpleSAML\Module\oidanchor\Database\Upsert;
 
 /**
  * Key/value store for runtime-mutable settings written through the Federation Admin API
@@ -97,14 +98,10 @@ class SettingsRepository
 
     public function set(string $key, mixed $value): void
     {
-        $stmt = $this->pdo->prepare(
-            'INSERT INTO ' . self::TABLE . ' (setting_key, setting_value, updated_at)
-             VALUES (?, ?, ?)
-             ON CONFLICT(setting_key) DO UPDATE SET
-                 setting_value = excluded.setting_value,
-                 updated_at    = excluded.updated_at',
-        );
-        $stmt->execute([$key, json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), time()]);
+        Upsert::run($this->pdo, self::TABLE, ['setting_key' => $key], [
+            'setting_value' => json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            'updated_at'    => time(),
+        ]);
     }
 
 

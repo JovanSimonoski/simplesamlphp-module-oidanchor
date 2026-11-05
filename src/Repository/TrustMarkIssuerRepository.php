@@ -6,6 +6,7 @@ namespace SimpleSAML\Module\oidanchor\Repository;
 
 use InvalidArgumentException;
 use PDO;
+use SimpleSAML\Module\oidanchor\Database\Upsert;
 
 /**
  * Trust Mark Issuers: entities authorised to issue marks of a given Trust Mark Type.
@@ -169,12 +170,13 @@ class TrustMarkIssuerRepository
 
     public function link(int $trustMarkTypeId, int $issuerId): void
     {
-        $stmt = $this->pdo->prepare(
-            'INSERT INTO ' . self::LINK_TABLE . ' (trust_mark_type_id, issuer_id, created_at)
-             VALUES (?, ?, ?)
-             ON CONFLICT(trust_mark_type_id, issuer_id) DO NOTHING',
+        Upsert::run(
+            $this->pdo,
+            self::LINK_TABLE,
+            ['trust_mark_type_id' => $trustMarkTypeId, 'issuer_id' => $issuerId],
+            [],
+            ['created_at' => time()],
         );
-        $stmt->execute([$trustMarkTypeId, $issuerId, time()]);
     }
 
 

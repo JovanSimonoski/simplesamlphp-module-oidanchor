@@ -52,8 +52,8 @@ class TrustMarkSubjectRepository
 
 
     /**
-     * One-shot backfill of subjects from previously issued marks. Idempotent: the
-     * INSERT is guarded by the UNIQUE(spec_id, entity_id) constraint.
+     * One-shot backfill of subjects from previously issued marks. Idempotent: only pairs that
+     * have no subject row yet are inserted (portable SQL rather than INSERT OR IGNORE).
      */
     private function migrateFromIssuedMarks(): void
     {
@@ -63,7 +63,7 @@ class TrustMarkSubjectRepository
 
         // A subject is blocked only when it holds no active mark for the type.
         $this->pdo->exec(
-            'INSERT OR IGNORE INTO ' . self::TABLE . " (spec_id, entity_id, status, created_at)
+            'INSERT INTO ' . self::TABLE . " (spec_id, entity_id, status, created_at)
              SELECT s.id,
                     i.sub,
                     CASE WHEN SUM(CASE WHEN i.status = 'active' THEN 1 ELSE 0 END) > 0
@@ -71,7 +71,10 @@ class TrustMarkSubjectRepository
                     MIN(i.iat)
              FROM oidanchor_trust_marks_issued i
              JOIN oidanchor_trust_mark_specs s ON s.trust_mark_type = i.trust_mark_type
-             GROUP BY s.id, i.sub",
+             WHERE NOT EXISTS (
+                 SELECT 1 FROM " . self::TABLE . ' x WHERE x.spec_id = s.id AND x.entity_id = i.sub
+             )
+             GROUP BY s.id, i.sub',
         );
     }
 

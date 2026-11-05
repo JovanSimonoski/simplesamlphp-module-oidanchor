@@ -6,6 +6,7 @@ namespace SimpleSAML\Module\oidanchor\Repository;
 
 use InvalidArgumentException;
 use PDO;
+use SimpleSAML\Module\oidanchor\Database\Upsert;
 
 /**
  * Trust Mark Owners: entities that own a Trust Mark Type and may delegate its issuance.
@@ -168,14 +169,13 @@ class TrustMarkOwnerRepository
 
     public function setOwnerOfType(int $trustMarkTypeId, int $ownerId, ?string $delegationJwt): void
     {
-        $stmt = $this->pdo->prepare(
-            'INSERT INTO ' . self::LINK_TABLE . ' (trust_mark_type_id, owner_id, delegation_jwt, created_at)
-             VALUES (?, ?, ?, ?)
-             ON CONFLICT(trust_mark_type_id) DO UPDATE SET
-                 owner_id       = excluded.owner_id,
-                 delegation_jwt = excluded.delegation_jwt',
+        Upsert::run(
+            $this->pdo,
+            self::LINK_TABLE,
+            ['trust_mark_type_id' => $trustMarkTypeId],
+            ['owner_id' => $ownerId, 'delegation_jwt' => $delegationJwt],
+            ['created_at' => time()],
         );
-        $stmt->execute([$trustMarkTypeId, $ownerId, $delegationJwt, time()]);
     }
 
 

@@ -9,6 +9,11 @@
             "SimpleSAML\\Module\\oidanchor\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "SimpleSAML\\Test\\Module\\oidanchor\\": "tests/src/"
+        }
+    },
     "require": {
         "php": "^8.3",
         "ext-date": "*",

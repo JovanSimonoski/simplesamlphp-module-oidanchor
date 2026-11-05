@@ -469,15 +469,21 @@ class TrustMarkIssuanceApi extends ApiController
         ?string $trustMarkType = null,
     ): void {
         try {
-            if ($status === 'active') {
-                $this->issuanceService()->issueForSubject($specId, $subjectId);
-
-                return;
-            }
-
             $spec    = $this->specRepo()->findById($specId);
             $subject = $this->subjectRepo()->findById($specId, $subjectId);
             if ($spec === null || $subject === null) {
+                return;
+            }
+
+            // An entity_id change leaves marks behind under the old subject name — whatever the
+            // new status is. For an active subject the mark is re-issued under the new name below.
+            if ($previousEntityId !== null && $trustMarkType !== null && $previousEntityId !== (string) $subject['entity_id']) {
+                $this->issuanceService()->revokeMarksForSubject($trustMarkType, $previousEntityId, 'subject entity_id changed');
+            }
+
+            if ($status === 'active') {
+                $this->issuanceService()->issueForSubject($specId, $subjectId);
+
                 return;
             }
 
@@ -486,11 +492,6 @@ class TrustMarkIssuanceApi extends ApiController
                 (string) $subject['entity_id'],
                 sprintf('subject status changed to %s', $status),
             );
-
-            // An entity_id change leaves marks behind under the old subject name.
-            if ($previousEntityId !== null && $trustMarkType !== null && $previousEntityId !== (string) $subject['entity_id']) {
-                $this->issuanceService()->revokeMarksForSubject($trustMarkType, $previousEntityId, 'subject entity_id changed');
-            }
         } catch (Throwable $e) {
             Logger::warning('oidanchor: trust mark issuance side effect failed: ' . $e->getMessage());
         }

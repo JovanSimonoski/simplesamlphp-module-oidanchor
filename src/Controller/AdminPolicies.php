@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace SimpleSAML\Module\oidanchor\Controller;
 
-use PDO;
-use PDOException;
-use RuntimeException;
 use SimpleSAML\Configuration;
 use SimpleSAML\Locale\Translate;
 use SimpleSAML\Logger;
 use SimpleSAML\Module;
 use SimpleSAML\Module\admin\Controller\Menu;
+use SimpleSAML\Module\oidanchor\Database\PdoFactory;
 use SimpleSAML\Module\oidanchor\Entity\FederationPolicy;
 use SimpleSAML\Module\oidanchor\Repository\FederationPolicyRepository;
 use SimpleSAML\Module\oidanchor\Validation\MetadataPolicyValidator;
@@ -255,26 +253,7 @@ class AdminPolicies
     {
         $moduleConfig = Configuration::getConfig('module_oidanchor.php');
 
-        return new FederationPolicyRepository($this->buildPdo($moduleConfig));
-    }
-
-
-    private function buildPdo(Configuration $moduleConfig): PDO
-    {
-        try {
-            return new PDO(
-                $moduleConfig->getString('database_dsn'),
-                $moduleConfig->getOptionalString('database_username', null),
-                $moduleConfig->getOptionalString('database_password', null),
-                [
-                    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES   => false,
-                ],
-            );
-        } catch (PDOException $e) {
-            throw new RuntimeException('oidanchor: cannot connect to database: ' . $e->getMessage(), 0, $e);
-        }
+        return new FederationPolicyRepository(PdoFactory::get($moduleConfig));
     }
 
 

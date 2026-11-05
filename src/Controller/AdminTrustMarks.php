@@ -33,6 +33,9 @@ use Throwable;
  */
 class AdminTrustMarks
 {
+    use AdminCsrfTrait;
+
+
     private const string FLASH_KEY = 'oidanchor_tm_flash';
 
 
@@ -341,30 +344,6 @@ class AdminTrustMarks
         } catch (PDOException $e) {
             throw new RuntimeException('oidanchor: cannot connect to database: ' . $e->getMessage(), 0, $e);
         }
-    }
-
-
-    private function csrfToken(): string
-    {
-        $session = Session::getSessionFromRequest();
-        $token   = $session->getData('oidanchor_csrf', 'token');
-
-        if (!is_string($token) || $token === '') {
-            $token = bin2hex(random_bytes(32));
-            $session->setData('oidanchor_csrf', 'token', $token);
-        }
-
-        return $token;
-    }
-
-
-    private function assertCsrf(Request $request): bool
-    {
-        $session  = Session::getSessionFromRequest();
-        $expected = $session->getData('oidanchor_csrf', 'token');
-        $provided = (string) $request->request->get('csrf_token', '');
-
-        return is_string($expected) && $expected !== '' && hash_equals($expected, $provided);
     }
 
 

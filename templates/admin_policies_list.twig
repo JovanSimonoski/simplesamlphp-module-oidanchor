@@ -72,6 +72,7 @@
               <form method="post"
                     action="{{ moduleURL('oidanchor/admin/policies/' ~ encodedType ~ '/delete') }}"
                     style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrfToken|e }}">
                 <button type="submit" class="pure-button pure-button-red"
                         onclick="return confirm('Delete policy for {{ p.entityType|e('js') }}? This cannot be undone.')">
                   {% trans %}Delete{% endtrans %}

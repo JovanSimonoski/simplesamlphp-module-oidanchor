@@ -27,10 +27,13 @@ use Symfony\Component\HttpFoundation\Request;
 /**
  * Admin UI controller for subordinate management.
  *
- * All methods require admin authentication.
+ * All methods require admin authentication; state-changing methods require a valid CSRF token.
  */
 class AdminSubordinates
 {
+    use AdminCsrfTrait;
+
+
     private const string FLASH_KEY = 'oidanchor_flash';
 
 
@@ -58,6 +61,7 @@ class AdminSubordinates
         $t->data['createUrl']     = Module::getModuleURL('oidanchor/admin/subordinates/create');
         $t->data['logouturl']     = $authUtils->getAdminLogoutURL();
         $t->data['flash']         = $this->popFlash();
+        $t->data['csrfToken']     = $this->csrfToken();
 
         $t->getLocalization()->addModuleDomain('oidanchor');
 
@@ -80,6 +84,10 @@ class AdminSubordinates
         $formData = $this->emptyFormData();
 
         if ($request->isMethod('POST')) {
+            if (!$this->assertCsrf($request)) {
+                return $this->csrfFailure();
+            }
+
             $formData = $this->extractFormData($request);
             $service  = $this->getService();
             $validator = new SubordinateValidator();
@@ -144,6 +152,10 @@ class AdminSubordinates
         $formData = [];
 
         if ($request->isMethod('POST')) {
+            if (!$this->assertCsrf($request)) {
+                return $this->csrfFailure();
+            }
+
             $formData             = $this->extractFormData($request);
             $formData['entity_id'] = $entityId;
             $validator            = new SubordinateValidator();
@@ -190,6 +202,10 @@ class AdminSubordinates
         $authUtils = new Utils\Auth();
         $authUtils->requireAdmin();
 
+        if (!$this->assertCsrf($request)) {
+            return $this->csrfFailure();
+        }
+
         $service = $this->getService();
 
         if ($service->findSubordinate($entityId) === null) {
@@ -214,14 +230,18 @@ class AdminSubordinates
 
 
     /**
-     * Set subordinate status (POST only). Expects ?status=active|suspended in query or body.
+     * Set subordinate status (POST only). Expects status=active|suspended in the body.
      */
     public function setStatus(Request $request, string $entityId): RedirectResponse
     {
         $authUtils = new Utils\Auth();
         $authUtils->requireAdmin();
 
-        $status  = $request->request->get('status') ?? $request->query->get('status', '');
+        if (!$this->assertCsrf($request)) {
+            return $this->csrfFailure();
+        }
+
+        $status  = (string) $request->request->get('status', '');
         $service = $this->getService();
 
         if ($service->findSubordinate($entityId) === null) {
@@ -255,6 +275,14 @@ class AdminSubordinates
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
+
+    private function csrfFailure(): RedirectResponse
+    {
+        $this->pushFlash('error', 'Invalid or missing CSRF token. Please try again.');
+
+        return new RedirectResponse(Module::getModuleURL('oidanchor/admin/subordinates'));
+    }
+
 
     private function getService(): SubordinateService
     {
@@ -369,6 +397,7 @@ class AdminSubordinates
         $t->data['listUrl']      = Module::getModuleURL('oidanchor/admin/subordinates');
         $t->data['logouturl']    = $authUtils->getAdminLogoutURL();
         $t->data['flash']        = $this->popFlash();
+        $t->data['csrfToken']    = $this->csrfToken();
 
         $t->getLocalization()->addModuleDomain('oidanchor');
 

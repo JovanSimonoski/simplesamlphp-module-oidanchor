@@ -46,6 +46,7 @@ class SubordinateRepository
             'ALTER TABLE ' . self::TABLE . ' ADD COLUMN extra_claims TEXT',
             "ALTER TABLE " . self::TABLE . " ADD COLUMN status TEXT NOT NULL DEFAULT 'active'",
             'ALTER TABLE ' . self::TABLE . ' ADD COLUMN updated_at INTEGER',
+            // Inert: trust marks never belong in a subordinate statement (see SubordinateStatementService).
             'ALTER TABLE ' . self::TABLE . ' ADD COLUMN include_trust_marks INTEGER NOT NULL DEFAULT 0',
             'ALTER TABLE ' . self::TABLE . ' ADD COLUMN description TEXT',
             'ALTER TABLE ' . self::TABLE . ' ADD COLUMN metadata TEXT',
@@ -212,8 +213,8 @@ class SubordinateRepository
         $stmt = $this->pdo->prepare(
             'INSERT INTO ' . self::TABLE . '
                 (entity_id, entity_type, entity_types, jwks, metadata, metadata_policy, constraints, extra_claims,
-                 status, registered_at, updated_at, include_trust_marks, description)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                 status, registered_at, updated_at, description)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         );
 
         $stmt->execute([
@@ -228,7 +229,6 @@ class SubordinateRepository
             $sub->status,
             $sub->registeredAt,
             $sub->updatedAt,
-            $sub->includeTrustMarks ? 1 : 0,
             $sub->description,
         ]);
 
@@ -246,7 +246,7 @@ class SubordinateRepository
     public function update(string $entityId, array $fields): void
     {
         $jsonColumns = ['entity_types', 'jwks', 'metadata', 'metadata_policy', 'constraints', 'extra_claims'];
-        $allowed     = [...$jsonColumns, 'entity_type', 'status', 'updated_at', 'include_trust_marks', 'description'];
+        $allowed     = [...$jsonColumns, 'entity_type', 'status', 'updated_at', 'description'];
 
         $sets   = [];
         $values = [];

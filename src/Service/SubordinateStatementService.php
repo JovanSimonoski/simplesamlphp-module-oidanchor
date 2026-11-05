@@ -93,9 +93,10 @@ class SubordinateStatementService
         // in the superior's Subordinate Statement about it (iss = TA, sub = subordinate). The
         // simplesamlphp/openid library enforces exactly this: EntityStatement::validate() throws
         // "Trust Marks claim encountered in configuration statement" when a non-configuration
-        // statement carries `trust_marks`, so signing such a statement would fail. The
-        // `include_trust_marks` column is retained (inert) to avoid a migration; the TA advertises
-        // the marks it issues via `trust_mark_issuers` in its own Entity Configuration instead.
+        // statement carries `trust_marks`, so signing such a statement would fail. There is no
+        // option to include them: the legacy `include_trust_marks` column is left unused in the
+        // table to avoid a migration. The TA advertises the marks it issues via
+        // `trust_mark_issuers` in its own Entity Configuration instead.
 
         return $payload;
     }

@@ -15,7 +15,8 @@ use SimpleSAML\Module\oidanchor\Repository\SubordinateRepository;
  * max_path_length, naming_constraints {permitted, excluded}, allowed_entity_types).
  *
  * The general constraints live in the settings store; per-subordinate constraints live on the
- * subordinate row. When both exist the per-subordinate value wins per member.
+ * subordinate row. When both exist the per-subordinate value can only narrow the general one
+ * (see {@see effective()}).
  *
  * simplesamlphp/openid models no constraints (no `constraints`, `max_path_length`,
  * `naming_constraints` or `allowed_entity_types` cases in Codebooks\ClaimsEnum, and no
@@ -81,17 +82,107 @@ class ConstraintsService
 
 
     /**
-     * The effective constraints for a subordinate statement: general constraints overlaid
-     * with the per-subordinate ones (per-subordinate wins per member). Returns null when
-     * nothing is configured, so the claim is omitted.
+     * The effective constraints for a subordinate statement: the general constraints narrowed
+     * by the per-subordinate ones, so a per-subordinate value can tighten but never loosen a
+     * federation-wide constraint. Returns null when nothing is configured, so the claim is omitted.
+     *
+     *  - max_path_length: the smaller value.
+     *  - allowed_entity_types: the intersection.
+     *  - naming_constraints.excluded: the union (more exclusions only narrow).
+     *  - naming_constraints.permitted: the intersection of the name subtrees.
+     *  - any other member: the per-subordinate value wins (no narrowing semantics are defined).
      *
      * @return array<string,mixed>|null
      */
     public function effective(Subordinate $subordinate): ?array
     {
-        $merged = array_merge($this->general(), $this->forSubordinate($subordinate));
+        $general = $this->general();
+        $own     = $this->forSubordinate($subordinate);
+        $merged  = array_merge($general, $own);
+
+        if (isset($general[self::MAX_PATH_LENGTH], $own[self::MAX_PATH_LENGTH])) {
+            $merged[self::MAX_PATH_LENGTH] = min((int) $general[self::MAX_PATH_LENGTH], (int) $own[self::MAX_PATH_LENGTH]);
+        }
+
+        if (isset($general[self::ALLOWED_ENTITY_TYPES], $own[self::ALLOWED_ENTITY_TYPES])) {
+            $merged[self::ALLOWED_ENTITY_TYPES] = array_values(array_intersect(
+                (array) $general[self::ALLOWED_ENTITY_TYPES],
+                (array) $own[self::ALLOWED_ENTITY_TYPES],
+            ));
+        }
+
+        if (isset($general[self::NAMING_CONSTRAINTS], $own[self::NAMING_CONSTRAINTS])) {
+            $merged[self::NAMING_CONSTRAINTS] = self::narrowNamingConstraints(
+                (array) $general[self::NAMING_CONSTRAINTS],
+                (array) $own[self::NAMING_CONSTRAINTS],
+            );
+        }
 
         return $merged === [] ? null : $merged;
+    }
+
+
+    /**
+     * @param array<string,mixed> $general
+     * @param array<string,mixed> $own
+     * @return array<string,list<string>>
+     */
+    private static function narrowNamingConstraints(array $general, array $own): array
+    {
+        $out = [];
+
+        if (isset($general['permitted'], $own['permitted'])) {
+            $g = array_map('strval', (array) $general['permitted']);
+            $s = array_map('strval', (array) $own['permitted']);
+
+            // A name is permitted only if both sides permit it: keep each subtree that lies within
+            // a subtree of the other side. An empty result permits nothing.
+            $out['permitted'] = array_values(array_unique(array_merge(
+                array_filter($s, static fn(string $x): bool => self::withinAny($x, $g)),
+                array_filter($g, static fn(string $x): bool => self::withinAny($x, $s)),
+            )));
+        } elseif (isset($general['permitted']) || isset($own['permitted'])) {
+            $out['permitted'] = array_values(array_map('strval', (array) ($own['permitted'] ?? $general['permitted'])));
+        }
+
+        if (isset($general['excluded']) || isset($own['excluded'])) {
+            $out['excluded'] = array_values(array_unique(array_map('strval', array_merge(
+                (array) ($general['excluded'] ?? []),
+                (array) ($own['excluded'] ?? []),
+            ))));
+        }
+
+        return $out;
+    }
+
+
+    /**
+     * @param list<string> $subtrees
+     */
+    private static function withinAny(string $name, array $subtrees): bool
+    {
+        foreach ($subtrees as $subtree) {
+            if (self::within($name, $subtree)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+    /**
+     * Whether every name matched by $name is also matched by $subtree (OpenID Federation 1.0
+     * §6.2.2): a host matches only itself, a constraint starting with a period matches any name
+     * formed by adding labels in front of it.
+     */
+    private static function within(string $name, string $subtree): bool
+    {
+        $name    = strtolower($name);
+        $subtree = strtolower($subtree);
+
+        return $name === $subtree
+            || (str_starts_with($subtree, '.') && str_ends_with($name, $subtree));
     }
 
 

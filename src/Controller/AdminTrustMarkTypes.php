@@ -10,6 +10,7 @@ use SimpleSAML\Module;
 use SimpleSAML\Module\oidanchor\Database\PdoFactory;
 use SimpleSAML\Module\oidanchor\Entity\TrustMarkType;
 use SimpleSAML\Module\oidanchor\Repository\IssuedTrustMarkRepository;
+use SimpleSAML\Module\oidanchor\Repository\TrustMarkSpecRepository;
 use SimpleSAML\Module\oidanchor\Repository\TrustMarkTypeRepository;
 use SimpleSAML\Module\oidanchor\Validation\TrustMarkTypeValidator;
 use SimpleSAML\XHTML\Template;
@@ -70,7 +71,9 @@ class AdminTrustMarkTypes extends AdminController
             }
 
             if ($errors === []) {
-                $typeRepo->create($this->toEntity($formData));
+                $type = $this->toEntity($formData);
+                $typeRepo->create($type);
+                $this->specRepository()->syncFromType($type);
 
                 Logger::info(sprintf(
                     'oidanchor: trust mark type created: %s (admin: %s)',
@@ -121,7 +124,9 @@ class AdminTrustMarkTypes extends AdminController
             $errors = (new TrustMarkTypeValidator())->validate($formData, isUpdate: true);
 
             if ($errors === []) {
-                $typeRepo->update($trustMarkType, $this->toEntity($formData, $type->createdAt));
+                $updated = $this->toEntity($formData, $type->createdAt);
+                $typeRepo->update($trustMarkType, $updated);
+                $this->specRepository()->syncFromType($updated);
 
                 Logger::info(sprintf(
                     'oidanchor: trust mark type updated: %s (admin: %s)',
@@ -190,6 +195,15 @@ class AdminTrustMarkTypes extends AdminController
         $pdo          = PdoFactory::get($moduleConfig);
 
         return [new TrustMarkTypeRepository($pdo), new IssuedTrustMarkRepository($pdo)];
+    }
+
+
+    /**
+     * Issuance reads the type's spec, so catalog edits are mirrored into it.
+     */
+    private function specRepository(): TrustMarkSpecRepository
+    {
+        return new TrustMarkSpecRepository(PdoFactory::get(Configuration::getConfig('module_oidanchor.php')));
     }
 
 

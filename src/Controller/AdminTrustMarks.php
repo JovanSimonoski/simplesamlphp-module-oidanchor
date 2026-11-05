@@ -12,7 +12,7 @@ use SimpleSAML\Module\oidanchor\Repository\IssuedTrustMarkRepository;
 use SimpleSAML\Module\oidanchor\Repository\SubordinateRepository;
 use SimpleSAML\Module\oidanchor\Repository\TrustMarkTypeRepository;
 use SimpleSAML\Module\oidanchor\Service\FederationKeyService;
-use SimpleSAML\Module\oidanchor\Service\TrustMarkIssuer;
+use SimpleSAML\Module\oidanchor\Service\TrustMarkIssuanceService;
 use SimpleSAML\Module\oidanchor\Validation\IssuedTrustMarkValidator;
 use SimpleSAML\OpenID\Federation;
 use SimpleSAML\XHTML\Template;
@@ -82,19 +82,18 @@ class AdminTrustMarks extends AdminController
 
             if ($errors === []) {
                 try {
-                    $exp = $formData['exp'] !== '' ? time() + (int) $formData['exp'] : null;
+                    $lifetime = $formData['exp'] !== '' ? (int) $formData['exp'] : null;
 
                     $extraClaims = $formData['extra_claims'] !== ''
                         ? (json_decode($formData['extra_claims'], true) ?: [])
                         : [];
 
-                    $issuer = new TrustMarkIssuer(
-                        new FederationKeyService(Configuration::getConfig('module_oidanchor.php')),
-                        $typeRepo,
-                        $this->issuedRepository(),
-                    );
-
-                    $mark = $issuer->issue($formData['trust_mark_type'], $formData['sub'], $exp, $extraClaims);
+                    // Same issuance path as the admin API: the type's issuance spec, with the
+                    // entity registered as an active subject of it.
+                    $moduleConfig = Configuration::getConfig('module_oidanchor.php');
+                    $pdo          = PdoFactory::get($moduleConfig);
+                    $mark         = (new TrustMarkIssuanceService(new FederationKeyService($moduleConfig, $pdo), $pdo))
+                        ->issueForEntity($formData['trust_mark_type'], $formData['sub'], $lifetime, $extraClaims);
 
                     Logger::info(sprintf(
                         'oidanchor: trust mark issued: type=%s sub=%s id=%d (admin: %s)',

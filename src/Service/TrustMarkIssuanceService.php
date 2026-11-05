@@ -52,11 +52,50 @@ class TrustMarkIssuanceService
 
 
     /**
+     * Issue a mark of a type to an entity directly (the admin UI's "issue" form): uses the type's
+     * issuance spec, and registers the entity as an active subject of it when it is not one yet.
+     *
+     * @param ?int $lifetime Seconds from now; overrides the spec lifetime.
+     * @param array<string,mixed> $extraClaims Per-issuance claims, merged over the spec/subject claims.
+     * @throws \RuntimeException When no issuance spec exists for the type.
+     * @throws \InvalidArgumentException When the entity is a subject that is not `active`.
+     */
+    public function issueForEntity(
+        string $trustMarkType,
+        string $sub,
+        ?int $lifetime = null,
+        array $extraClaims = [],
+    ): IssuedTrustMark {
+        $spec = (new TrustMarkSpecRepository($this->pdo))->findByType($trustMarkType)
+            ?? throw new RuntimeException(sprintf('No issuance spec for Trust Mark type "%s".', $trustMarkType));
+
+        $subjectRepo = new TrustMarkSubjectRepository($this->pdo);
+        $subject     = $subjectRepo->findByTypeAndEntity($trustMarkType, $sub);
+        if ($subject === null) {
+            $id      = $subjectRepo->create((int) $spec['id'], $sub, 'active', null, null);
+            $subject = $subjectRepo->findById((int) $spec['id'], $id)
+                ?? throw new RuntimeException(sprintf('Could not register subject "%s".', $sub));
+        }
+
+        return $this->issue($spec, $subject, $lifetime, $extraClaims);
+    }
+
+
+    /**
+     * The one place a Trust Mark is built, signed and recorded.
+     *
+     * Claims, later wins: the spec's descriptive claims (logo_uri, ref, delegation), then the
+     * subject's additional_claims (which replace the spec's general claims entirely), then any
+     * per-issuance $extraClaims, and finally the issuer-controlled claims (iss, sub, iat, exp,
+     * trust_mark_type), which always win.
+     *
      * @param array<string,mixed> $spec
      * @param array<string,mixed> $subject
+     * @param ?int $lifetime Seconds from now; overrides the spec lifetime.
+     * @param array<string,mixed> $extraClaims Per-issuance claims.
      * @throws \InvalidArgumentException When the subject's status is not `active`.
      */
-    public function issue(array $spec, array $subject): IssuedTrustMark
+    public function issue(array $spec, array $subject, ?int $lifetime = null, array $extraClaims = []): IssuedTrustMark
     {
         if (($subject['status'] ?? '') !== 'active') {
             throw new InvalidArgumentException(sprintf(
@@ -71,9 +110,10 @@ class TrustMarkIssuanceService
         $issuedRepo    = new IssuedTrustMarkRepository($this->pdo);
         $now           = time();
 
-        // cache_ttl: reuse the most recent active mark while it is fresh enough.
+        // cache_ttl: reuse the most recent active mark while it is fresh enough — unless this
+        // issuance asks for something specific.
         $cacheTtl = (int) ($spec['cache_ttl'] ?? 0);
-        if ($cacheTtl > 0) {
+        if ($cacheTtl > 0 && $lifetime === null && $extraClaims === []) {
             $existing = $issuedRepo->findActive($trustMarkType, $sub);
             if (
                 $existing !== null
@@ -84,9 +124,8 @@ class TrustMarkIssuanceService
             }
         }
 
-        $exp = isset($spec['lifetime']) && (int) $spec['lifetime'] > 0
-            ? $now + (int) $spec['lifetime']
-            : null;
+        $lifetime ??= isset($spec['lifetime']) ? (int) $spec['lifetime'] : null;
+        $exp        = $lifetime !== null && $lifetime > 0 ? $now + $lifetime : null;
 
         // Per the spec: a subject's additional_claims replace the spec's general claims entirely.
         $additionalClaims = array_key_exists('additional_claims', $subject) && is_array($subject['additional_claims'])
@@ -104,7 +143,7 @@ class TrustMarkIssuanceService
             $payload[ClaimsEnum::Delegation->value] = (string) $spec['delegation_jwt'];
         }
 
-        $payload = array_merge($payload, $additionalClaims);
+        $payload = array_merge($payload, $additionalClaims, $extraClaims);
 
         // Issuer-controlled claims always win.
         $payload[ClaimsEnum::Iss->value]           = $this->keys->entityId();

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SimpleSAML\Module\oidanchor\Controller\Api;
 
 use InvalidArgumentException;
+use PDO;
 use SimpleSAML\Logger;
 use SimpleSAML\Module\oidanchor\Repository\TrustMarkSpecRepository;
 use SimpleSAML\Module\oidanchor\Repository\TrustMarkSubjectRepository;
@@ -26,6 +27,9 @@ use Throwable;
 class TrustMarkIssuanceApi extends ApiController
 {
     private const array ELIGIBILITY_MODES = ['db_only', 'check_only', 'db_or_check', 'db_and_check', 'custom'];
+
+
+    private ?PDO $pdo = null;
 
 
     // ---- issuance specs ------------------------------------------------------
@@ -215,7 +219,7 @@ class TrustMarkIssuanceApi extends ApiController
     /**
      * POST — create a subject. An `active` subject gets its trust mark issued immediately.
      */
-    public function createSubject(Request $request, string $trustMarkSpecID): JsonResponse
+    public function createSubject(Request $request, string $trustMarkSpecID): Response
     {
         $this->requireAdmin($request);
 
@@ -239,27 +243,29 @@ class TrustMarkIssuanceApi extends ApiController
             return $this->badRequest('status must be one of: ' . implode(', ', TrustMarkSubjectRepository::STATUSES) . '.');
         }
 
-        try {
-            $id = $this->subjectRepo()->create(
-                (int) $spec['id'],
-                $entityId,
-                $status,
-                isset($body['description']) ? (string) $body['description'] : null,
-                isset($body['additional_claims']) && is_array($body['additional_claims'])
-                    ? $body['additional_claims']
-                    : null,
+        return $this->inTransaction(function () use ($spec, $entityId, $status, $body): JsonResponse {
+            try {
+                $id = $this->subjectRepo()->create(
+                    (int) $spec['id'],
+                    $entityId,
+                    $status,
+                    isset($body['description']) ? (string) $body['description'] : null,
+                    isset($body['additional_claims']) && is_array($body['additional_claims'])
+                        ? $body['additional_claims']
+                        : null,
+                );
+            } catch (InvalidArgumentException $e) {
+                return $this->conflict($e->getMessage());
+            }
+
+            $this->applyStatusEffects((int) $spec['id'], $id, $status);
+            Logger::info(sprintf('oidanchor: API trust mark subject created: %s', $entityId));
+
+            return $this->json(
+                self::subjectToApi($this->subjectRepo()->findById((int) $spec['id'], $id)),
+                JsonResponse::HTTP_CREATED,
             );
-        } catch (InvalidArgumentException $e) {
-            return $this->conflict($e->getMessage());
-        }
-
-        $this->applyStatusEffects((int) $spec['id'], $id, $status);
-        Logger::info(sprintf('oidanchor: API trust mark subject created: %s', $entityId));
-
-        return $this->json(
-            self::subjectToApi($this->subjectRepo()->findById((int) $spec['id'], $id)),
-            JsonResponse::HTTP_CREATED,
-        );
+        });
     }
 
 
@@ -279,7 +285,7 @@ class TrustMarkIssuanceApi extends ApiController
     }
 
 
-    public function updateSubject(Request $request, string $trustMarkSpecID, string $trustMarkSubjectID): JsonResponse
+    public function updateSubject(Request $request, string $trustMarkSpecID, string $trustMarkSubjectID): Response
     {
         $this->requireAdmin($request);
 
@@ -306,19 +312,27 @@ class TrustMarkIssuanceApi extends ApiController
             return $this->badRequest('status must be one of: ' . implode(', ', TrustMarkSubjectRepository::STATUSES) . '.');
         }
 
-        $this->subjectRepo()->update((int) $subject['id'], [
-            'entity_id'         => $entityId,
-            'status'            => $status,
-            'description'       => isset($body['description']) ? (string) $body['description'] : null,
-            'additional_claims' => isset($body['additional_claims']) && is_array($body['additional_claims'])
-                ? $body['additional_claims']
-                : null,
-        ]);
+        return $this->inTransaction(function () use ($spec, $subject, $entityId, $status, $body): JsonResponse {
+            $this->subjectRepo()->update((int) $subject['id'], [
+                'entity_id'         => $entityId,
+                'status'            => $status,
+                'description'       => isset($body['description']) ? (string) $body['description'] : null,
+                'additional_claims' => isset($body['additional_claims']) && is_array($body['additional_claims'])
+                    ? $body['additional_claims']
+                    : null,
+            ]);
 
-        $this->applyStatusEffects((int) $spec['id'], (int) $subject['id'], $status, (string) $subject['entity_id'], (string) $spec['trust_mark_type']);
-        Logger::info(sprintf('oidanchor: API trust mark subject updated: %s', $entityId));
+            $this->applyStatusEffects(
+                (int) $spec['id'],
+                (int) $subject['id'],
+                $status,
+                (string) $subject['entity_id'],
+                (string) $spec['trust_mark_type'],
+            );
+            Logger::info(sprintf('oidanchor: API trust mark subject updated: %s', $entityId));
 
-        return $this->json(self::subjectToApi($this->subjectRepo()->findById((int) $spec['id'], (int) $subject['id'])));
+            return $this->json(self::subjectToApi($this->subjectRepo()->findById((int) $spec['id'], (int) $subject['id'])));
+        });
     }
 
 
@@ -334,22 +348,24 @@ class TrustMarkIssuanceApi extends ApiController
             return $this->subjectNotFound($trustMarkSubjectID);
         }
 
-        $this->issuanceService()->revokeMarksForSubject(
-            (string) $spec['trust_mark_type'],
-            (string) $subject['entity_id'],
-            'subject removed',
-        );
-        $this->subjectRepo()->delete((int) $subject['id']);
-        Logger::info(sprintf('oidanchor: API trust mark subject deleted: %s', (string) $subject['entity_id']));
+        return $this->inTransaction(function () use ($spec, $subject): Response {
+            $this->issuanceService()->revokeMarksForSubject(
+                (string) $spec['trust_mark_type'],
+                (string) $subject['entity_id'],
+                'subject removed',
+            );
+            $this->subjectRepo()->delete((int) $subject['id']);
+            Logger::info(sprintf('oidanchor: API trust mark subject deleted: %s', (string) $subject['entity_id']));
 
-        return $this->noContent();
+            return $this->noContent();
+        });
     }
 
 
     /**
      * PUT /subjects/{id}/status — issue or revoke the subject's marks accordingly.
      */
-    public function changeSubjectStatus(Request $request, string $trustMarkSpecID, string $trustMarkSubjectID): JsonResponse
+    public function changeSubjectStatus(Request $request, string $trustMarkSpecID, string $trustMarkSubjectID): Response
     {
         $this->requireAdmin($request);
 
@@ -366,22 +382,24 @@ class TrustMarkIssuanceApi extends ApiController
             return $this->badRequest('status must be one of: ' . implode(', ', TrustMarkSubjectRepository::STATUSES) . '.');
         }
 
-        $this->subjectRepo()->setStatus((int) $subject['id'], $status);
-        $this->applyStatusEffects(
-            (int) $spec['id'],
-            (int) $subject['id'],
-            $status,
-            (string) $subject['entity_id'],
-            (string) $spec['trust_mark_type'],
-        );
+        return $this->inTransaction(function () use ($spec, $subject, $status): JsonResponse {
+            $this->subjectRepo()->setStatus((int) $subject['id'], $status);
+            $this->applyStatusEffects(
+                (int) $spec['id'],
+                (int) $subject['id'],
+                $status,
+                (string) $subject['entity_id'],
+                (string) $spec['trust_mark_type'],
+            );
 
-        Logger::info(sprintf(
-            'oidanchor: API trust mark subject status changed: %s -> %s',
-            (string) $subject['entity_id'],
-            $status,
-        ));
+            Logger::info(sprintf(
+                'oidanchor: API trust mark subject status changed: %s -> %s',
+                (string) $subject['entity_id'],
+                $status,
+            ));
 
-        return $this->json(self::subjectToApi($this->subjectRepo()->findById((int) $spec['id'], (int) $subject['id'])));
+            return $this->json(self::subjectToApi($this->subjectRepo()->findById((int) $spec['id'], (int) $subject['id'])));
+        });
     }
 
 
@@ -459,7 +477,9 @@ class TrustMarkIssuanceApi extends ApiController
     // -------------------------------------------------------------------------
 
     /**
-     * Issue the mark when the subject becomes eligible; revoke its marks otherwise.
+     * Issue the mark when the subject becomes eligible; revoke its marks otherwise. Failures are
+     * not swallowed: callers run this inside {@see inTransaction()}, which rolls the subject
+     * change back and reports the error.
      */
     private function applyStatusEffects(
         int $specId,
@@ -468,33 +488,29 @@ class TrustMarkIssuanceApi extends ApiController
         ?string $previousEntityId = null,
         ?string $trustMarkType = null,
     ): void {
-        try {
-            $spec    = $this->specRepo()->findById($specId);
-            $subject = $this->subjectRepo()->findById($specId, $subjectId);
-            if ($spec === null || $subject === null) {
-                return;
-            }
-
-            // An entity_id change leaves marks behind under the old subject name — whatever the
-            // new status is. For an active subject the mark is re-issued under the new name below.
-            if ($previousEntityId !== null && $trustMarkType !== null && $previousEntityId !== (string) $subject['entity_id']) {
-                $this->issuanceService()->revokeMarksForSubject($trustMarkType, $previousEntityId, 'subject entity_id changed');
-            }
-
-            if ($status === 'active') {
-                $this->issuanceService()->issueForSubject($specId, $subjectId);
-
-                return;
-            }
-
-            $this->issuanceService()->revokeMarksForSubject(
-                (string) $spec['trust_mark_type'],
-                (string) $subject['entity_id'],
-                sprintf('subject status changed to %s', $status),
-            );
-        } catch (Throwable $e) {
-            Logger::warning('oidanchor: trust mark issuance side effect failed: ' . $e->getMessage());
+        $spec    = $this->specRepo()->findById($specId);
+        $subject = $this->subjectRepo()->findById($specId, $subjectId);
+        if ($spec === null || $subject === null) {
+            return;
         }
+
+        // An entity_id change leaves marks behind under the old subject name — whatever the
+        // new status is. For an active subject the mark is re-issued under the new name below.
+        if ($previousEntityId !== null && $trustMarkType !== null && $previousEntityId !== (string) $subject['entity_id']) {
+            $this->issuanceService()->revokeMarksForSubject($trustMarkType, $previousEntityId, 'subject entity_id changed');
+        }
+
+        if ($status === 'active') {
+            $this->issuanceService()->issueForSubject($specId, $subjectId);
+
+            return;
+        }
+
+        $this->issuanceService()->revokeMarksForSubject(
+            (string) $spec['trust_mark_type'],
+            (string) $subject['entity_id'],
+            sprintf('subject status changed to %s', $status),
+        );
     }
 
 
@@ -634,21 +650,63 @@ class TrustMarkIssuanceApi extends ApiController
     }
 
 
+    /**
+     * Apply a subject change together with its trust mark side effects (issue / revoke) in one
+     * transaction: if signing or persistence fails, nothing is changed and the caller gets a 500,
+     * rather than a success response for a subject whose marks do not match its status.
+     *
+     * @param callable(): \Symfony\Component\HttpFoundation\Response $change
+     */
+    private function inTransaction(callable $change): Response
+    {
+        $pdo = $this->pdo();
+        $pdo->beginTransaction();
+
+        try {
+            $response = $change();
+        } catch (Throwable $e) {
+            $pdo->rollBack();
+
+            Logger::error('oidanchor: trust mark subject change failed, rolled back: ' . $e->getMessage());
+
+            return $this->serverError('Trust mark issuance failed; no changes were made: ' . $e->getMessage());
+        }
+
+        if ($response->isSuccessful()) {
+            $pdo->commit();
+        } else {
+            $pdo->rollBack();
+        }
+
+        return $response;
+    }
+
+
+    /**
+     * One connection for the whole request, so the repositories and the issuance service share
+     * the transaction opened by {@see inTransaction()}.
+     */
+    private function pdo(): PDO
+    {
+        return $this->pdo ??= $this->buildPdo();
+    }
+
+
     private function specRepo(): TrustMarkSpecRepository
     {
-        return new TrustMarkSpecRepository($this->buildPdo());
+        return new TrustMarkSpecRepository($this->pdo());
     }
 
 
     private function subjectRepo(): TrustMarkSubjectRepository
     {
-        return new TrustMarkSubjectRepository($this->buildPdo());
+        return new TrustMarkSubjectRepository($this->pdo());
     }
 
 
     private function issuanceService(): TrustMarkIssuanceService
     {
-        $pdo = $this->buildPdo();
+        $pdo = $this->pdo();
 
         return new TrustMarkIssuanceService(new FederationKeyService($this->moduleConfig(), $pdo), $pdo);
     }

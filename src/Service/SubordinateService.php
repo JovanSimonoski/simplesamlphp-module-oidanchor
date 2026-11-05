@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace SimpleSAML\Module\oidanchor\Service;
 
+use InvalidArgumentException;
 use SimpleSAML\Module\oidanchor\Entity\Subordinate;
+use SimpleSAML\Module\oidanchor\Entity\SubordinateStatus;
 use SimpleSAML\Module\oidanchor\Repository\SubordinateEventRepository;
 use SimpleSAML\Module\oidanchor\Repository\SubordinateRepository;
 
@@ -158,11 +160,11 @@ class SubordinateService
 
 
     /**
-     * Suspend a subordinate (status = suspended).
+     * Block a subordinate: it stops being served by the federation endpoints.
      */
-    public function suspend(string $entityId): void
+    public function block(string $entityId): void
     {
-        $this->setStatus($entityId, 'suspended');
+        $this->setStatus($entityId, SubordinateStatus::Blocked->value);
     }
 
 
@@ -171,15 +173,25 @@ class SubordinateService
      */
     public function activate(string $entityId): void
     {
-        $this->setStatus($entityId, 'active');
+        $this->setStatus($entityId, SubordinateStatus::Active->value);
     }
 
 
     /**
-     * Set an arbitrary status value (e.g. active, blocked, pending, inactive).
+     * Set the status; must be one of {@see SubordinateStatus}.
+     *
+     * @throws \InvalidArgumentException For a value outside the shared vocabulary.
      */
     public function setStatus(string $entityId, string $status): void
     {
+        if (SubordinateStatus::tryFrom($status) === null) {
+            throw new InvalidArgumentException(sprintf(
+                'Invalid subordinate status "%s"; expected one of: %s.',
+                $status,
+                implode(', ', SubordinateStatus::values()),
+            ));
+        }
+
         $this->repository->setStatus($entityId, $status);
 
         $sub = $this->repository->findByEntityId($entityId);

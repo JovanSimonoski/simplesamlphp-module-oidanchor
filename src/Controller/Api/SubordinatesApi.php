@@ -6,6 +6,7 @@ namespace SimpleSAML\Module\oidanchor\Controller\Api;
 
 use SimpleSAML\Logger;
 use SimpleSAML\Module\oidanchor\Entity\Subordinate;
+use SimpleSAML\Module\oidanchor\Entity\SubordinateStatus;
 use SimpleSAML\Module\oidanchor\Repository\AdditionalClaimsRepository;
 use SimpleSAML\Module\oidanchor\Repository\SubordinateEventRepository;
 use SimpleSAML\Module\oidanchor\Service\ConstraintsService;
@@ -26,8 +27,6 @@ class SubordinatesApi extends ApiController
 {
     use AdditionalClaimsTrait;
 
-
-    private const array STATUSES = ['active', 'blocked', 'pending', 'inactive'];
 
     private const int HISTORY_DEFAULT_LIMIT = 50;
 
@@ -71,8 +70,8 @@ class SubordinatesApi extends ApiController
         }
 
         $status = (string) ($body['status'] ?? 'active');
-        if (!in_array($status, self::STATUSES, true)) {
-            return $this->badRequest('status must be one of: ' . implode(', ', self::STATUSES) . '.');
+        if (SubordinateStatus::tryFrom($status) === null) {
+            return $this->badRequest('status must be one of: ' . implode(', ', SubordinateStatus::values()) . '.');
         }
 
         $jwks = $body['jwks'] ?? null;
@@ -176,8 +175,8 @@ class SubordinatesApi extends ApiController
         }
 
         $status = trim($this->bodyString($request), " \t\n\r\0\x0B\"");
-        if (!in_array($status, self::STATUSES, true)) {
-            return $this->badRequest('status must be one of: ' . implode(', ', self::STATUSES) . '.');
+        if (SubordinateStatus::tryFrom($status) === null) {
+            return $this->badRequest('status must be one of: ' . implode(', ', SubordinateStatus::values()) . '.');
         }
 
         if ($status === 'active' && !$this->jwksHasKeys($sub->jwks)) {

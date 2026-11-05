@@ -81,11 +81,23 @@ class FederationKeyService
      * The TA's public federation JWKS in {"keys":[...]} form: every published key
      * (active signing key, API-managed keys, rotated-out keys still in their overlap window).
      *
+     * The signing key is resolved first and always included. It is memoised for the rest of the
+     * request, so a statement whose `jwks` claim comes from here is signed by a key in that very
+     * set even if the key is rotated (by cron or an admin) between claim assembly and signing —
+     * otherwise the Entity Configuration could not be self-verified.
+     *
      * @return array{keys: list<array<string,mixed>>}
      */
     public function publicJwks(): array
     {
-        return $this->keyManagement()->publicJwks();
+        $ctx  = $this->context();
+        $jwks = $this->keyManagement()->publicJwks();
+
+        if (!in_array($ctx['kid'], array_column($jwks['keys'], 'kid'), true)) {
+            array_unshift($jwks['keys'], $ctx['publicJwkData']);
+        }
+
+        return $jwks;
     }
 
 

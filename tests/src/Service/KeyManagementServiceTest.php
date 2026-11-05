@@ -67,6 +67,60 @@ final class KeyManagementServiceTest extends TestCase
     }
 
 
+    public function testSwitchingWithinTheKeyFamilyKeepsTheKeyAndKeepsSigningWorking(): void
+    {
+        $config = $this->moduleConfig();
+        $kms    = new KeyManagementService($config, $this->pdo);
+        $kms->activeSigningContext();
+        // A KMS-generated key: its JWK material carries "alg": "RS256".
+        $kid = $kms->triggerRotation(false, 'test')->kid;
+
+        $kms->setAlgorithm('PS256');
+
+        $key = $this->keyRepo()->findByKid($kid);
+        $this->assertNotNull($key);
+        $this->assertSame('active', $key->status);
+        $this->assertSame('PS256', $key->alg);
+        $this->assertSame('PS256', $key->publicJwk['alg']);
+        $this->assertSame('PS256', $key->privateJwk['alg'] ?? null);
+
+        $token  = $this->keys($config)->signEntityStatement($this->minimalStatement());
+        $header = self::decodeJwt($token)['header'];
+        $this->assertSame('PS256', $header['alg']);
+        $this->assertSame($kid, $header['kid']);
+    }
+
+
+    public function testSwitchingTheKeyFamilyRotatesToANewKey(): void
+    {
+        $config = $this->moduleConfig();
+        $kms    = new KeyManagementService($config, $this->pdo);
+        $old    = $kms->activeSigningContext()['kid'];
+
+        $kms->setAlgorithm('ES256');
+
+        $ctx = $kms->activeSigningContext();
+        $this->assertNotSame($old, $ctx['kid']);
+        $this->assertSame('ES256', $ctx['algorithm']->value);
+        $this->assertSame('ES256', self::decodeJwt($this->keys($config)->signEntityStatement($this->minimalStatement()))['header']['alg']);
+    }
+
+
+    /**
+     * @return array<non-empty-string,mixed>
+     */
+    private function minimalStatement(): array
+    {
+        return [
+            'iss'  => self::ENTITY_ID,
+            'sub'  => self::ENTITY_ID,
+            'iat'  => time(),
+            'exp'  => time() + 60,
+            'jwks' => (new KeyManagementService($this->moduleConfig(), $this->pdo))->publicJwks(),
+        ];
+    }
+
+
     private function makeRotationDue(KeyManagementService $kms): void
     {
         $kms->setRotationOptions(['enabled' => true, 'interval' => 3600, 'overlap' => 600], merge: false);

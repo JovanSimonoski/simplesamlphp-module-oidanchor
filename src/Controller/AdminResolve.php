@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace SimpleSAML\Module\oidanchor\Controller;
 
 use SimpleSAML\Configuration;
-use SimpleSAML\Locale\Translate;
 use SimpleSAML\Logger;
 use SimpleSAML\Module;
-use SimpleSAML\Module\admin\Controller\Menu;
 use SimpleSAML\Module\oidanchor\Database\PdoFactory;
 use SimpleSAML\Module\oidanchor\Exception\ResolveException;
 use SimpleSAML\Module\oidanchor\Repository\IssuedTrustMarkRepository;
@@ -16,8 +14,6 @@ use SimpleSAML\Module\oidanchor\Repository\TrustMarkSubjectRepository;
 use SimpleSAML\Module\oidanchor\Service\FederationKeyService;
 use SimpleSAML\Module\oidanchor\Service\FederationResolver;
 use SimpleSAML\Module\oidanchor\Service\TrustMarkStatusService;
-use SimpleSAML\Session;
-use SimpleSAML\Utils;
 use SimpleSAML\XHTML\Template;
 use Symfony\Component\HttpFoundation\Request;
 use Throwable;
@@ -29,21 +25,11 @@ use Throwable;
  * metadata, the decoded trust chain, the validated Trust Marks, any warnings, and the signed
  * Resolve Response JWT. Requires admin auth; the form carries a CSRF token.
  */
-class AdminResolve
+class AdminResolve extends AdminController
 {
-    use AdminCsrfTrait;
-
-
-    public function __construct(
-        protected Configuration $config,
-    ) {
-    }
-
-
     public function index(Request $request): Template
     {
-        $authUtils = new Utils\Auth();
-        $authUtils->requireAdmin();
+        $this->requireAdmin();
 
         $moduleConfig = Configuration::getConfig('module_oidanchor.php');
         $entityId     = $moduleConfig->getString('entity_id');
@@ -119,15 +105,8 @@ class AdminResolve
         $t->data['error']     = $error;
         $t->data['view']      = $view;
         $t->data['actionUrl'] = Module::getModuleURL('oidanchor/admin/resolve');
-        $t->data['csrfToken'] = $this->csrfToken();
-        $t->data['logouturl'] = $authUtils->getAdminLogoutURL();
 
-        $t->getLocalization()->addModuleDomain('oidanchor');
-
-        $menu = new Menu();
-        $menu->addOption('logout', $authUtils->getAdminLogoutURL(), Translate::noop('Log out'));
-
-        return $menu->insert($t);
+        return $this->page($t);
     }
 
 
@@ -199,22 +178,5 @@ class AdminResolve
         $json = json_decode($decoded, true);
 
         return is_array($json) ? $this->pretty($json) : $decoded;
-    }
-
-
-    private function getAdminUsername(): string
-    {
-        try {
-            $session = Session::getSessionFromRequest();
-            $authId  = $session->getAuthData('admin', 'Attributes');
-
-            if (is_array($authId) && isset($authId['uid'][0])) {
-                return (string) $authId['uid'][0];
-            }
-        } catch (Throwable) {
-            // Best-effort.
-        }
-
-        return 'admin';
     }
 }

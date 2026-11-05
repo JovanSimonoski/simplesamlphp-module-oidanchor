@@ -11,6 +11,7 @@ use SimpleSAML\Module\oidanchor\Repository\TrustMarkIssuerRepository;
 use SimpleSAML\Module\oidanchor\Repository\TrustMarkOwnerRepository;
 use SimpleSAML\Module\oidanchor\Repository\TrustMarkTypeRepository;
 use SimpleSAML\Module\oidanchor\Service\TrustMarkDelegationService;
+use SimpleSAML\Module\oidanchor\Validation\Url;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -48,7 +49,7 @@ class TrustMarkTypesApi extends ApiController
         }
 
         $trustMarkType = trim((string) ($body['trust_mark_type'] ?? ''));
-        if ($trustMarkType === '' || !$this->isHttpsUrl($trustMarkType)) {
+        if ($trustMarkType === '' || !Url::isHttps($trustMarkType)) {
             return $this->badRequest('trust_mark_type is required and must be an HTTPS URL.');
         }
 
@@ -490,15 +491,5 @@ class TrustMarkTypesApi extends ApiController
     private function delegationService(): TrustMarkDelegationService
     {
         return new TrustMarkDelegationService($this->moduleConfig(), $this->buildPdo());
-    }
-
-
-    private function isHttpsUrl(string $url): bool
-    {
-        $parsed = parse_url($url);
-
-        return isset($parsed['scheme'], $parsed['host'])
-            && $parsed['scheme'] === 'https'
-            && $parsed['host'] !== '';
     }
 }

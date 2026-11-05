@@ -13,6 +13,7 @@ use SimpleSAML\Module\oidanchor\Repository\TrustMarkSubjectRepository;
 use SimpleSAML\Module\oidanchor\Service\FederationKeyService;
 use SimpleSAML\Module\oidanchor\Service\FederationResolver;
 use SimpleSAML\Module\oidanchor\Service\TrustMarkStatusService;
+use SimpleSAML\Module\oidanchor\Validation\Url;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -53,7 +54,7 @@ class Resolve
             );
         }
 
-        if (!$this->isHttpsUrl($sub) || !$this->isHttpsUrl($trustAnchor)) {
+        if (!Url::isHttps($sub) || !Url::isHttps($trustAnchor)) {
             return $this->error(
                 'invalid_request',
                 'sub and trust_anchor must be HTTPS URLs.',
@@ -99,16 +100,6 @@ class Resolve
 
             return $this->error('server_error', 'Unable to resolve the requested entity.', Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-    }
-
-
-    private function isHttpsUrl(string $url): bool
-    {
-        $parsed = parse_url($url);
-
-        return isset($parsed['scheme'], $parsed['host'])
-            && $parsed['scheme'] === 'https'
-            && $parsed['host'] !== '';
     }
 
 

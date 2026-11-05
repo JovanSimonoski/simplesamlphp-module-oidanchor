@@ -49,7 +49,7 @@ trait MetadataPolicyDocumentTrait
     protected function policyReplace(Request $request): JsonResponse
     {
         $body = $this->decodeJson($request);
-        if (!is_array($body) || array_is_list($body)) {
+        if (!$this->isJsonObject($body)) {
             return $this->badRequest('Body must be a JSON object keyed by entity type.');
         }
 
@@ -84,7 +84,7 @@ trait MetadataPolicyDocumentTrait
     protected function policyPutType(Request $request, string $entityType): JsonResponse
     {
         $policy = $this->decodeJson($request);
-        if (!is_array($policy) || array_is_list($policy)) {
+        if (!$this->isJsonObject($policy)) {
             return $this->badRequest('Body must be a JSON object of claim → operators.');
         }
 
@@ -106,7 +106,7 @@ trait MetadataPolicyDocumentTrait
     protected function policyAddClaims(Request $request, string $entityType): JsonResponse
     {
         $add = $this->decodeJson($request);
-        if (!is_array($add) || array_is_list($add)) {
+        if (!$this->isJsonObject($add)) {
             return $this->badRequest('Body must be a JSON object of claim → operators.');
         }
 
@@ -152,7 +152,7 @@ trait MetadataPolicyDocumentTrait
     protected function policyPutClaim(Request $request, string $entityType, string $claim): JsonResponse
     {
         $entry = $this->decodeJson($request);
-        if (!is_array($entry) || array_is_list($entry)) {
+        if (!$this->isJsonObject($entry)) {
             return $this->badRequest('Body must be a JSON object of operator → value.');
         }
 
@@ -177,7 +177,7 @@ trait MetadataPolicyDocumentTrait
     protected function policyAddOperators(Request $request, string $entityType, string $claim): JsonResponse
     {
         $ops = $this->decodeJson($request);
-        if (!is_array($ops) || array_is_list($ops)) {
+        if (!$this->isJsonObject($ops)) {
             return $this->badRequest('Body must be a JSON object of operator → value.');
         }
 

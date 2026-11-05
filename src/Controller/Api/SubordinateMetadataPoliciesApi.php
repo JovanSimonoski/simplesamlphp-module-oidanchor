@@ -240,7 +240,7 @@ class SubordinateMetadataPoliciesApi extends ApiController
      */
     protected function readPolicyDocument(): array
     {
-        return $this->subordinate?->metadataPolicy ?? [];
+        return $this->subordinate->metadataPolicy ?? [];
     }
 
 

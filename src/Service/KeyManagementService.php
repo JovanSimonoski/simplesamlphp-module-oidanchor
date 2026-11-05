@@ -449,7 +449,7 @@ class KeyManagementService
 
         Logger::info(sprintf(
             'oidanchor: signing key rotated: %s -> %s (%s)',
-            $old?->kid ?? 'none',
+            $old->kid ?? 'none',
             $new->kid,
             $reason ?? 'manual',
         ));
@@ -572,16 +572,14 @@ class KeyManagementService
     private function configuredAlgorithm(): string
     {
         return $this->settingsRepo()->getString(SettingsRepository::SIGNING_ALGORITHM)
-            ?? $this->moduleConfig->getOptionalString('signing_algorithm', 'RS256')
-            ?? 'RS256';
+            ?? $this->moduleConfig->getOptionalString('signing_algorithm', 'RS256');
     }
 
 
     private function rsaKeyLen(): int
     {
         return $this->settingsRepo()->getInt(SettingsRepository::RSA_KEY_LEN)
-            ?? $this->moduleConfig->getOptionalInteger('signing_rsa_key_len', self::DEFAULT_RSA_KEY_LEN)
-            ?? self::DEFAULT_RSA_KEY_LEN;
+            ?? $this->moduleConfig->getOptionalInteger('signing_rsa_key_len', self::DEFAULT_RSA_KEY_LEN);
     }
 
 

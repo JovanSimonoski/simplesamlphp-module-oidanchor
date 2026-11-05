@@ -144,8 +144,8 @@ class AdminResolve
         foreach ($entities as $statement) {
             try {
                 $view[] = [
-                    'iss'     => (string) ($statement->getIssuer() ?? ''),
-                    'sub'     => (string) ($statement->getSubject() ?? ''),
+                    'iss'     => $statement->getIssuer(),
+                    'sub'     => $statement->getSubject(),
                     'header'  => $this->pretty($statement->getHeader()),
                     'payload' => $this->pretty($statement->getPayload()),
                 ];

@@ -107,8 +107,7 @@ class SubordinateStatementService
     public function lifetime(Configuration $moduleConfig, PDO $pdo): int
     {
         return (new SettingsRepository($pdo))->getInt(SettingsRepository::SUBORDINATE_STATEMENT_LIFETIME)
-            ?? $moduleConfig->getOptionalInteger('subordinate_statement_lifetime', 86400)
-            ?? 86400;
+            ?? $moduleConfig->getOptionalInteger('subordinate_statement_lifetime', 86400);
     }
 
 

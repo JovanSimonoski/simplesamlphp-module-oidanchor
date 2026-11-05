@@ -43,12 +43,12 @@ trait MetadataDocumentTrait
     protected function metadataReplace(Request $request): JsonResponse
     {
         $body = $this->decodeJson($request);
-        if (!is_array($body) || array_is_list($body)) {
+        if (!$this->isJsonObject($body)) {
             return $this->badRequest('Body must be a JSON object keyed by entity type.');
         }
 
         foreach ($body as $entityType => $claims) {
-            if (!is_array($claims) || array_is_list($claims)) {
+            if (!$this->isJsonObject($claims)) {
                 return $this->badRequest(sprintf('Metadata for "%s" must be a JSON object.', $entityType));
             }
         }
@@ -75,7 +75,7 @@ trait MetadataDocumentTrait
     protected function metadataPutType(Request $request, string $entityType): JsonResponse
     {
         $claims = $this->decodeJson($request);
-        if (!is_array($claims) || array_is_list($claims)) {
+        if (!$this->isJsonObject($claims)) {
             return $this->badRequest('Body must be a JSON object of claim → value.');
         }
 
@@ -93,7 +93,7 @@ trait MetadataDocumentTrait
     protected function metadataAddClaims(Request $request, string $entityType): JsonResponse
     {
         $claims = $this->decodeJson($request);
-        if (!is_array($claims) || array_is_list($claims)) {
+        if (!$this->isJsonObject($claims)) {
             return $this->badRequest('Body must be a JSON object of claim → value.');
         }
 

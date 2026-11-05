@@ -186,9 +186,8 @@ class FederationResolver
         }
 
         $kids = [];
-        /** @var array<string,mixed> $key */
-        foreach ((array) ($anchorJwks['keys'] ?? []) as $key) {
-            if (is_array($key) && isset($key['kid']) && is_string($key['kid'])) {
+        foreach ($anchorJwks['keys'] as $key) {
+            if (isset($key['kid']) && is_string($key['kid'])) {
                 $kids[] = $key['kid'];
             }
         }
@@ -364,7 +363,7 @@ class FederationResolver
      */
     private function config(): array
     {
-        $r = $this->moduleConfig->getOptionalArray('resolve', []) ?? [];
+        $r = $this->moduleConfig->getOptionalArray('resolve', []);
 
         return [
             'max_chain_depth'      => (int) ($r['max_chain_depth'] ?? 6),

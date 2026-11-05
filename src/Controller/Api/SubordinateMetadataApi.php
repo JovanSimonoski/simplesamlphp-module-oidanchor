@@ -145,7 +145,7 @@ class SubordinateMetadataApi extends ApiController
      */
     protected function readMetadataDocument(): array
     {
-        return $this->subordinate?->metadata ?? [];
+        return $this->subordinate->metadata ?? [];
     }
 
 

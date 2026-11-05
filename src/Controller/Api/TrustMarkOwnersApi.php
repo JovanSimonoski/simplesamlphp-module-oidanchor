@@ -231,7 +231,7 @@ class TrustMarkOwnersApi extends ApiController
         $typeId = is_int($rawTypeId) ? $rawTypeId : $this->internalId((string) $rawTypeId);
         $type   = $typeId !== null ? $this->typeRepo()->findByInternalId($typeId) : null;
 
-        if ($type === null || $typeId === null) {
+        if ($type === null) {
             return sprintf('Unknown trust mark type ID "%s".', (string) $rawTypeId);
         }
 

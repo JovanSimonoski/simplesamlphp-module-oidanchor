@@ -65,6 +65,9 @@ class FederationKeyRepository
     }
 
 
+    /**
+     * @phpstan-impure
+     */
     public function findByKid(string $kid): ?FederationKey
     {
         $stmt = $this->pdo->prepare(

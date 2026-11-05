@@ -418,7 +418,7 @@ class TrustMarkIssuanceApi extends ApiController
         }
 
         $body = $this->decodeJson($request);
-        if (!is_array($body) || array_is_list($body)) {
+        if (!$this->isJsonObject($body)) {
             return $this->badRequest('Body must be a JSON object of claim → value.');
         }
 

@@ -41,12 +41,12 @@ class MetadataPolicyValidator
         }
 
         try {
-            $this->resolver->ensureFormat($decoded);
+            $policy = $this->resolver->ensureFormat($decoded);
         } catch (MetadataPolicyException $e) {
             return 'Invalid metadata policy structure: ' . $e->getMessage();
         }
 
-        return $this->validateParamOperators($decoded);
+        return $this->validateParamOperators($policy);
     }
 
 
@@ -67,12 +67,12 @@ class MetadataPolicyValidator
         $wrapped = [$entityType => $decoded];
 
         try {
-            $this->resolver->ensureFormat($wrapped);
+            $policy = $this->resolver->ensureFormat($wrapped);
         } catch (MetadataPolicyException $e) {
             return 'Invalid policy structure: ' . $e->getMessage();
         }
 
-        return $this->validateParamOperators($wrapped);
+        return $this->validateParamOperators($policy);
     }
 
 
@@ -85,10 +85,6 @@ class MetadataPolicyValidator
     {
         foreach ($policy as $entityType => $params) {
             foreach ($params as $param => $ops) {
-                if (!is_array($ops)) {
-                    continue;
-                }
-
                 try {
                     MetadataPolicyOperatorsEnum::validateGeneralParameterOperationRules($ops);
                     MetadataPolicyOperatorsEnum::validateSpecificParameterOperationRules($ops);

@@ -271,7 +271,7 @@ class AdminTrustMarks
             $parts = explode('.', $jwt);
 
             return [
-                'header'  => $this->prettyFromSegment($parts[0] ?? ''),
+                'header'  => $this->prettyFromSegment($parts[0]),
                 'payload' => $this->prettyFromSegment($parts[1] ?? ''),
                 'note'    => 'Shown via lenient decode (strict parse failed: ' . $e->getMessage() . ').',
             ];

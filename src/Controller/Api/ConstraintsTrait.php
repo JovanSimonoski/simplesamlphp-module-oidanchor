@@ -44,7 +44,7 @@ trait ConstraintsTrait
     protected function constraintsReplace(Request $request): JsonResponse
     {
         $body = $this->decodeJson($request);
-        if (!is_array($body) || array_is_list($body)) {
+        if (!$this->isJsonObject($body)) {
             return $this->badRequest('Body must be a Constraints JSON object.');
         }
 

@@ -3,6 +3,9 @@
 vendor/
 phpunit.xml.bak
 nbproject/
-docs/
+# Working notes stay local; only the module documentation is tracked.
+docs/*
+!docs/oidanchor.md
+!docs/architecture.md
 memory/
 federation_admin_openapi.yaml

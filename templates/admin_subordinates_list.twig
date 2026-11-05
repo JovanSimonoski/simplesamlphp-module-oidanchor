@@ -60,7 +60,7 @@
         {% for sub in subordinates %}
           <tr>
             <td><code>{{ sub.entityId|e }}</code></td>
-            <td>{{ sub.entityType ?? '-' }}</td>
+            <td>{{ sub.entityTypes ? sub.entityTypes|join(', ') : '-' }}</td>
             <td>
               <span class="badge-{{ sub.status }}">{{ sub.status|e }}</span>
             </td>

@@ -7,11 +7,21 @@ namespace SimpleSAML\Module\oidanchor\Entity;
 class Subordinate
 {
     /**
+     * Every registered entity type. $entityType is the primary (first) one, kept for callers
+     * that need a single type.
+     *
+     * @var list<string>
+     */
+    public readonly array $entityTypes;
+
+
+    /**
      * @param array<string,mixed>|null $jwks
      * @param array<string,mixed>|null $metadataPolicy
      * @param array<string,mixed>|null $extraClaims
      * @param array<string,mixed>|null $metadata
      * @param array<string,mixed>|null $constraints
+     * @param list<string> $entityTypes All registered types; defaults to [$entityType].
      */
     public function __construct(
         public readonly string $entityId,
@@ -27,7 +37,9 @@ class Subordinate
         public readonly ?int $id = null,
         public readonly ?array $metadata = null,
         public readonly ?array $constraints = null,
+        array $entityTypes = [],
     ) {
+        $this->entityTypes = $entityTypes !== [] ? $entityTypes : ($entityType !== null ? [$entityType] : []);
     }
 
 
@@ -54,6 +66,18 @@ class Subordinate
             id:             isset($row['id']) ? (int) $row['id'] : null,
             metadata:       isset($row['metadata']) ? json_decode((string) $row['metadata'], true) : null,
             constraints:    isset($row['constraints']) ? json_decode((string) $row['constraints'], true) : null,
+            entityTypes:    self::decodeEntityTypes($row['entity_types'] ?? null),
         );
+    }
+
+
+    /**
+     * @return list<string>
+     */
+    private static function decodeEntityTypes(mixed $json): array
+    {
+        $decoded = is_string($json) ? json_decode($json, true) : null;
+
+        return is_array($decoded) ? array_values(array_filter($decoded, 'is_string')) : [];
     }
 }

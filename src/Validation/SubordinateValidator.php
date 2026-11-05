@@ -30,13 +30,17 @@ class SubordinateValidator
             }
         }
 
-        if (!empty($data['entity_type'])) {
-            $validTypes = array_column(EntityTypesEnum::cases(), 'value');
-            if (!in_array($data['entity_type'], $validTypes, true)) {
-                $errors['entity_type'] = sprintf(
+        $entityTypes = is_array($data['entity_types'] ?? null)
+            ? $data['entity_types']
+            : (empty($data['entity_type']) ? [] : [$data['entity_type']]);
+        $validTypes = array_column(EntityTypesEnum::cases(), 'value');
+        foreach ($entityTypes as $entityType) {
+            if (!in_array($entityType, $validTypes, true)) {
+                $errors['entity_types'] = sprintf(
                     'Unknown entity type. Valid types: %s.',
                     implode(', ', $validTypes),
                 );
+                break;
             }
         }
 

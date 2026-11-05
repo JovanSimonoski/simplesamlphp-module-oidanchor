@@ -323,13 +323,13 @@ class AdminSubordinates
 
 
     /**
-     * @return array<string,string>
+     * @return array<string,mixed>
      */
     private function emptyFormData(): array
     {
         return [
             'entity_id'           => '',
-            'entity_type'         => '',
+            'entity_types'        => [],
             'jwks'                => '',
             'metadata_policy'     => '',
             'extra_claims'        => '',
@@ -339,13 +339,16 @@ class AdminSubordinates
 
 
     /**
-     * @return array<string,string>
+     * @return array<string,mixed>
      */
     private function extractFormData(Request $request): array
     {
         return [
             'entity_id'           => trim((string) $request->request->get('entity_id', '')),
-            'entity_type'         => trim((string) $request->request->get('entity_type', '')),
+            'entity_types'        => array_values(array_filter(
+                array_map('strval', $request->request->all('entity_types')),
+                static fn(string $t): bool => trim($t) !== '',
+            )),
             'jwks'                => trim((string) $request->request->get('jwks', '')),
             'metadata_policy'     => trim((string) $request->request->get('metadata_policy', '')),
             'extra_claims'        => trim((string) $request->request->get('extra_claims', '')),
@@ -355,13 +358,13 @@ class AdminSubordinates
 
 
     /**
-     * @return array<string,string>
+     * @return array<string,mixed>
      */
     private function subordinateToFormData(Subordinate $sub): array
     {
         return [
             'entity_id'       => $sub->entityId,
-            'entity_type'     => $sub->entityType ?? '',
+            'entity_types'    => $sub->entityTypes,
             'jwks'            => $sub->jwks !== null
                                     ? json_encode($sub->jwks, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
                                     : '',
@@ -377,7 +380,7 @@ class AdminSubordinates
 
 
     /**
-     * @param array<string,string> $formData
+     * @param array<string,mixed> $formData
      * @param array<string,string> $errors
      */
     private function renderForm(

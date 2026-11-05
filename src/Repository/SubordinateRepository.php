@@ -49,6 +49,8 @@ class SubordinateRepository
             'ALTER TABLE ' . self::TABLE . ' ADD COLUMN description TEXT',
             'ALTER TABLE ' . self::TABLE . ' ADD COLUMN metadata TEXT',
             'ALTER TABLE ' . self::TABLE . ' ADD COLUMN constraints TEXT',
+            // JSON list of every registered entity type; entity_type keeps the first one.
+            'ALTER TABLE ' . self::TABLE . ' ADD COLUMN entity_types TEXT',
         ];
 
         foreach ($migrations as $sql) {
@@ -85,6 +87,7 @@ class SubordinateRepository
                 id                  INTEGER PRIMARY KEY AUTOINCREMENT,
                 entity_id           TEXT    NOT NULL UNIQUE,
                 entity_type         TEXT,
+                entity_types        TEXT,
                 jwks                TEXT,
                 metadata            TEXT,
                 metadata_policy     TEXT,
@@ -100,9 +103,9 @@ class SubordinateRepository
 
         $this->pdo->exec(
             'INSERT INTO ' . self::TABLE . '_new
-                (entity_id, entity_type, jwks, metadata, metadata_policy, constraints, extra_claims,
+                (entity_id, entity_type, entity_types, jwks, metadata, metadata_policy, constraints, extra_claims,
                  status, registered_at, updated_at, include_trust_marks, description)
-             SELECT entity_id, entity_type, jwks, metadata, metadata_policy, constraints, extra_claims,
+             SELECT entity_id, entity_type, entity_types, jwks, metadata, metadata_policy, constraints, extra_claims,
                     status, registered_at, updated_at, include_trust_marks, description
              FROM ' . self::TABLE . ' ORDER BY registered_at ASC',
         );
@@ -207,14 +210,15 @@ class SubordinateRepository
     {
         $stmt = $this->pdo->prepare(
             'INSERT INTO ' . self::TABLE . '
-                (entity_id, entity_type, jwks, metadata, metadata_policy, constraints, extra_claims,
+                (entity_id, entity_type, entity_types, jwks, metadata, metadata_policy, constraints, extra_claims,
                  status, registered_at, updated_at, include_trust_marks, description)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         );
 
         $stmt->execute([
             $sub->entityId,
-            $sub->entityType,
+            $sub->entityTypes[0] ?? null,
+            $sub->entityTypes !== [] ? json_encode($sub->entityTypes, JSON_UNESCAPED_SLASHES) : null,
             $sub->jwks !== null ? json_encode($sub->jwks, JSON_UNESCAPED_SLASHES) : null,
             $sub->metadata !== null ? json_encode($sub->metadata, JSON_UNESCAPED_SLASHES) : null,
             $sub->metadataPolicy !== null ? json_encode($sub->metadataPolicy, JSON_UNESCAPED_SLASHES) : null,
@@ -239,7 +243,7 @@ class SubordinateRepository
     public function update(string $entityId, array $fields): void
     {
         $allowed = [
-            'entity_type', 'jwks', 'metadata', 'metadata_policy', 'constraints',
+            'entity_type', 'entity_types', 'jwks', 'metadata', 'metadata_policy', 'constraints',
             'extra_claims', 'status', 'updated_at', 'include_trust_marks', 'description',
         ];
 

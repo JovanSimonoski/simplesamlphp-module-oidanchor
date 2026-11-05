@@ -78,6 +78,31 @@ final class SubordinateStatementServiceTest extends TestCase
     }
 
 
+    public function testFederationWidePoliciesOfEveryRegisteredTypeAreApplied(): void
+    {
+        $repo = new FederationPolicyRepository($this->pdo);
+        $repo->upsert('openid_relying_party', ['grant_types' => ['subset_of' => ['authorization_code']]]);
+        $repo->upsert('openid_provider', ['subject_types_supported' => ['value' => ['pairwise']]]);
+
+        $subordinate = new Subordinate(
+            entityId:       self::SUB,
+            entityType:     'openid_relying_party',
+            jwks:           self::JWKS,
+            metadataPolicy: null,
+            extraClaims:    null,
+            status:         'active',
+            registeredAt:   time(),
+            updatedAt:      null,
+            entityTypes:    ['openid_relying_party', 'openid_provider'],
+        );
+
+        $policy = $this->build($subordinate)['metadata_policy'];
+
+        $this->assertArrayHasKey('openid_relying_party', $policy);
+        $this->assertArrayHasKey('openid_provider', $policy);
+    }
+
+
     public function testIncompatiblePoliciesThrow(): void
     {
         (new FederationPolicyRepository($this->pdo))->upsert('openid_relying_party', [

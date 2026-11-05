@@ -134,6 +134,96 @@ final class ConstraintsServiceTest extends TestCase
     }
 
 
+    public function testASubordinateCannotLoosenMaxPathLength(): void
+    {
+        $service = new ConstraintsService($this->pdo);
+        $service->setGeneral(['max_path_length' => 1]);
+
+        $this->assertSame(['max_path_length' => 1], $service->effective($this->subordinate(['max_path_length' => 5])));
+    }
+
+
+    public function testAllowedEntityTypesAreIntersected(): void
+    {
+        $service = new ConstraintsService($this->pdo);
+        $service->setGeneral(['allowed_entity_types' => ['openid_provider', 'openid_relying_party']]);
+
+        $effective = $service->effective($this->subordinate([
+            'allowed_entity_types' => ['openid_relying_party', 'oauth_resource'],
+        ]));
+
+        $this->assertSame(['openid_relying_party'], $effective['allowed_entity_types'] ?? null);
+    }
+
+
+    public function testExcludedSubtreesAreCombined(): void
+    {
+        $service = new ConstraintsService($this->pdo);
+        $service->setGeneral(['naming_constraints' => ['excluded' => ['.bad.example.org']]]);
+
+        $effective = $service->effective($this->subordinate([
+            'naming_constraints' => ['excluded' => ['.worse.example.org']],
+        ]));
+
+        $this->assertSame(
+            ['excluded' => ['.bad.example.org', '.worse.example.org']],
+            $effective['naming_constraints'] ?? null,
+        );
+    }
+
+
+    public function testPermittedSubtreesAreIntersected(): void
+    {
+        $service = new ConstraintsService($this->pdo);
+        $service->setGeneral(['naming_constraints' => ['permitted' => ['.example.org', 'host.other.org']]]);
+
+        // .sub.example.org narrows .example.org; .unrelated.org is outside the general set and is dropped.
+        $effective = $service->effective($this->subordinate([
+            'naming_constraints' => ['permitted' => ['.sub.example.org', '.unrelated.org']],
+        ]));
+
+        $this->assertSame(['permitted' => ['.sub.example.org']], $effective['naming_constraints'] ?? null);
+    }
+
+
+    public function testAWiderPermittedSubtreeCannotLoosenTheGeneralOne(): void
+    {
+        $service = new ConstraintsService($this->pdo);
+        $service->setGeneral(['naming_constraints' => ['permitted' => ['.sub.example.org']]]);
+
+        $effective = $service->effective($this->subordinate([
+            'naming_constraints' => ['permitted' => ['.example.org']],
+        ]));
+
+        $this->assertSame(['permitted' => ['.sub.example.org']], $effective['naming_constraints'] ?? null);
+    }
+
+
+    public function testDisjointPermittedSubtreesPermitNothing(): void
+    {
+        $service = new ConstraintsService($this->pdo);
+        $service->setGeneral(['naming_constraints' => ['permitted' => ['.example.org']]]);
+
+        $effective = $service->effective($this->subordinate([
+            'naming_constraints' => ['permitted' => ['.example.com']],
+        ]));
+
+        $this->assertSame(['permitted' => []], $effective['naming_constraints'] ?? null);
+    }
+
+
+    public function testAMemberSetOnOneSideOnlyIsKept(): void
+    {
+        $service = new ConstraintsService($this->pdo);
+        $service->setGeneral(['max_path_length' => 2]);
+
+        $this->assertSame(
+            ['max_path_length' => 2, 'allowed_entity_types' => ['openid_provider']],
+            $service->effective($this->subordinate(['allowed_entity_types' => ['openid_provider']])),
+        );
+    }
+
+
     /**
      * @param array<string,mixed>|null $constraints
      */

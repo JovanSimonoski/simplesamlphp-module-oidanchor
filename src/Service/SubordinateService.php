@@ -94,7 +94,6 @@ class SubordinateService
             status:         !empty($data['status']) ? (string) $data['status'] : 'active',
             registeredAt:   time(),
             updatedAt:      null,
-            includeTrustMarks: !empty($data['include_trust_marks']),
             description:    !empty($data['description']) ? (string) $data['description'] : null,
         );
 
@@ -132,10 +131,6 @@ class SubordinateService
             if (array_key_exists($jsonField, $data)) {
                 $fields[$jsonField] = self::jsonField($data, $jsonField);
             }
-        }
-
-        if (array_key_exists('include_trust_marks', $data)) {
-            $fields['include_trust_marks'] = !empty($data['include_trust_marks']) ? 1 : 0;
         }
 
         if (array_key_exists('description', $data)) {

@@ -8,7 +8,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use SimpleSAML\Module\oidanchor\Entity\Subordinate;
 use SimpleSAML\Module\oidanchor\Repository\AdditionalClaimsRepository;
 use SimpleSAML\Module\oidanchor\Repository\FederationPolicyRepository;
+use SimpleSAML\Module\oidanchor\Repository\SubordinateRepository;
 use SimpleSAML\Module\oidanchor\Service\ConstraintsService;
+use SimpleSAML\Module\oidanchor\Service\SubordinateService;
 use SimpleSAML\Module\oidanchor\Service\SubordinateStatementService;
 use SimpleSAML\OpenID\Exceptions\MetadataPolicyException;
 use SimpleSAML\Test\Module\oidanchor\TestCase;
@@ -36,9 +38,15 @@ final class SubordinateStatementServiceTest extends TestCase
     }
 
 
-    public function testTrustMarksAreNeverEmittedEvenWhenTheLegacyFlagIsSet(): void
+    public function testTrustMarksAreNeverEmittedEvenWhenTheLegacyColumnIsSet(): void
     {
-        $this->assertArrayNotHasKey('trust_marks', $this->build($this->subordinate(includeTrustMarks: true)));
+        $service = new SubordinateService(new SubordinateRepository($this->pdo));
+        $service->create(['entity_id' => self::SUB, 'entity_types' => ['openid_relying_party'], 'jwks' => self::JWKS]);
+        $this->pdo->exec('UPDATE oidanchor_subordinates SET include_trust_marks = 1');
+
+        $subordinate = $service->findSubordinate(self::SUB);
+        $this->assertNotNull($subordinate);
+        $this->assertArrayNotHasKey('trust_marks', $this->build($subordinate));
     }
 
 
@@ -156,21 +164,19 @@ final class SubordinateStatementServiceTest extends TestCase
     private function subordinate(
         ?array $metadataPolicy = null,
         ?array $metadata = null,
-        bool $includeTrustMarks = false,
         ?int $id = null,
     ): Subordinate {
         return new Subordinate(
-            entityId:          self::SUB,
-            entityType:        'openid_relying_party',
-            jwks:              self::JWKS,
-            metadataPolicy:    $metadataPolicy,
-            extraClaims:       null,
-            status:            'active',
-            registeredAt:      time(),
-            updatedAt:         null,
-            includeTrustMarks: $includeTrustMarks,
-            id:                $id,
-            metadata:          $metadata,
+            entityId:       self::SUB,
+            entityType:     'openid_relying_party',
+            jwks:           self::JWKS,
+            metadataPolicy: $metadataPolicy,
+            extraClaims:    null,
+            status:         'active',
+            registeredAt:   time(),
+            updatedAt:      null,
+            id:             $id,
+            metadata:       $metadata,
         );
     }
 }

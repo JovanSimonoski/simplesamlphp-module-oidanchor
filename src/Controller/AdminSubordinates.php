@@ -333,7 +333,6 @@ class AdminSubordinates
             'jwks'                => '',
             'metadata_policy'     => '',
             'extra_claims'        => '',
-            'include_trust_marks' => '',
         ];
     }
 
@@ -352,7 +351,6 @@ class AdminSubordinates
             'jwks'                => trim((string) $request->request->get('jwks', '')),
             'metadata_policy'     => trim((string) $request->request->get('metadata_policy', '')),
             'extra_claims'        => trim((string) $request->request->get('extra_claims', '')),
-            'include_trust_marks' => $request->request->get('include_trust_marks') !== null ? '1' : '',
         ];
     }
 
@@ -392,7 +390,6 @@ class AdminSubordinates
             'extra_claims'    => $sub->extraClaims !== null
                                     ? json_encode($sub->extraClaims, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
                                     : '',
-            'include_trust_marks' => $sub->includeTrustMarks ? '1' : '',
         ];
     }
 

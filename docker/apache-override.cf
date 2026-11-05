@@ -1,0 +1,20 @@
+# Allow %2F (encoded slashes) in URL path segments to reach PHP intact.
+# Without this, Apache decodes %2F → / before routing, which breaks entity IDs
+# like https://rp.example.com used as path parameters.
+AllowEncodedSlashes NoDecode
+
+RewriteEngine On
+# Serve the federation endpoints at the host root, where the Entity Configuration advertises
+# them (base_url + '/federation/fetch' etc.) and where federation clients look for the
+# well-known Entity Configuration. Each maps to the module route of the same name; the
+# query string is passed through unchanged.
+RewriteRule ^/(\.well-known/openid-federation|federation/fetch|federation/list|resolve|trust_mark_status)$ /${SSP_APACHE_ALIAS}module.php/oidanchor/$1 [PT]
+
+# Leave Authorization header with Bearer tokens available in requests.
+# Solution 1:
+RewriteEngine On
+RewriteCond %{HTTP:Authorization} .+
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+# Solution 2:
+#SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+

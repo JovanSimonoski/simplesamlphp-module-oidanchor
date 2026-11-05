@@ -1,0 +1,18 @@
+/*
+ * oidanchor admin UI tables.
+ *
+ * Kept in a file rather than an inline <style>: SimpleSAMLphp's Content-Security-Policy
+ * (style-src 'self') blocks inline styles, including style="" attributes.
+ */
+.oidanchor-table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+.oidanchor-table th, .oidanchor-table td { padding: .8em .8em; border: 1px solid #bbb; font-size: .9em; vertical-align: middle; }
+.oidanchor-table th { background: #f4f4f4; text-align: left; }
+.oidanchor-table tr:hover td { background: #fafafa; }
+/* Keep the per-row action buttons (each a small form) on one line. */
+.oidanchor-table form { display: inline; }
+
+/* Collapsible Menu (admin_nav.twig): the heading keeps SSP's h2 look, with an arrow instead of the default marker. */
+.oidanchor-menu summary { cursor: pointer; list-style: none; }
+.oidanchor-menu summary::-webkit-details-marker { display: none; }
+.oidanchor-menu summary h2::after { content: " \25BE"; }
+.oidanchor-menu[open] summary h2::after { content: " \25B4"; }

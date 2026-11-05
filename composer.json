@@ -9,6 +9,11 @@
             "SimpleSAML\\Module\\oidanchor\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "SimpleSAML\\Test\\Module\\oidanchor\\": "tests/src/"
+        }
+    },
     "require": {
         "php": "^8.3",
         "ext-date": "*",
@@ -16,8 +21,9 @@
         "ext-openssl": "*",
         "ext-pdo": "*",
 
-        "simplesamlphp/assert": "^1.9",
-        "simplesamlphp/simplesamlphp": "^2.5@dev"
+        "simplesamlphp/assert": "^2.0",
+        "simplesamlphp/simplesamlphp": "^2.5@dev",
+        "simplesamlphp/openid": "^0.1.43"
     },
     "require-dev": {
         "simplesamlphp/simplesamlphp-test-framework": "^1.11"

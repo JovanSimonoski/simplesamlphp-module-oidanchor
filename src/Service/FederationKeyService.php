@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SimpleSAML\Module\oidanchor\Service;
 
+use InvalidArgumentException;
 use PDO;
 use PDOException;
 use RuntimeException;
@@ -74,6 +75,39 @@ class FederationKeyService
     public function algorithm(): SignatureAlgorithmEnum
     {
         return $this->context()['algorithm'];
+    }
+
+
+    /**
+     * The algorithms accepted when *verifying* federation JWTs — other entities' statements,
+     * trust marks and delegations are signed with their own choice of algorithm, independent of
+     * this TA's signing algorithm. Configured by `verification_algorithms` (default: every
+     * asymmetric algorithm the library supports); this TA's own signing algorithm is always included.
+     *
+     * @throws \InvalidArgumentException When the configured list names an unknown algorithm or `none`.
+     */
+    public function verificationAlgorithms(): SupportedAlgorithms
+    {
+        $configured = $this->moduleConfig->getOptionalArray('verification_algorithms', null);
+
+        $algorithms = $configured === null
+            ? array_values(array_filter(
+                SignatureAlgorithmEnum::cases(),
+                static fn(SignatureAlgorithmEnum $alg): bool => $alg !== SignatureAlgorithmEnum::none,
+            ))
+            : array_map(static function (mixed $name): SignatureAlgorithmEnum {
+                $alg = is_string($name) ? SignatureAlgorithmEnum::tryFrom($name) : null;
+                if ($alg === null || $alg === SignatureAlgorithmEnum::none) {
+                    throw new InvalidArgumentException(sprintf(
+                        'oidanchor: unsupported entry in verification_algorithms: %s',
+                        var_export($name, true),
+                    ));
+                }
+
+                return $alg;
+            }, $configured);
+
+        return new SupportedAlgorithms(new SignatureAlgorithmBag($this->algorithm(), ...$algorithms));
     }
 
 

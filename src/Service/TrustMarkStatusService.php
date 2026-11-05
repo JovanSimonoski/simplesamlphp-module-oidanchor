@@ -6,10 +6,8 @@ namespace SimpleSAML\Module\oidanchor\Service;
 
 use SimpleSAML\Module\oidanchor\Repository\IssuedTrustMarkRepository;
 use SimpleSAML\Module\oidanchor\Repository\TrustMarkSubjectRepository;
-use SimpleSAML\OpenID\Algorithms\SignatureAlgorithmBag;
 use SimpleSAML\OpenID\Codebooks\TrustMarkStatusEnum;
 use SimpleSAML\OpenID\Federation;
-use SimpleSAML\OpenID\SupportedAlgorithms;
 use Throwable;
 
 /**
@@ -249,7 +247,7 @@ class TrustMarkStatusService
     private function federation(): Federation
     {
         return $this->federation ??= new Federation(
-            new SupportedAlgorithms(new SignatureAlgorithmBag($this->keys->algorithm())),
+            $this->keys->verificationAlgorithms(),
         );
     }
 }

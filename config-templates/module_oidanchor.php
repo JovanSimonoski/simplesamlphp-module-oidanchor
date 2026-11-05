@@ -44,6 +44,15 @@ return [
     'signing_algorithm' => 'RS256',
 
     /*
+     * Algorithms accepted when VERIFYING federation JWTs signed by other entities (subordinate
+     * and intermediate statements during resolve, trust marks, delegations). Independent of
+     * signing_algorithm, which is always accepted in addition. null = every asymmetric algorithm
+     * listed above.
+     * Example: ['RS256', 'PS256', 'ES256']
+     */
+    'verification_algorithms' => null,
+
+    /*
      * Lifetime of the Entity Configuration JWT in seconds.
      * Defaults to 24 hours.
      */

@@ -256,7 +256,7 @@ class SubordinateMetadataPoliciesApi extends ApiController
 
         $this->subordinateService()->update(
             $subordinate->entityId,
-            ['metadata_policy' => $document === [] ? null : json_encode($document, JSON_UNESCAPED_SLASHES)],
+            ['metadata_policy' => $document],
             $document === [] ? 'policy_deleted' : 'policy_updated',
             'subordinate metadata policy updated',
         );

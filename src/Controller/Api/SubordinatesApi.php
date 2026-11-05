@@ -91,7 +91,7 @@ class SubordinatesApi extends ApiController
             'entity_types' => $registeredTypes,
             'status'       => $status,
             'description'  => $body['description'] ?? null,
-            'jwks'         => $jwks !== null ? json_encode($jwks, JSON_UNESCAPED_SLASHES) : null,
+            'jwks'         => is_array($jwks) ? $jwks : null,
         ]);
 
         Logger::info(sprintf('oidanchor: API subordinate created: %s', $entityId));
@@ -289,7 +289,7 @@ class SubordinatesApi extends ApiController
 
         $this->subordinateService()->update(
             $sub->entityId,
-            ['jwks' => json_encode($body, JSON_UNESCAPED_SLASHES)],
+            ['jwks' => $body],
             'jwks_replaced',
             'JWKS replaced',
         );
@@ -319,7 +319,7 @@ class SubordinatesApi extends ApiController
 
         $this->subordinateService()->update(
             $sub->entityId,
-            ['jwks' => json_encode($jwks, JSON_UNESCAPED_SLASHES)],
+            ['jwks' => $jwks],
             'jwk_added',
             sprintf('key added: %s', isset($jwk['kid']) ? (string) $jwk['kid'] : 'no kid'),
         );
@@ -353,7 +353,7 @@ class SubordinatesApi extends ApiController
             $jwks['keys'] = $remaining;
             $this->subordinateService()->update(
                 $sub->entityId,
-                ['jwks' => json_encode($jwks, JSON_UNESCAPED_SLASHES)],
+                ['jwks' => $jwks],
                 'jwk_removed',
                 sprintf('key removed: %s', $kid),
             );

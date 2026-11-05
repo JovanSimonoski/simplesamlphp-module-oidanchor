@@ -85,6 +85,27 @@ abstract class TestCase extends BaseTestCase
     }
 
 
+    /**
+     * Switch $this->pdo to a temporary SQLite file and return its DSN, for code that opens its
+     * own connection from `database_dsn` (the controllers) and must see the test's data.
+     */
+    protected function useFileDatabase(): string
+    {
+        $file = tempnam(sys_get_temp_dir(), 'oidanchor-test-db-');
+        self::assertIsString($file);
+        register_shutdown_function(static fn() => @unlink($file));
+
+        $dsn       = 'sqlite:' . $file;
+        $this->pdo = new PDO($dsn, null, null, [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES   => false,
+        ]);
+
+        return $dsn;
+    }
+
+
     protected function keys(?Configuration $config = null): FederationKeyService
     {
         return new FederationKeyService($config ?? $this->moduleConfig(), $this->pdo);

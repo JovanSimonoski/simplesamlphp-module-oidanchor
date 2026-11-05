@@ -74,9 +74,7 @@ class ConstraintsService
     public function setForSubordinate(string $entityId, array $constraints): void
     {
         (new SubordinateRepository($this->pdo))->update($entityId, [
-            'constraints' => $constraints === []
-                ? null
-                : json_encode($constraints, JSON_UNESCAPED_SLASHES),
+            'constraints' => $constraints === [] ? null : $constraints,
             'updated_at'  => time(),
         ]);
     }

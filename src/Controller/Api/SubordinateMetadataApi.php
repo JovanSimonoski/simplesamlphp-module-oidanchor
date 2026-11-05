@@ -161,7 +161,7 @@ class SubordinateMetadataApi extends ApiController
 
         $this->subordinateService()->update(
             $subordinate->entityId,
-            ['metadata' => $document === [] ? null : json_encode($document, JSON_UNESCAPED_SLASHES)],
+            ['metadata' => $document],
             $document === [] ? 'metadata_deleted' : 'metadata_updated',
             'subordinate metadata updated',
         );

@@ -66,9 +66,17 @@ class SubordinateService
 
 
     /**
+     * JSON-valued subordinate columns. create() and update() take them as decoded arrays (or
+     * null); encoding happens only at the repository boundary. An empty array means "none".
+     */
+    private const array JSON_FIELDS = ['jwks', 'metadata', 'metadata_policy', 'constraints', 'extra_claims'];
+
+
+    /**
      * Create a new subordinate from the given data array.
      *
-     * @param array<string,mixed> $data
+     * @param array<string,mixed> $data JSON fields ({@see JSON_FIELDS}) as decoded arrays.
+     * @throws \InvalidArgumentException When a JSON field is not an array or null.
      */
     public function create(array $data): Subordinate
     {
@@ -78,15 +86,11 @@ class SubordinateService
             entityId:       (string) $data['entity_id'],
             entityType:     $entityTypes[0] ?? null,
             entityTypes:    $entityTypes,
-            jwks:           !empty($data['jwks'])
-                                ? json_decode((string) $data['jwks'], true)
-                                : null,
-            metadataPolicy: !empty($data['metadata_policy'])
-                                ? json_decode((string) $data['metadata_policy'], true)
-                                : null,
-            extraClaims:    !empty($data['extra_claims'])
-                                ? json_decode((string) $data['extra_claims'], true)
-                                : null,
+            jwks:           self::jsonField($data, 'jwks'),
+            metadataPolicy: self::jsonField($data, 'metadata_policy'),
+            extraClaims:    self::jsonField($data, 'extra_claims'),
+            metadata:       self::jsonField($data, 'metadata'),
+            constraints:    self::jsonField($data, 'constraints'),
             status:         !empty($data['status']) ? (string) $data['status'] : 'active',
             registeredAt:   time(),
             updatedAt:      null,
@@ -109,9 +113,10 @@ class SubordinateService
 
 
     /**
-     * Update a subordinate. $data may contain any subset of updatable fields as raw input.
+     * Update a subordinate. $data may contain any subset of the updatable fields.
      *
-     * @param array<string,mixed> $data
+     * @param array<string,mixed> $data JSON fields ({@see JSON_FIELDS}) as decoded arrays.
+     * @throws \InvalidArgumentException When a JSON field is not an array or null.
      */
     public function update(string $entityId, array $data, string $eventType = 'updated', ?string $message = null): void
     {
@@ -120,13 +125,12 @@ class SubordinateService
         $entityTypes = self::entityTypesFrom($data);
         if ($entityTypes !== null) {
             $fields['entity_type']  = $entityTypes[0] ?? null;
-            $fields['entity_types'] = $entityTypes !== [] ? json_encode($entityTypes, JSON_UNESCAPED_SLASHES) : null;
+            $fields['entity_types'] = $entityTypes !== [] ? $entityTypes : null;
         }
 
-        foreach (['jwks', 'metadata', 'metadata_policy', 'constraints', 'extra_claims'] as $jsonColumn) {
-            if (array_key_exists($jsonColumn, $data)) {
-                $raw = trim((string) ($data[$jsonColumn] ?? ''));
-                $fields[$jsonColumn] = $raw !== '' ? $raw : null;
+        foreach (self::JSON_FIELDS as $jsonField) {
+            if (array_key_exists($jsonField, $data)) {
+                $fields[$jsonField] = self::jsonField($data, $jsonField);
             }
         }
 
@@ -216,6 +220,27 @@ class SubordinateService
     public function exists(string $entityId): bool
     {
         return $this->repository->exists($entityId);
+    }
+
+
+    /**
+     * @param array<string,mixed> $data
+     * @return array<mixed>|null
+     * @throws \InvalidArgumentException
+     */
+    private static function jsonField(array $data, string $field): ?array
+    {
+        $value = $data[$field] ?? null;
+
+        if ($value !== null && !is_array($value)) {
+            throw new InvalidArgumentException(sprintf(
+                'Subordinate field "%s" must be a decoded array or null, got %s.',
+                $field,
+                get_debug_type($value),
+            ));
+        }
+
+        return $value === [] ? null : $value;
     }
 
 

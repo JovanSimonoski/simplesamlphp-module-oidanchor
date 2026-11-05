@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SimpleSAML\Module\oidanchor\Repository;
 
+use InvalidArgumentException;
 use PDO;
 use PDOException;
 use SimpleSAML\Module\oidanchor\Entity\Subordinate;
@@ -238,23 +239,33 @@ class SubordinateRepository
     /**
      * Update mutable columns for an existing subordinate.
      *
-     * @param array<string,mixed> $fields Associative array of column => value pairs to update (entity_id excluded).
+     * @param array<string,mixed> $fields Column => value pairs to update (entity_id excluded). JSON
+     *     columns take decoded arrays (or null) and are encoded here, the same as in create().
+     * @throws \InvalidArgumentException When a JSON column is given anything but an array or null.
      */
     public function update(string $entityId, array $fields): void
     {
-        $allowed = [
-            'entity_type', 'entity_types', 'jwks', 'metadata', 'metadata_policy', 'constraints',
-            'extra_claims', 'status', 'updated_at', 'include_trust_marks', 'description',
-        ];
+        $jsonColumns = ['entity_types', 'jwks', 'metadata', 'metadata_policy', 'constraints', 'extra_claims'];
+        $allowed     = [...$jsonColumns, 'entity_type', 'status', 'updated_at', 'include_trust_marks', 'description'];
 
         $sets   = [];
         $values = [];
 
         foreach ($allowed as $col) {
-            if (array_key_exists($col, $fields)) {
-                $sets[]   = "$col = ?";
-                $values[] = $fields[$col];
+            if (!array_key_exists($col, $fields)) {
+                continue;
             }
+
+            $value = $fields[$col];
+            if (in_array($col, $jsonColumns, true) && $value !== null) {
+                if (!is_array($value)) {
+                    throw new InvalidArgumentException(sprintf('Column "%s" takes a decoded array or null.', $col));
+                }
+                $value = json_encode($value, JSON_UNESCAPED_SLASHES);
+            }
+
+            $sets[]   = "$col = ?";
+            $values[] = $value;
         }
 
         if (empty($sets)) {

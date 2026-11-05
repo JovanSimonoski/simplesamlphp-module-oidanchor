@@ -102,7 +102,7 @@ class AdminSubordinates
             }
 
             if (empty($errors)) {
-                $service->create($formData);
+                $service->create($this->toServiceData($formData));
 
                 $adminUser = $this->getAdminUsername();
                 Logger::info(sprintf(
@@ -164,7 +164,7 @@ class AdminSubordinates
             $errors = $validator->validate($formData, isUpdate: true);
 
             if (empty($errors)) {
-                $service->update($entityId, $formData);
+                $service->update($entityId, $this->toServiceData($formData));
 
                 $adminUser = $this->getAdminUsername();
                 Logger::info(sprintf(
@@ -354,6 +354,24 @@ class AdminSubordinates
             'extra_claims'        => trim((string) $request->request->get('extra_claims', '')),
             'include_trust_marks' => $request->request->get('include_trust_marks') !== null ? '1' : '',
         ];
+    }
+
+
+    /**
+     * The form keeps JSON fields as text (to re-render what the admin typed); the service takes
+     * them decoded. Called after validation, so the text is valid JSON or empty.
+     *
+     * @param array<string,mixed> $formData
+     * @return array<string,mixed>
+     */
+    private function toServiceData(array $formData): array
+    {
+        foreach (['jwks', 'metadata_policy', 'extra_claims'] as $field) {
+            $raw = trim((string) ($formData[$field] ?? ''));
+            $formData[$field] = $raw !== '' ? json_decode($raw, true) : null;
+        }
+
+        return $formData;
     }
 
 

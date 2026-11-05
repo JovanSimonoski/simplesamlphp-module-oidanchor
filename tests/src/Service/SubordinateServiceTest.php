@@ -100,6 +100,38 @@ final class SubordinateServiceTest extends TestCase
     }
 
 
+    public function testCreateAndUpdateTakeTheSameDecodedRepresentation(): void
+    {
+        $jwks    = ['keys' => [['kty' => 'EC', 'crv' => 'P-256', 'kid' => 'k1', 'x' => 'x', 'y' => 'y']]];
+        $policy  = ['openid_relying_party' => ['grant_types' => ['subset_of' => ['authorization_code']]]];
+        $service = $this->service();
+
+        $service->create(['entity_id' => self::SUB, 'jwks' => $jwks, 'metadata_policy' => $policy]);
+        $created = $service->findSubordinate(self::SUB);
+        $this->assertNotNull($created);
+        $this->assertSame($jwks, $created->jwks);
+        $this->assertSame($policy, $created->metadataPolicy);
+
+        $metadata = ['openid_relying_party' => ['client_name' => 'Leaf']];
+        $service->update(self::SUB, ['metadata' => $metadata, 'metadata_policy' => []]);
+        $updated = $this->service()->findSubordinate(self::SUB);
+        $this->assertNotNull($updated);
+        $this->assertSame($metadata, $updated->metadata);
+        $this->assertNull($updated->metadataPolicy);
+        $this->assertSame($jwks, $updated->jwks);
+    }
+
+
+    public function testEncodedJsonStringsAreRejected(): void
+    {
+        $service = $this->service();
+        $service->create(['entity_id' => self::SUB]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $service->update(self::SUB, ['jwks' => '{"keys":[]}']);
+    }
+
+
     private function service(): SubordinateService
     {
         return new SubordinateService(new SubordinateRepository($this->pdo));

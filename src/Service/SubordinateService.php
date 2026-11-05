@@ -72,9 +72,12 @@ class SubordinateService
      */
     public function create(array $data): Subordinate
     {
+        $entityTypes = self::entityTypesFrom($data) ?? [];
+
         $sub = new Subordinate(
             entityId:       (string) $data['entity_id'],
-            entityType:     !empty($data['entity_type']) ? (string) $data['entity_type'] : null,
+            entityType:     $entityTypes[0] ?? null,
+            entityTypes:    $entityTypes,
             jwks:           !empty($data['jwks'])
                                 ? json_decode((string) $data['jwks'], true)
                                 : null,
@@ -114,8 +117,10 @@ class SubordinateService
     {
         $fields = ['updated_at' => time()];
 
-        if (array_key_exists('entity_type', $data)) {
-            $fields['entity_type'] = !empty($data['entity_type']) ? (string) $data['entity_type'] : null;
+        $entityTypes = self::entityTypesFrom($data);
+        if ($entityTypes !== null) {
+            $fields['entity_type']  = $entityTypes[0] ?? null;
+            $fields['entity_types'] = $entityTypes !== [] ? json_encode($entityTypes, JSON_UNESCAPED_SLASHES) : null;
         }
 
         foreach (['jwks', 'metadata', 'metadata_policy', 'constraints', 'extra_claims'] as $jsonColumn) {
@@ -211,6 +216,30 @@ class SubordinateService
     public function exists(string $entityId): bool
     {
         return $this->repository->exists($entityId);
+    }
+
+
+    /**
+     * The registered entity types in $data: `entity_types` (a list) or the single `entity_type`.
+     * Null when neither is present, so an update leaves the types alone.
+     *
+     * @param array<string,mixed> $data
+     * @return list<string>|null
+     */
+    private static function entityTypesFrom(array $data): ?array
+    {
+        if (array_key_exists('entity_types', $data)) {
+            $types = is_array($data['entity_types']) ? $data['entity_types'] : [];
+        } elseif (array_key_exists('entity_type', $data)) {
+            $types = [$data['entity_type']];
+        } else {
+            return null;
+        }
+
+        return array_values(array_unique(array_filter(
+            array_map(static fn(mixed $t): string => is_string($t) ? trim($t) : '', $types),
+            static fn(string $t): bool => $t !== '',
+        )));
     }
 
 

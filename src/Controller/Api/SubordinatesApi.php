@@ -42,7 +42,7 @@ class SubordinatesApi extends ApiController
 
         $result = [];
         foreach ($this->subordinateService()->findAll() as $sub) {
-            if ($entityType !== null && $sub->entityType !== $entityType) {
+            if ($entityType !== null && !in_array($entityType, $sub->entityTypes, true)) {
                 continue;
             }
             if ($status !== null && $sub->status !== $status) {
@@ -87,11 +87,11 @@ class SubordinatesApi extends ApiController
         $registeredTypes = $this->normalizeEntityTypes($body['registered_entity_types'] ?? null);
 
         $sub = $service->create([
-            'entity_id'   => $entityId,
-            'entity_type' => $registeredTypes[0] ?? null,
-            'status'      => $status,
-            'description' => $body['description'] ?? null,
-            'jwks'        => $jwks !== null ? json_encode($jwks, JSON_UNESCAPED_SLASHES) : null,
+            'entity_id'    => $entityId,
+            'entity_types' => $registeredTypes,
+            'status'       => $status,
+            'description'  => $body['description'] ?? null,
+            'jwks'         => $jwks !== null ? json_encode($jwks, JSON_UNESCAPED_SLASHES) : null,
         ]);
 
         Logger::info(sprintf('oidanchor: API subordinate created: %s', $entityId));
@@ -132,8 +132,7 @@ class SubordinatesApi extends ApiController
             $fields['description'] = $body['description'];
         }
         if (array_key_exists('registered_entity_types', $body)) {
-            $types = $this->normalizeEntityTypes($body['registered_entity_types']);
-            $fields['entity_type'] = $types[0] ?? null;
+            $fields['entity_types'] = $this->normalizeEntityTypes($body['registered_entity_types']);
         }
 
         $service = $this->subordinateService();
@@ -536,7 +535,7 @@ class SubordinatesApi extends ApiController
             'id'                      => $sub->id,
             'entity_id'               => $sub->entityId,
             'status'                  => $sub->status,
-            'registered_entity_types' => $sub->entityType !== null ? [$sub->entityType] : [],
+            'registered_entity_types' => $sub->entityTypes,
         ];
 
         if ($sub->description !== null) {

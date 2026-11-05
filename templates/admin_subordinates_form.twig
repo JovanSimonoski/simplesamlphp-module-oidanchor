@@ -67,19 +67,19 @@
 
     {# Entity Type #}
     <div class="field">
-      <label for="entity_type">{% trans %}Entity Type{% endtrans %}</label>
-      <select id="entity_type" name="entity_type"
-              class="pure-input-1{% if errors.entity_type is defined %} pure-input-error{% endif %}">
-        <option value="">{% trans %}select type{% endtrans %}</option>
+      <label for="entity_types">{% trans %}Entity Types{% endtrans %}</label>
+      <select id="entity_types" name="entity_types[]" multiple size="{{ entityTypes|length }}"
+              class="pure-input-1{% if errors.entity_types is defined %} pure-input-error{% endif %}">
         {% for type in entityTypes %}
           <option value="{{ type }}"
-                  {% if formData.entity_type|default('') == type %}selected{% endif %}>
+                  {% if type in formData.entity_types|default([]) %}selected{% endif %}>
             {{ type }}
           </option>
         {% endfor %}
       </select>
-      {% if errors.entity_type is defined %}
-        <p class="field-error">{{ errors.entity_type|e }}</p>
+      <p class="field-hint">{% trans %}Select every type the entity is registered as (Ctrl/Cmd-click for several).{% endtrans %}</p>
+      {% if errors.entity_types is defined %}
+        <p class="field-error">{{ errors.entity_types|e }}</p>
       {% endif %}
     </div>
 

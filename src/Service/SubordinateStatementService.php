@@ -37,15 +37,15 @@ class SubordinateStatementService
         $entityId = $moduleConfig->getString('entity_id');
         $lifetime = $this->lifetime($moduleConfig, $pdo);
 
-        // Merge federation-wide policy (per entity type) with the per-subordinate policy.
-        $policyRepo      = new FederationPolicyRepository($pdo);
-        $federationEntry = $subordinate->entityType !== null
-            ? $policyRepo->findByEntityType($subordinate->entityType)
-            : null;
-
-        $federationWidePolicy = $federationEntry !== null
-            ? [$federationEntry->entityType => $federationEntry->policy]
-            : null;
+        // Merge the federation-wide policy of every registered entity type with the per-subordinate policy.
+        $policyRepo           = new FederationPolicyRepository($pdo);
+        $federationWidePolicy = [];
+        foreach ($subordinate->entityTypes as $entityType) {
+            $entry = $policyRepo->findByEntityType($entityType);
+            if ($entry !== null) {
+                $federationWidePolicy[$entry->entityType] = $entry->policy;
+            }
+        }
 
         $mergedPolicy = (new MetadataPolicyMerger())->merge(
             $federationWidePolicy,

@@ -7,11 +7,9 @@ namespace SimpleSAML\Module\oidanchor\Service;
 use SimpleSAML\Configuration;
 use SimpleSAML\Logger;
 use SimpleSAML\Module\oidanchor\Repository\EcTrustMarkRepository;
-use SimpleSAML\OpenID\Algorithms\SignatureAlgorithmBag;
 use SimpleSAML\OpenID\Codebooks\ClaimsEnum;
 use SimpleSAML\OpenID\Federation;
 use SimpleSAML\OpenID\Federation\Claims\TrustMarksClaimValue;
-use SimpleSAML\OpenID\SupportedAlgorithms;
 use Throwable;
 
 /**
@@ -298,7 +296,7 @@ class EcTrustMarkService
     private function federation(): Federation
     {
         return $this->federation ??= new Federation(
-            supportedAlgorithms: new SupportedAlgorithms(new SignatureAlgorithmBag($this->keys->algorithm())),
+            supportedAlgorithms: $this->keys->verificationAlgorithms(),
             client: FederationHttpClient::create(
                 $this->moduleConfig ?? Configuration::loadFromArray([]),
                 'oidanchor-trust-mark-refresh/1.0 (+' . $this->keys->entityId() . ')',

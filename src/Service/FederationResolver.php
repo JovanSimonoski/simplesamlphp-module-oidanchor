@@ -6,14 +6,12 @@ namespace SimpleSAML\Module\oidanchor\Service;
 
 use SimpleSAML\Configuration;
 use SimpleSAML\Module\oidanchor\Exception\ResolveException;
-use SimpleSAML\OpenID\Algorithms\SignatureAlgorithmBag;
 use SimpleSAML\OpenID\Codebooks\ClaimsEnum;
 use SimpleSAML\OpenID\Codebooks\EntityTypesEnum;
 use SimpleSAML\OpenID\Exceptions\MetadataPolicyException;
 use SimpleSAML\OpenID\Exceptions\TrustChainException;
 use SimpleSAML\OpenID\Federation;
 use SimpleSAML\OpenID\Federation\TrustChain;
-use SimpleSAML\OpenID\SupportedAlgorithms;
 use Throwable;
 
 /**
@@ -159,7 +157,7 @@ class FederationResolver
         );
 
         return new Federation(
-            supportedAlgorithms: new SupportedAlgorithms(new SignatureAlgorithmBag($this->keys->algorithm())),
+            supportedAlgorithms: $this->keys->verificationAlgorithms(),
             maxTrustChainDepth: $this->config()['max_chain_depth'],
             cache: $cache,
             client: $client,

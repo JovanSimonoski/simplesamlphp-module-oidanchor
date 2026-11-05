@@ -7,10 +7,8 @@ namespace SimpleSAML\Module\oidanchor\Service;
 use InvalidArgumentException;
 use PDO;
 use SimpleSAML\Configuration;
-use SimpleSAML\OpenID\Algorithms\SignatureAlgorithmBag;
 use SimpleSAML\OpenID\Codebooks\ClaimsEnum;
 use SimpleSAML\OpenID\Federation;
-use SimpleSAML\OpenID\SupportedAlgorithms;
 use Throwable;
 
 /**
@@ -122,7 +120,7 @@ class TrustMarkDelegationService
     private function federation(): Federation
     {
         return $this->federation ??= new Federation(
-            new SupportedAlgorithms(new SignatureAlgorithmBag($this->keys()->algorithm())),
+            $this->keys()->verificationAlgorithms(),
         );
     }
 }

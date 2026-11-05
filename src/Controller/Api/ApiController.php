@@ -47,6 +47,11 @@ abstract class ApiController
      * We deliberately do NOT fall through to `Utils\Auth::requireAdmin()`, which redirects to the
      * SimpleSAMLphp login page: the gateway proxy follows redirects, so a redirect would make it
      * capture the HTML login page as the API response instead of a clean 401.
+     *
+     * The session credential is an ambient cookie (and SSP defaults to SameSite=None), so a
+     * session-authenticated write must also come from this origin — see {@see isSameOrigin()}.
+     * Otherwise any page the operator visits could POST to the API (e.g. rotate the signing
+     * key) with their cookie. Basic auth is not ambient and needs no such check.
      */
     protected function requireAdmin(Request $request): void
     {
@@ -61,10 +66,48 @@ abstract class ApiController
         }
 
         if ((new Utils\Auth())->isAdmin()) {
+            if (!$request->isMethodSafe() && !$this->isSameOrigin($request)) {
+                $this->abort($this->error(
+                    'forbidden',
+                    'Cross-origin request rejected: session-authenticated writes must come from this origin.',
+                    JsonResponse::HTTP_FORBIDDEN,
+                ));
+            }
+
             return;
         }
 
-        $this->sendUnauthorized();
+        $response = $this->error('unauthorized', 'Admin authentication required.', JsonResponse::HTTP_UNAUTHORIZED);
+        $response->headers->set('WWW-Authenticate', 'Basic realm="oidanchor admin API"');
+        $this->abort($response);
+    }
+
+
+    /**
+     * Whether a browser request was issued by a page on this origin. Browsers send `Origin` on
+     * every cross-origin POST/PUT/PATCH/DELETE; when it is absent, the Fetch Metadata header
+     * `Sec-Fetch-Site` decides. A request carrying neither is rejected.
+     *
+     * Besides this host, the origins listed in `api_allowed_origins` are trusted (for a reverse
+     * proxy that changes the Host the module sees).
+     */
+    protected function isSameOrigin(Request $request): bool
+    {
+        $origin = $request->headers->get('Origin');
+
+        if ($origin !== null) {
+            $allowed = array_merge(
+                [$request->getSchemeAndHttpHost()],
+                $this->moduleConfig()->getOptionalArray('api_allowed_origins', []),
+            );
+
+            return in_array(rtrim($origin, '/'), array_map(
+                static fn(mixed $o): string => rtrim((string) $o, '/'),
+                $allowed,
+            ), true);
+        }
+
+        return in_array($request->headers->get('Sec-Fetch-Site'), ['same-origin', 'none'], true);
     }
 
 
@@ -124,17 +167,11 @@ abstract class ApiController
 
 
     /**
-     * Emit the spec's UnauthorizedError as JSON 401 (with a Basic challenge) and end the request.
-     * Never returns — the controller method must not continue after auth fails.
+     * Emit an auth error and end the request. Never returns — the controller method must not
+     * continue after auth fails.
      */
-    private function sendUnauthorized(): never
+    private function abort(JsonResponse $response): never
     {
-        $response = $this->error(
-            'unauthorized',
-            'Admin authentication required.',
-            JsonResponse::HTTP_UNAUTHORIZED,
-        );
-        $response->headers->set('WWW-Authenticate', 'Basic realm="oidanchor admin API"');
         $response->send();
 
         exit;

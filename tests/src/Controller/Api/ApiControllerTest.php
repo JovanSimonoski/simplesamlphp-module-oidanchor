@@ -99,6 +99,41 @@ final class ApiControllerTest extends TestCase
     }
 
 
+    /**
+     * @return array<string,array{array<string,string>, bool}>
+     */
+    public static function originHeaders(): array
+    {
+        return [
+            'same origin'                 => [['HTTP_ORIGIN' => 'https://ta.example.org'], true],
+            'same origin, trailing slash' => [['HTTP_ORIGIN' => 'https://ta.example.org/'], true],
+            'configured extra origin'     => [['HTTP_ORIGIN' => 'https://proxy.example.org'], true],
+            'foreign origin'              => [['HTTP_ORIGIN' => 'https://evil.example.org'], false],
+            'other scheme'                => [['HTTP_ORIGIN' => 'http://ta.example.org'], false],
+            'opaque origin'               => [['HTTP_ORIGIN' => 'null'], false],
+            'origin wins over fetch site' => [['HTTP_ORIGIN' => 'https://evil.example.org', 'HTTP_SEC_FETCH_SITE' => 'same-origin'], false],
+            'fetch site same-origin'      => [['HTTP_SEC_FETCH_SITE' => 'same-origin'], true],
+            'fetch site none'             => [['HTTP_SEC_FETCH_SITE' => 'none'], true],
+            'fetch site cross-site'       => [['HTTP_SEC_FETCH_SITE' => 'cross-site'], false],
+            'fetch site same-site'        => [['HTTP_SEC_FETCH_SITE' => 'same-site'], false],
+            'no browser headers'          => [[], false],
+        ];
+    }
+
+
+    /**
+     * @param array<string,string> $headers
+     */
+    #[DataProvider('originHeaders')]
+    public function testSessionWritesMustComeFromThisOrigin(array $headers, bool $expected): void
+    {
+        $this->preloadModuleConfig(['api_allowed_origins' => ['https://proxy.example.org/']]);
+        $request = Request::create('https://ta.example.org/api/v1/admin/kms/rotate', 'POST', server: $headers);
+
+        $this->assertSame($expected, $this->controller()->isSameOrigin($request));
+    }
+
+
     private function request(?string $user, ?string $pass): Request
     {
         $server = $user === null ? [] : ['PHP_AUTH_USER' => $user, 'PHP_AUTH_PW' => (string) $pass];
@@ -125,6 +160,12 @@ final class ApiControllerTest extends TestCase
             public function basicCredentials(Request $request): ?array
             {
                 return parent::basicCredentials($request);
+            }
+
+
+            public function isSameOrigin(Request $request): bool
+            {
+                return parent::isSameOrigin($request);
             }
         };
     }

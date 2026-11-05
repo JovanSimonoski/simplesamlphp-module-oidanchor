@@ -8,6 +8,7 @@ use PDO;
 use PDOException;
 use RuntimeException;
 use SimpleSAML\Configuration;
+use SimpleSAML\Module\oidanchor\Repository\IssuedTrustMarkRepository;
 use SimpleSAML\Module\oidanchor\Repository\SubordinateRepository;
 use SimpleSAML\Module\oidanchor\Service\EntityConfigurationService;
 use SimpleSAML\Module\oidanchor\Service\FederationKeyService;
@@ -59,11 +60,37 @@ class OpenIDFederation
     {
         $moduleConfig = Configuration::getConfig('module_oidanchor.php');
 
-        $service = new SubordinateService(
-            new SubordinateRepository($this->buildPdo($moduleConfig)),
-        );
+        // OpenID Federation 1.0 §8.2.1. `intermediate` is not supported: the TA does not know which
+        // subordinates are intermediates, and the spec requires rejecting an unsupported parameter.
+        if ($request->query->has('intermediate')) {
+            return $this->federationError(
+                'unsupported_parameter',
+                'The intermediate parameter is not supported by this Trust Anchor.',
+                Response::HTTP_BAD_REQUEST,
+            );
+        }
 
-        return new JsonResponse($service->listSubordinates());
+        $trustMarked = $request->query->get('trust_marked');
+        if ($trustMarked !== null && !in_array($trustMarked, ['true', 'false'], true)) {
+            return $this->federationError(
+                'invalid_request',
+                'trust_marked must be true or false',
+                Response::HTTP_BAD_REQUEST,
+            );
+        }
+
+        $entityType    = trim((string) $request->query->get('entity_type', '')) ?: null;
+        $trustMarkType = trim((string) $request->query->get('trust_mark_type', '')) ?: null;
+
+        $pdo     = $this->buildPdo($moduleConfig);
+        $service = new SubordinateService(new SubordinateRepository($pdo));
+
+        return new JsonResponse($service->listSubordinates(
+            entityType:    $entityType,
+            trustMarked:   $trustMarked === 'true',
+            trustMarkType: $trustMarkType,
+            issuedMarks:   new IssuedTrustMarkRepository($pdo),
+        ));
     }
 
 

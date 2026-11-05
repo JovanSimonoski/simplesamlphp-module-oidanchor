@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace SimpleSAML\Module\oidanchor\Service;
 
 use InvalidArgumentException;
+use LogicException;
 use SimpleSAML\Module\oidanchor\Entity\Subordinate;
 use SimpleSAML\Module\oidanchor\Entity\SubordinateStatus;
+use SimpleSAML\Module\oidanchor\Repository\IssuedTrustMarkRepository;
 use SimpleSAML\Module\oidanchor\Repository\SubordinateEventRepository;
 use SimpleSAML\Module\oidanchor\Repository\SubordinateRepository;
 
@@ -26,13 +28,47 @@ class SubordinateService
 
 
     /**
-     * Return entity IDs of all active subordinates (for the federation list endpoint).
+     * Entity IDs of the active subordinates, for the federation list endpoint, optionally
+     * filtered as OpenID Federation 1.0 §8.2.1 defines: by registered entity type, by having
+     * any active trust mark issued by this TA, or an active one of a given type.
      *
      * @return string[]
+     * @throws \LogicException When filtering by trust marks without $issuedMarks.
      */
-    public function listSubordinates(): array
-    {
-        return $this->repository->getAllActiveEntityIds();
+    public function listSubordinates(
+        ?string $entityType = null,
+        bool $trustMarked = false,
+        ?string $trustMarkType = null,
+        ?IssuedTrustMarkRepository $issuedMarks = null,
+    ): array {
+        if ($entityType === null && !$trustMarked && $trustMarkType === null) {
+            return $this->repository->getAllActiveEntityIds();
+        }
+
+        if (($trustMarked || $trustMarkType !== null) && $issuedMarks === null) {
+            throw new LogicException('Filtering by trust marks needs the issued trust mark repository.');
+        }
+
+        $ids = [];
+        foreach ($this->repository->findAll() as $sub) {
+            if ($sub->status !== SubordinateStatus::Active->value) {
+                continue;
+            }
+            if ($entityType !== null && !in_array($entityType, $sub->entityTypes, true)) {
+                continue;
+            }
+            if ($issuedMarks !== null) {
+                if ($trustMarkType !== null && $issuedMarks->findActive($trustMarkType, $sub->entityId) === null) {
+                    continue;
+                }
+                if ($trustMarked && $issuedMarks->findActiveBySub($sub->entityId) === []) {
+                    continue;
+                }
+            }
+            $ids[] = $sub->entityId;
+        }
+
+        return $ids;
     }
 
 

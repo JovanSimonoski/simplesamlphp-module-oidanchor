@@ -136,8 +136,9 @@ return [
     'federation_list_endpoint_enabled' => true,
 
     /*
-     * PDO DSN for the subordinate registry database.
-     * SQLite is fine for development; use PostgreSQL/MySQL in production.
+     * PDO DSN for the module database (subordinates, keys, trust marks, settings).
+     * Only SQLite 3.25+ is supported for now: the schema setup uses SQLite-specific SQL.
+     * The database holds the federation signing keys unencrypted — protect it and its backups.
      */
     'database_dsn' => 'sqlite:/var/simplesamlphp/data/oidanchor.sqlite',
 

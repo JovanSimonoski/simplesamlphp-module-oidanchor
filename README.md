@@ -3,6 +3,10 @@
 OpenID Anchor module: an OpenID Federation 1.0 Trust Anchor for
 SimpleSAMLphp.
 
+See [docs/oidanchor.md](docs/oidanchor.md) for installation, configuration
+and usage, and [docs/architecture.md](docs/architecture.md) for how the code
+is organised.
+
 ## Federation endpoints
 
 Paths are relative to the module URL, e.g.

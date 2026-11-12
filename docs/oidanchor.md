@@ -104,7 +104,8 @@ options) can also be changed at runtime through the admin API; a stored value
 takes precedence over the configuration file.
 
 `federation_fetch_endpoint_enabled` and `federation_list_endpoint_enabled`
-are **not enforced yet**: both endpoints are always served.
+switch those endpoints off: a disabled endpoint answers 404 and is not
+advertised in the Entity Configuration.
 
 ## Federation endpoints
 

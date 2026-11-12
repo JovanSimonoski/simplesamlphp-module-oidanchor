@@ -47,6 +47,38 @@ final class OpenIDFederationTest extends TestCase
     }
 
 
+    public function testDisabledListEndpointAnswersNotFound(): void
+    {
+        $this->preloadModuleConfig(['federation_list_endpoint_enabled' => false]);
+
+        $response = $this->list([]);
+
+        $this->assertSame(404, $response->getStatusCode());
+        $this->assertSame('not_found', json_decode((string) $response->getContent(), true)['error']);
+    }
+
+
+    public function testDisabledFetchEndpointAnswersNotFound(): void
+    {
+        $this->preloadModuleConfig(['federation_fetch_endpoint_enabled' => false]);
+
+        $response = (new OpenIDFederation(Configuration::loadFromArray([])))
+            ->fetch(Request::create('/federation/fetch', 'GET', ['sub' => 'https://leaf.example.org']));
+
+        $this->assertSame(404, $response->getStatusCode());
+        $this->assertSame('not_found', json_decode((string) $response->getContent(), true)['error']);
+    }
+
+
+    public function testEnabledFetchEndpointStillValidatesTheRequest(): void
+    {
+        $response = (new OpenIDFederation(Configuration::loadFromArray([])))
+            ->fetch(Request::create('/federation/fetch', 'GET'));
+
+        $this->assertSame(400, $response->getStatusCode());
+    }
+
+
     /**
      * @param array<string,string> $query
      */

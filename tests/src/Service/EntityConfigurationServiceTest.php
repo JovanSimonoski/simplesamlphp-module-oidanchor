@@ -45,6 +45,22 @@ final class EntityConfigurationServiceTest extends TestCase
     }
 
 
+    public function testDisabledEndpointsAreNotAdvertised(): void
+    {
+        $config = $this->moduleConfig([
+            'federation_fetch_endpoint_enabled' => false,
+            'federation_list_endpoint_enabled'  => false,
+        ]);
+
+        $metadata = (new EntityConfigurationService($this->keys($config)))
+            ->buildClaims($config, $this->pdo)['metadata']['federation_entity'];
+
+        $this->assertArrayNotHasKey('federation_fetch_endpoint', $metadata);
+        $this->assertArrayNotHasKey('federation_list_endpoint', $metadata);
+        $this->assertSame(self::ENTITY_ID . '/resolve', $metadata['federation_resolve_endpoint']);
+    }
+
+
     public function testStoredMetadataOverridesDerivedValues(): void
     {
         (new EcMetadataRepository($this->pdo))->upsert('federation_entity', [

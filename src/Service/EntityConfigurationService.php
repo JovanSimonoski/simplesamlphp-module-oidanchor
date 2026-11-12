@@ -144,20 +144,28 @@ class EntityConfigurationService
      */
     public function derivedFederationEntityMetadata(Configuration $moduleConfig): array
     {
-        $baseUrl = $moduleConfig->getString('base_url');
+        $baseUrl  = $moduleConfig->getString('base_url');
+        $metadata = [];
 
-        return [
-            ClaimsEnum::FederationFetchEndpoint->value => $moduleConfig->getOptionalString('federation_fetch_endpoint', null)
-                ?? $baseUrl . '/federation/fetch',
-            ClaimsEnum::FederationListEndpoint->value  => $moduleConfig->getOptionalString('federation_list_endpoint', null)
-                ?? $baseUrl . '/federation/list',
-            // The library's ClaimsEnum has no federation_resolve_endpoint case (it models
-            // fetch/list/trust-mark/trust-mark-status only), so the spec name is used literally.
-            'federation_resolve_endpoint' => $moduleConfig->getOptionalString('federation_resolve_endpoint', null)
-                ?? $baseUrl . '/resolve',
-            ClaimsEnum::FederationTrustMarkStatusEndpoint->value => $moduleConfig->getOptionalString('federation_trust_mark_status_endpoint', null)
-                ?? $baseUrl . '/trust_mark_status',
-        ];
+        // Endpoints switched off in the configuration are not advertised (they answer 404).
+        if ($moduleConfig->getOptionalBoolean('federation_fetch_endpoint_enabled', true)) {
+            $metadata[ClaimsEnum::FederationFetchEndpoint->value] = $moduleConfig->getOptionalString('federation_fetch_endpoint', null)
+                ?? $baseUrl . '/federation/fetch';
+        }
+
+        if ($moduleConfig->getOptionalBoolean('federation_list_endpoint_enabled', true)) {
+            $metadata[ClaimsEnum::FederationListEndpoint->value] = $moduleConfig->getOptionalString('federation_list_endpoint', null)
+                ?? $baseUrl . '/federation/list';
+        }
+
+        // The library's ClaimsEnum has no federation_resolve_endpoint case (it models
+        // fetch/list/trust-mark/trust-mark-status only), so the spec name is used literally.
+        $metadata['federation_resolve_endpoint'] = $moduleConfig->getOptionalString('federation_resolve_endpoint', null)
+            ?? $baseUrl . '/resolve';
+        $metadata[ClaimsEnum::FederationTrustMarkStatusEndpoint->value] = $moduleConfig->getOptionalString('federation_trust_mark_status_endpoint', null)
+            ?? $baseUrl . '/trust_mark_status';
+
+        return $metadata;
     }
 
 

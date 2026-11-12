@@ -6,9 +6,8 @@ namespace SimpleSAML\Module\oidanchor\Service;
 
 use InvalidArgumentException;
 use PDO;
-use PDOException;
-use RuntimeException;
 use SimpleSAML\Configuration;
+use SimpleSAML\Module\oidanchor\Database\PdoFactory;
 use SimpleSAML\OpenID\Algorithms\SignatureAlgorithmBag;
 use SimpleSAML\OpenID\Algorithms\SignatureAlgorithmEnum;
 use SimpleSAML\OpenID\Codebooks\ClaimsEnum;
@@ -307,23 +306,6 @@ class FederationKeyService
      */
     public function pdoConnection(): PDO
     {
-        if ($this->pdo !== null) {
-            return $this->pdo;
-        }
-
-        try {
-            return $this->pdo = new PDO(
-                $this->moduleConfig->getString('database_dsn'),
-                $this->moduleConfig->getOptionalString('database_username', null),
-                $this->moduleConfig->getOptionalString('database_password', null),
-                [
-                    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES   => false,
-                ],
-            );
-        } catch (PDOException $e) {
-            throw new RuntimeException('oidanchor: cannot connect to database: ' . $e->getMessage(), 0, $e);
-        }
+        return $this->pdo ??= PdoFactory::get($this->moduleConfig);
     }
 }

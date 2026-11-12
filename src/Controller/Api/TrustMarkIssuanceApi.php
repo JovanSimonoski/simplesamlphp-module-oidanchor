@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace SimpleSAML\Module\oidanchor\Controller\Api;
 
 use InvalidArgumentException;
-use PDO;
 use SimpleSAML\Logger;
 use SimpleSAML\Module\oidanchor\Repository\TrustMarkSpecRepository;
 use SimpleSAML\Module\oidanchor\Repository\TrustMarkSubjectRepository;
@@ -27,9 +26,6 @@ use Throwable;
 class TrustMarkIssuanceApi extends ApiController
 {
     private const array ELIGIBILITY_MODES = ['db_only', 'check_only', 'db_or_check', 'db_and_check', 'custom'];
-
-
-    private ?PDO $pdo = null;
 
 
     // ---- issuance specs ------------------------------------------------------
@@ -653,13 +649,15 @@ class TrustMarkIssuanceApi extends ApiController
     /**
      * Apply a subject change together with its trust mark side effects (issue / revoke) in one
      * transaction: if signing or persistence fails, nothing is changed and the caller gets a 500,
-     * rather than a success response for a subject whose marks do not match its status.
+     * rather than a success response for a subject whose marks do not match its status. The
+     * repositories and the issuance service all use the request's shared connection, so they
+     * take part in the transaction.
      *
      * @param callable(): \Symfony\Component\HttpFoundation\Response $change
      */
     private function inTransaction(callable $change): Response
     {
-        $pdo = $this->pdo();
+        $pdo = $this->buildPdo();
         $pdo->beginTransaction();
 
         try {
@@ -682,31 +680,21 @@ class TrustMarkIssuanceApi extends ApiController
     }
 
 
-    /**
-     * One connection for the whole request, so the repositories and the issuance service share
-     * the transaction opened by {@see inTransaction()}.
-     */
-    private function pdo(): PDO
-    {
-        return $this->pdo ??= $this->buildPdo();
-    }
-
-
     private function specRepo(): TrustMarkSpecRepository
     {
-        return new TrustMarkSpecRepository($this->pdo());
+        return new TrustMarkSpecRepository($this->buildPdo());
     }
 
 
     private function subjectRepo(): TrustMarkSubjectRepository
     {
-        return new TrustMarkSubjectRepository($this->pdo());
+        return new TrustMarkSubjectRepository($this->buildPdo());
     }
 
 
     private function issuanceService(): TrustMarkIssuanceService
     {
-        $pdo = $this->pdo();
+        $pdo = $this->buildPdo();
 
         return new TrustMarkIssuanceService(new FederationKeyService($this->moduleConfig(), $pdo), $pdo);
     }

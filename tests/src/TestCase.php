@@ -9,6 +9,7 @@ use PHPUnit\Framework\TestCase as BaseTestCase;
 use SimpleSAML\Configuration;
 use SimpleSAML\Logger;
 use SimpleSAML\Logger\LoggingHandlerInterface;
+use SimpleSAML\Module\oidanchor\Database\PdoFactory;
 use SimpleSAML\Module\oidanchor\Service\FederationKeyService;
 
 /**
@@ -27,6 +28,8 @@ abstract class TestCase extends BaseTestCase
 
     protected function setUp(): void
     {
+        PdoFactory::reset();
+
         $this->pdo = new PDO('sqlite::memory:', null, null, [
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -53,6 +56,7 @@ abstract class TestCase extends BaseTestCase
 
     protected function tearDown(): void
     {
+        PdoFactory::reset();
         Configuration::clearInternalState();
     }
 

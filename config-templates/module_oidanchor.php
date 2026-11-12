@@ -126,12 +126,16 @@ return [
     'cron_tag' => 'hourly',
 
     /*
-     * Enable/disable the federation_fetch endpoint.
+     * Enable/disable the federation_fetch endpoint. When false, /federation/fetch (and /fetch)
+     * answer 404 and federation_fetch_endpoint is not advertised in the Entity Configuration.
+     * Note that a Trust Anchor without a fetch endpoint cannot serve the Subordinate Statements
+     * that trust chains through it need.
      */
     'federation_fetch_endpoint_enabled' => true,
 
     /*
-     * Enable/disable the federation_list endpoint.
+     * Enable/disable the federation_list endpoint. When false, /federation/list answers 404 and
+     * federation_list_endpoint is not advertised in the Entity Configuration.
      */
     'federation_list_endpoint_enabled' => true,
 

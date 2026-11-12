@@ -58,6 +58,10 @@ class OpenIDFederation
     {
         $moduleConfig = Configuration::getConfig('module_oidanchor.php');
 
+        if (!$moduleConfig->getOptionalBoolean('federation_list_endpoint_enabled', true)) {
+            return $this->endpointDisabled();
+        }
+
         // OpenID Federation 1.0 §8.2.1. `intermediate` is not supported: the TA does not know which
         // subordinates are intermediates, and the spec requires rejecting an unsupported parameter.
         if ($request->query->has('intermediate')) {
@@ -103,6 +107,10 @@ class OpenIDFederation
     {
         $moduleConfig = Configuration::getConfig('module_oidanchor.php');
         $entityId     = $moduleConfig->getString('entity_id');
+
+        if (!$moduleConfig->getOptionalBoolean('federation_fetch_endpoint_enabled', true)) {
+            return $this->endpointDisabled();
+        }
 
         // iss is optional: this TA is always the issuer, so default it to our entity_id when the
         // caller omits it (the Federation Gateway's chain inspector calls /fetch?sub=… with no iss).
@@ -190,6 +198,20 @@ class OpenIDFederation
         return new JsonResponse(
             ['error' => $error, 'error_description' => $description],
             $status,
+        );
+    }
+
+
+    /**
+     * An endpoint switched off with federation_{fetch,list}_endpoint_enabled: answered as if it
+     * did not exist (it is not advertised in the Entity Configuration either).
+     */
+    private function endpointDisabled(): JsonResponse
+    {
+        return $this->federationError(
+            'not_found',
+            'This endpoint is disabled on this Trust Anchor.',
+            Response::HTTP_NOT_FOUND,
         );
     }
 }

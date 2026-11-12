@@ -8,6 +8,7 @@ use SimpleSAML\Logger;
 use SimpleSAML\Module\oidanchor\Repository\EcTrustMarkRepository;
 use SimpleSAML\Module\oidanchor\Service\EcTrustMarkService;
 use SimpleSAML\Module\oidanchor\Service\FederationKeyService;
+use SimpleSAML\OpenID\Federation;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -142,6 +143,13 @@ class EcTrustMarksApi extends ApiController
             return $this->badRequest('No updatable members supplied.');
         }
 
+        if (isset($fields['trust_mark'])) {
+            $type = array_key_exists('trust_mark_type', $fields) ? $fields['trust_mark_type'] : $row['trust_mark_type'];
+            if (($err = $this->checkSuppliedMark((string) $fields['trust_mark'], $type)) !== null) {
+                return $this->badRequest($err);
+            }
+        }
+
         // A new JWT or self-issuance spec invalidates the refresh bookkeeping.
         if (array_key_exists('trust_mark', $fields) || array_key_exists('self_issuance_spec', $fields)) {
             $fields['last_refresh_at'] = null;
@@ -187,13 +195,39 @@ class EcTrustMarksApi extends ApiController
             return $hasType ? null : 'self_issuance_spec requires trust_mark_type.';
         }
         if ($hasJwt) {
-            return null;
+            return $this->checkSuppliedMark((string) $body['trust_mark'], $hasType ? trim((string) $body['trust_mark_type']) : null);
         }
         if ($hasType && $hasIss) {
             return null;
         }
 
         return 'Provide either trust_mark_type + trust_mark_issuer, or trust_mark (JWT), or self_issuance_spec with trust_mark_type.';
+    }
+
+
+    /**
+     * A directly supplied mark is republished in this TA's signed Entity Configuration, so it must
+     * at least be a well-formed, unexpired Trust Mark about this TA, of the declared type. (Its
+     * signature cannot be checked here: the issuer's keys are not known.)
+     */
+    private function checkSuppliedMark(string $jwt, ?string $trustMarkType): ?string
+    {
+        try {
+            $mark = (new Federation())->trustMarkFactory()->fromToken(trim($jwt));
+        } catch (Throwable $e) {
+            return 'trust_mark is not a valid Trust Mark JWT: ' . $e->getMessage();
+        }
+
+        $entityId = $this->moduleConfig()->getString('entity_id');
+        if ($mark->getSubject() !== $entityId) {
+            return sprintf('trust_mark must be issued for this Trust Anchor (%s), not %s.', $entityId, $mark->getSubject());
+        }
+
+        if ($trustMarkType !== null && $mark->getTrustMarkType() !== $trustMarkType) {
+            return sprintf('trust_mark is of type %s, not the declared %s.', $mark->getTrustMarkType(), $trustMarkType);
+        }
+
+        return null;
     }
 
 

@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace SimpleSAML\Module\oidanchor\Service;
 
+use RuntimeException;
 use SimpleSAML\Configuration;
 use SimpleSAML\Logger;
 use SimpleSAML\Module\oidanchor\Repository\EcTrustMarkRepository;
 use SimpleSAML\OpenID\Codebooks\ClaimsEnum;
 use SimpleSAML\OpenID\Federation;
 use SimpleSAML\OpenID\Federation\Claims\TrustMarksClaimValue;
+use SimpleSAML\OpenID\Federation\EntityStatement;
+use SimpleSAML\OpenID\Federation\TrustMark;
 use Throwable;
 
 /**
@@ -17,7 +20,8 @@ use Throwable;
  *
  * Three variants per the spec: a directly supplied JWT, an externally fetched mark
  * (type + issuer, refreshed via the library's TrustMarkFetcher against the issuer's
- * federation_trust_mark_endpoint), and a self-issued mark (signed here with the TA key).
+ * federation_trust_mark_endpoint, and verified before it is stored — see
+ * {@see verifiedExternalMark()}), and a self-issued mark (signed here with the TA key).
  *
  * Reading and refreshing are deliberately separate. {@see claimValues()} runs on the public
  * Entity Configuration request and only serves what is stored — no outbound HTTP, no signing,
@@ -253,9 +257,10 @@ class EcTrustMarkService
             $issuerConfiguration = $federation->entityStatementFetcher()
                 ->fromCacheOrWellKnownEndpoint($issuer);
 
-            return $federation->trustMarkFetcher()
-                ->fromCacheOrFederationTrustMarkEndpoint($type, $this->keys->entityId(), $issuerConfiguration)
-                ->getToken();
+            $mark = $federation->trustMarkFetcher()
+                ->fromCacheOrFederationTrustMarkEndpoint($type, $this->keys->entityId(), $issuerConfiguration);
+
+            return $this->verifiedExternalMark($mark, $issuerConfiguration, $type, $issuer);
         } catch (Throwable $e) {
             Logger::warning(sprintf(
                 'oidanchor: EC trust mark refresh failed for "%s" from "%s": %s',
@@ -266,6 +271,48 @@ class EcTrustMarkService
 
             return null;
         }
+    }
+
+
+    /**
+     * Accept a mark fetched from an external issuer only after checking it: this TA republishes it
+     * in its own signed Entity Configuration, so it vouches for it.
+     *
+     *  - The issuer's Entity Configuration must be the issuer's own (iss == sub == the configured
+     *    issuer) and verify with its own JWKS.
+     *  - The mark must be issued by that issuer, for this TA, of the requested type, and its
+     *    signature must verify with the issuer's keys. (iat/exp were checked when it was parsed.)
+     *
+     * The issuer is trusted as configured by the admin and served over TLS from its well-known
+     * URL; no trust chain is resolved for it.
+     *
+     * @return string The verified mark (compact JWT).
+     * @throws \RuntimeException|\Throwable When any check fails.
+     */
+    public function verifiedExternalMark(
+        TrustMark $mark,
+        EntityStatement $issuerConfiguration,
+        string $trustMarkType,
+        string $issuer,
+    ): string {
+        if (!$issuerConfiguration->isConfiguration() || $issuerConfiguration->getIssuer() !== $issuer) {
+            throw new RuntimeException(sprintf('The Entity Configuration fetched for "%s" is not that issuer\'s own.', $issuer));
+        }
+        $issuerConfiguration->verifyWithKeySet();
+
+        if ($mark->getIssuer() !== $issuer) {
+            throw new RuntimeException(sprintf('The trust mark was issued by "%s", not "%s".', $mark->getIssuer(), $issuer));
+        }
+        if ($mark->getSubject() !== $this->keys->entityId()) {
+            throw new RuntimeException(sprintf('The trust mark was issued for "%s", not this Trust Anchor.', $mark->getSubject()));
+        }
+        if ($mark->getTrustMarkType() !== $trustMarkType) {
+            throw new RuntimeException(sprintf('The trust mark is of type "%s", not "%s".', $mark->getTrustMarkType(), $trustMarkType));
+        }
+
+        $mark->verifyWithKeySet($issuerConfiguration->getJwks()->getValue());
+
+        return $mark->getToken();
     }
 
 

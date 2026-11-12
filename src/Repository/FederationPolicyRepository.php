@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SimpleSAML\Module\oidanchor\Repository;
 
 use PDO;
+use SimpleSAML\Module\oidanchor\Database\Upsert;
 use SimpleSAML\Module\oidanchor\Entity\FederationPolicy;
 
 class FederationPolicyRepository
@@ -65,15 +66,15 @@ class FederationPolicyRepository
 
     public function upsert(string $entityType, array $policy): void
     {
-        $now        = time();
-        $policyJson = json_encode($policy, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $now = time();
 
-        $stmt = $this->pdo->prepare(
-            'INSERT INTO ' . self::TABLE . ' (entity_type, policy, created_at, updated_at)
-             VALUES (?, ?, ?, ?)
-             ON CONFLICT(entity_type) DO UPDATE SET policy = excluded.policy, updated_at = excluded.updated_at',
+        Upsert::run(
+            $this->pdo,
+            self::TABLE,
+            ['entity_type' => $entityType],
+            ['policy' => json_encode($policy, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), 'updated_at' => $now],
+            ['created_at' => $now],
         );
-        $stmt->execute([$entityType, $policyJson, $now, $now]);
     }
 
 

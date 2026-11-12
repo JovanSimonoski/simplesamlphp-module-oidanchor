@@ -5,17 +5,13 @@ declare(strict_types=1);
 namespace SimpleSAML\Module\oidanchor\Controller;
 
 use SimpleSAML\Configuration;
-use SimpleSAML\Locale\Translate;
 use SimpleSAML\Logger;
 use SimpleSAML\Module;
-use SimpleSAML\Module\admin\Controller\Menu;
 use SimpleSAML\Module\oidanchor\Database\PdoFactory;
 use SimpleSAML\Module\oidanchor\Entity\TrustMarkType;
 use SimpleSAML\Module\oidanchor\Repository\IssuedTrustMarkRepository;
 use SimpleSAML\Module\oidanchor\Repository\TrustMarkTypeRepository;
 use SimpleSAML\Module\oidanchor\Validation\TrustMarkTypeValidator;
-use SimpleSAML\Session;
-use SimpleSAML\Utils;
 use SimpleSAML\XHTML\Template;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,24 +21,14 @@ use Symfony\Component\HttpFoundation\Request;
  *
  * All methods require admin authentication; state-changing methods require a valid CSRF token.
  */
-class AdminTrustMarkTypes
+class AdminTrustMarkTypes extends AdminController
 {
-    use AdminCsrfTrait;
-
-
-    private const string FLASH_KEY = 'oidanchor_tm_types_flash';
-
-
-    public function __construct(
-        protected Configuration $config,
-    ) {
-    }
+    protected const string FLASH_KEY = 'oidanchor_tm_types_flash';
 
 
     public function list(Request $request): Template
     {
-        $authUtils = new Utils\Auth();
-        $authUtils->requireAdmin();
+        $this->requireAdmin();
 
         [$typeRepo, $issuedRepo] = $this->getRepositories();
 
@@ -58,32 +44,21 @@ class AdminTrustMarkTypes
         $t->data['types']        = $types;
         $t->data['activeCounts'] = $activeCounts;
         $t->data['createUrl']    = Module::getModuleURL('oidanchor/admin/trust-mark-types/create');
-        $t->data['csrfToken']    = $this->csrfToken();
-        $t->data['logouturl']    = $authUtils->getAdminLogoutURL();
-        $t->data['flash']        = $this->popFlash();
 
-        $t->getLocalization()->addModuleDomain('oidanchor');
-
-        $menu = new Menu();
-        $menu->addOption('logout', $authUtils->getAdminLogoutURL(), Translate::noop('Log out'));
-
-        return $menu->insert($t);
+        return $this->page($t);
     }
 
 
     public function create(Request $request): Template|RedirectResponse
     {
-        $authUtils = new Utils\Auth();
-        $authUtils->requireAdmin();
+        $this->requireAdmin();
 
         $errors   = [];
         $formData = $this->emptyFormData();
 
         if ($request->isMethod('POST')) {
             if (!$this->assertCsrf($request)) {
-                $this->pushFlash('error', 'Invalid or missing CSRF token. Please try again.');
-
-                return new RedirectResponse(Module::getModuleURL('oidanchor/admin/trust-mark-types'));
+                return $this->csrfFailure('oidanchor/admin/trust-mark-types');
             }
 
             $formData = $this->extractFormData($request);
@@ -122,8 +97,7 @@ class AdminTrustMarkTypes
 
     public function edit(Request $request, string $trustMarkType): Template|RedirectResponse
     {
-        $authUtils = new Utils\Auth();
-        $authUtils->requireAdmin();
+        $this->requireAdmin();
 
         [$typeRepo] = $this->getRepositories();
         $type = $typeRepo->findById($trustMarkType);
@@ -139,9 +113,7 @@ class AdminTrustMarkTypes
 
         if ($request->isMethod('POST')) {
             if (!$this->assertCsrf($request)) {
-                $this->pushFlash('error', 'Invalid or missing CSRF token. Please try again.');
-
-                return new RedirectResponse(Module::getModuleURL('oidanchor/admin/trust-mark-types'));
+                return $this->csrfFailure('oidanchor/admin/trust-mark-types');
             }
 
             $formData                  = $this->extractFormData($request);
@@ -176,13 +148,10 @@ class AdminTrustMarkTypes
 
     public function delete(Request $request, string $trustMarkType): RedirectResponse
     {
-        $authUtils = new Utils\Auth();
-        $authUtils->requireAdmin();
+        $this->requireAdmin();
 
         if (!$this->assertCsrf($request)) {
-            $this->pushFlash('error', 'Invalid or missing CSRF token. Please try again.');
-
-            return new RedirectResponse(Module::getModuleURL('oidanchor/admin/trust-mark-types'));
+            return $this->csrfFailure('oidanchor/admin/trust-mark-types');
         }
 
         [$typeRepo] = $this->getRepositories();
@@ -312,8 +281,6 @@ class AdminTrustMarkTypes
         string $actionUrl,
         string $submitLabel,
     ): Template {
-        $authUtils = new Utils\Auth();
-
         $t = new Template($this->config, 'oidanchor:admin_trust_mark_types_form.twig');
         $t->data['title']       = $title;
         $t->data['isEdit']      = $isEdit;
@@ -321,58 +288,8 @@ class AdminTrustMarkTypes
         $t->data['errors']      = $errors;
         $t->data['actionUrl']   = $actionUrl;
         $t->data['submitLabel'] = $submitLabel;
-        $t->data['csrfToken']   = $this->csrfToken();
         $t->data['listUrl']     = Module::getModuleURL('oidanchor/admin/trust-mark-types');
-        $t->data['logouturl']   = $authUtils->getAdminLogoutURL();
-        $t->data['flash']       = $this->popFlash();
 
-        $t->getLocalization()->addModuleDomain('oidanchor');
-
-        $menu = new Menu();
-        $menu->addOption('logout', $authUtils->getAdminLogoutURL(), Translate::noop('Log out'));
-
-        return $menu->insert($t);
-    }
-
-
-    private function pushFlash(string $type, string $message): void
-    {
-        $session = Session::getSessionFromRequest();
-        $session->setData(self::FLASH_KEY, 'msg', ['type' => $type, 'text' => $message]);
-    }
-
-
-    /**
-     * @return array{type: string, text: string}|null
-     */
-    private function popFlash(): ?array
-    {
-        $session = Session::getSessionFromRequest();
-
-        /** @var array{type: string, text: string}|null $flash */
-        $flash = $session->getData(self::FLASH_KEY, 'msg');
-
-        if ($flash !== null) {
-            $session->deleteData(self::FLASH_KEY, 'msg');
-        }
-
-        return $flash;
-    }
-
-
-    private function getAdminUsername(): string
-    {
-        try {
-            $session = Session::getSessionFromRequest();
-            $authId  = $session->getAuthData('admin', 'Attributes');
-
-            if (is_array($authId) && isset($authId['uid'][0])) {
-                return (string) $authId['uid'][0];
-            }
-        } catch (\Throwable) {
-            // Best-effort.
-        }
-
-        return 'admin';
+        return $this->page($t);
     }
 }

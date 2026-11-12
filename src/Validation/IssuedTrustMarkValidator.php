@@ -26,7 +26,7 @@ class IssuedTrustMarkValidator
 
         if (empty($data['sub'])) {
             $errors['sub'] = 'Subject (sub) is required.';
-        } elseif (!$this->isHttpsUrl((string) $data['sub'])) {
+        } elseif (!Url::isHttps((string) $data['sub'])) {
             $errors['sub'] = 'Subject must be a valid HTTPS URL.';
         }
 
@@ -55,15 +55,5 @@ class IssuedTrustMarkValidator
         }
 
         return $errors;
-    }
-
-
-    private function isHttpsUrl(string $url): bool
-    {
-        $parsed = parse_url($url);
-
-        return isset($parsed['scheme'], $parsed['host'])
-            && $parsed['scheme'] === 'https'
-            && $parsed['host'] !== '';
     }
 }

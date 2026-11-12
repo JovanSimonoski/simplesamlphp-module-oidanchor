@@ -11,6 +11,7 @@ use SimpleSAML\Module\oidanchor\Repository\AdditionalClaimsRepository;
 use SimpleSAML\Module\oidanchor\Repository\SubordinateEventRepository;
 use SimpleSAML\Module\oidanchor\Service\ConstraintsService;
 use SimpleSAML\Module\oidanchor\Service\SubordinateStatementService;
+use SimpleSAML\Module\oidanchor\Validation\Url;
 use SimpleSAML\OpenID\Exceptions\MetadataPolicyException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -65,7 +66,7 @@ class SubordinatesApi extends ApiController
         }
 
         $entityId = trim((string) ($body['entity_id'] ?? ''));
-        if ($entityId === '' || !$this->isHttpsUrl($entityId)) {
+        if ($entityId === '' || !Url::isHttps($entityId)) {
             return $this->badRequest('entity_id is required and must be an HTTPS URL.');
         }
 
@@ -615,15 +616,5 @@ class SubordinatesApi extends ApiController
             array_map(static fn($v): string => is_string($v) ? trim($v) : '', $value),
             static fn(string $v): bool => $v !== '',
         ));
-    }
-
-
-    private function isHttpsUrl(string $url): bool
-    {
-        $parsed = parse_url($url);
-
-        return isset($parsed['scheme'], $parsed['host'])
-            && $parsed['scheme'] === 'https'
-            && $parsed['host'] !== '';
     }
 }

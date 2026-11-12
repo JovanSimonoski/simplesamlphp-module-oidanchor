@@ -27,7 +27,7 @@ class TrustMarkTypeValidator
         if (!$isUpdate) {
             if (empty($data['trust_mark_type'])) {
                 $errors['trust_mark_type'] = 'Trust Mark Type is required.';
-            } elseif (!$this->isHttpsUrl((string) $data['trust_mark_type'])) {
+            } elseif (!Url::isHttps((string) $data['trust_mark_type'])) {
                 $errors['trust_mark_type'] = 'Trust Mark Type must be a valid HTTPS URL.';
             }
         }
@@ -36,11 +36,11 @@ class TrustMarkTypeValidator
             $errors['name'] = 'Name is required.';
         }
 
-        if (!empty($data['logo_uri']) && !$this->isHttpsUrl((string) $data['logo_uri'])) {
+        if (!empty($data['logo_uri']) && !Url::isHttps((string) $data['logo_uri'])) {
             $errors['logo_uri'] = 'Logo URI must be a valid HTTPS URL.';
         }
 
-        if (!empty($data['ref_uri']) && !$this->isHttpsUrl((string) $data['ref_uri'])) {
+        if (!empty($data['ref_uri']) && !Url::isHttps((string) $data['ref_uri'])) {
             $errors['ref_uri'] = 'Reference URI must be a valid HTTPS URL.';
         }
 
@@ -85,15 +85,5 @@ class TrustMarkTypeValidator
         }
 
         return null;
-    }
-
-
-    private function isHttpsUrl(string $url): bool
-    {
-        $parsed = parse_url($url);
-
-        return isset($parsed['scheme'], $parsed['host'])
-            && $parsed['scheme'] === 'https'
-            && $parsed['host'] !== '';
     }
 }

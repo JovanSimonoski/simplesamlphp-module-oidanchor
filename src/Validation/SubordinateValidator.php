@@ -25,7 +25,7 @@ class SubordinateValidator
         if (!$isUpdate) {
             if (empty($data['entity_id'])) {
                 $errors['entity_id'] = 'Entity ID is required.';
-            } elseif (!$this->isHttpsUrl((string) $data['entity_id'])) {
+            } elseif (!Url::isHttps((string) $data['entity_id'])) {
                 $errors['entity_id'] = 'Entity ID must be a valid HTTPS URL (must start with https://).';
             }
         }
@@ -70,16 +70,6 @@ class SubordinateValidator
         }
 
         return $errors;
-    }
-
-
-    private function isHttpsUrl(string $url): bool
-    {
-        $parsed = parse_url($url);
-
-        return isset($parsed['scheme'], $parsed['host'])
-            && $parsed['scheme'] === 'https'
-            && $parsed['host'] !== '';
     }
 
 

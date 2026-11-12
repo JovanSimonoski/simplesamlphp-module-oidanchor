@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace SimpleSAML\Module\oidanchor\Controller;
 
 use SimpleSAML\Configuration;
-use SimpleSAML\Locale\Translate;
 use SimpleSAML\Logger;
 use SimpleSAML\Module;
-use SimpleSAML\Module\admin\Controller\Menu;
 use SimpleSAML\Module\oidanchor\Database\PdoFactory;
 use SimpleSAML\Module\oidanchor\Entity\Subordinate;
 use SimpleSAML\Module\oidanchor\Entity\SubordinateStatus;
@@ -17,8 +15,6 @@ use SimpleSAML\Module\oidanchor\Repository\SubordinateRepository;
 use SimpleSAML\Module\oidanchor\Service\SubordinateService;
 use SimpleSAML\Module\oidanchor\Validation\SubordinateValidator;
 use SimpleSAML\OpenID\Codebooks\EntityTypesEnum;
-use SimpleSAML\Session;
-use SimpleSAML\Utils;
 use SimpleSAML\XHTML\Template;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -28,18 +24,9 @@ use Symfony\Component\HttpFoundation\Request;
  *
  * All methods require admin authentication; state-changing methods require a valid CSRF token.
  */
-class AdminSubordinates
+class AdminSubordinates extends AdminController
 {
-    use AdminCsrfTrait;
-
-
-    private const string FLASH_KEY = 'oidanchor_flash';
-
-
-    public function __construct(
-        protected Configuration $config,
-    ) {
-    }
+    protected const string FLASH_KEY = 'oidanchor_flash';
 
 
     /**
@@ -47,8 +34,7 @@ class AdminSubordinates
      */
     public function list(Request $request): Template
     {
-        $authUtils = new Utils\Auth();
-        $authUtils->requireAdmin();
+        $this->requireAdmin();
 
         $service = $this->getService();
 
@@ -58,16 +44,8 @@ class AdminSubordinates
         $t->data['subordinates']  = $subordinates;
         $t->data['entityTypes']   = array_column(EntityTypesEnum::cases(), 'value');
         $t->data['createUrl']     = Module::getModuleURL('oidanchor/admin/subordinates/create');
-        $t->data['logouturl']     = $authUtils->getAdminLogoutURL();
-        $t->data['flash']         = $this->popFlash();
-        $t->data['csrfToken']     = $this->csrfToken();
 
-        $t->getLocalization()->addModuleDomain('oidanchor');
-
-        $menu = new Menu();
-        $menu->addOption('logout', $authUtils->getAdminLogoutURL(), Translate::noop('Log out'));
-
-        return $menu->insert($t);
+        return $this->page($t);
     }
 
 
@@ -76,15 +54,14 @@ class AdminSubordinates
      */
     public function create(Request $request): Template|RedirectResponse
     {
-        $authUtils = new Utils\Auth();
-        $authUtils->requireAdmin();
+        $this->requireAdmin();
 
         $errors   = [];
         $formData = $this->emptyFormData();
 
         if ($request->isMethod('POST')) {
             if (!$this->assertCsrf($request)) {
-                return $this->csrfFailure();
+                return $this->csrfFailure('oidanchor/admin/subordinates');
             }
 
             $formData = $this->extractFormData($request);
@@ -135,8 +112,7 @@ class AdminSubordinates
      */
     public function edit(Request $request, string $entityId): Template|RedirectResponse
     {
-        $authUtils = new Utils\Auth();
-        $authUtils->requireAdmin();
+        $this->requireAdmin();
 
         $service     = $this->getService();
         $subordinate = $service->findSubordinate($entityId);
@@ -152,7 +128,7 @@ class AdminSubordinates
 
         if ($request->isMethod('POST')) {
             if (!$this->assertCsrf($request)) {
-                return $this->csrfFailure();
+                return $this->csrfFailure('oidanchor/admin/subordinates');
             }
 
             $formData             = $this->extractFormData($request);
@@ -198,11 +174,10 @@ class AdminSubordinates
      */
     public function delete(Request $request, string $entityId): RedirectResponse
     {
-        $authUtils = new Utils\Auth();
-        $authUtils->requireAdmin();
+        $this->requireAdmin();
 
         if (!$this->assertCsrf($request)) {
-            return $this->csrfFailure();
+            return $this->csrfFailure('oidanchor/admin/subordinates');
         }
 
         $service = $this->getService();
@@ -233,11 +208,10 @@ class AdminSubordinates
      */
     public function setStatus(Request $request, string $entityId): RedirectResponse
     {
-        $authUtils = new Utils\Auth();
-        $authUtils->requireAdmin();
+        $this->requireAdmin();
 
         if (!$this->assertCsrf($request)) {
-            return $this->csrfFailure();
+            return $this->csrfFailure('oidanchor/admin/subordinates');
         }
 
         $status  = (string) $request->request->get('status', '');
@@ -278,14 +252,6 @@ class AdminSubordinates
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
-
-    private function csrfFailure(): RedirectResponse
-    {
-        $this->pushFlash('error', 'Invalid or missing CSRF token. Please try again.');
-
-        return new RedirectResponse(Module::getModuleURL('oidanchor/admin/subordinates'));
-    }
-
 
     private function getService(): SubordinateService
     {
@@ -386,8 +352,6 @@ class AdminSubordinates
         string $actionUrl,
         string $submitLabel,
     ): Template {
-        $authUtils = new Utils\Auth();
-
         $t = new Template($this->config, 'oidanchor:admin_subordinates_form.twig');
         $t->data['title']        = $title;
         $t->data['subordinate']  = $subordinate;
@@ -397,57 +361,7 @@ class AdminSubordinates
         $t->data['submitLabel']  = $submitLabel;
         $t->data['entityTypes']  = array_column(EntityTypesEnum::cases(), 'value');
         $t->data['listUrl']      = Module::getModuleURL('oidanchor/admin/subordinates');
-        $t->data['logouturl']    = $authUtils->getAdminLogoutURL();
-        $t->data['flash']        = $this->popFlash();
-        $t->data['csrfToken']    = $this->csrfToken();
 
-        $t->getLocalization()->addModuleDomain('oidanchor');
-
-        $menu = new Menu();
-        $menu->addOption('logout', $authUtils->getAdminLogoutURL(), Translate::noop('Log out'));
-
-        return $menu->insert($t);
-    }
-
-
-    private function pushFlash(string $type, string $message): void
-    {
-        $session = Session::getSessionFromRequest();
-        $session->setData(self::FLASH_KEY, 'msg', ['type' => $type, 'text' => $message]);
-    }
-
-
-    /**
-     * @return array{type: string, text: string}|null
-     */
-    private function popFlash(): ?array
-    {
-        $session = Session::getSessionFromRequest();
-
-        /** @var array{type: string, text: string}|null $flash */
-        $flash = $session->getData(self::FLASH_KEY, 'msg');
-
-        if ($flash !== null) {
-            $session->deleteData(self::FLASH_KEY, 'msg');
-        }
-
-        return $flash;
-    }
-
-
-    private function getAdminUsername(): string
-    {
-        try {
-            $session = Session::getSessionFromRequest();
-            $authId  = $session->getAuthData('admin', 'Attributes');
-
-            if (is_array($authId) && isset($authId['uid'][0])) {
-                return (string) $authId['uid'][0];
-            }
-        } catch (\Throwable) {
-            // Best-effort.
-        }
-
-        return 'admin';
+        return $this->page($t);
     }
 }

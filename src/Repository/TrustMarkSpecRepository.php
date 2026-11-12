@@ -6,6 +6,7 @@ namespace SimpleSAML\Module\oidanchor\Repository;
 
 use InvalidArgumentException;
 use PDO;
+use SimpleSAML\Module\oidanchor\Entity\TrustMarkType;
 
 /**
  * Trust Mark Issuance Specs: templates governing how the TA issues marks of a type
@@ -198,6 +199,35 @@ class TrustMarkSpecRepository
             'UPDATE ' . self::TABLE . ' SET ' . implode(', ', $sets) . ' WHERE id = ?',
         );
         $stmt->execute($values);
+    }
+
+
+    /**
+     * Mirror a catalog type's issuance fields (description, logo, ref, lifetime, claims) into its
+     * issuance spec, creating the spec when missing. The spec is what issuance reads, so this keeps
+     * edits made in the type catalog effective. Spec-only settings (delegation, cache, eligibility)
+     * are left alone.
+     *
+     * @return int The spec id.
+     */
+    public function syncFromType(TrustMarkType $type): int
+    {
+        $fields = [
+            'description'       => $type->description,
+            'lifetime'          => $type->defaultLifetime,
+            'ref'               => $type->refUri,
+            'logo_uri'          => $type->logoUri,
+            'additional_claims' => $type->extraClaims,
+        ];
+
+        $existing = $this->findByType($type->trustMarkType);
+        if ($existing === null) {
+            return $this->create($fields + ['trust_mark_type' => $type->trustMarkType]);
+        }
+
+        $this->update((int) $existing['id'], $fields);
+
+        return (int) $existing['id'];
     }
 
 

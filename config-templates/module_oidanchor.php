@@ -38,6 +38,18 @@ return [
     'signing_key_passphrase' => null,
 
     /*
+     * Secret that encrypts the federation private keys at rest in the database (AES-256-GCM, key
+     * derived with HKDF). The key in signing_key_file is imported into the database on first use,
+     * and every rotation generates a new key there, so without this secret the federation's root
+     * signing keys sit in the database — and in its backups — as plain JSON.
+     *
+     * Use a long random value (at least 32 characters), e.g. `openssl rand -base64 48`, and keep
+     * it out of the database and its backups. Existing plaintext keys are encrypted on first use
+     * once it is set. Losing it makes the stored private keys unrecoverable (see docs/oidanchor.md).
+     */
+    'key_store_secret' => null,
+
+    /*
      * Signature algorithm for all federation JWTs.
      * Supported: RS256, RS384, RS512, PS256, PS384, PS512, ES256, ES384, ES512, EdDSA
      */
@@ -142,7 +154,7 @@ return [
     /*
      * PDO DSN for the module database (subordinates, keys, trust marks, settings).
      * Only SQLite 3.25+ is supported for now: the schema setup uses SQLite-specific SQL.
-     * The database holds the federation signing keys unencrypted — protect it and its backups.
+     * The database holds the federation signing keys — set key_store_secret to encrypt them.
      */
     'database_dsn' => 'sqlite:/var/simplesamlphp/data/oidanchor.sqlite',
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SimpleSAML\Module\oidanchor\Repository;
 
 use PDO;
+use SimpleSAML\Module\oidanchor\Database\KeyMaterialCipher;
 use SimpleSAML\Module\oidanchor\Entity\FederationKey;
 
 /**
@@ -13,15 +14,28 @@ use SimpleSAML\Module\oidanchor\Entity\FederationKey;
  *
  * Rows are only hard-deleted through the explicit DELETE endpoint; rotation and
  * revocation keep rows so the history remains available (step 10 historical keys).
+ *
+ * Private key material goes through {@see KeyMaterialCipher}: encrypted at rest when
+ * `key_store_secret` is configured, plain JSON otherwise.
  */
 class FederationKeyRepository
 {
     private const string TABLE = 'oidanchor_federation_keys';
 
 
-    public function __construct(private readonly PDO $pdo)
-    {
+    private readonly KeyMaterialCipher $cipher;
+
+
+    public function __construct(
+        private readonly PDO $pdo,
+        ?KeyMaterialCipher $cipher = null,
+    ) {
+        $this->cipher = $cipher ?? KeyMaterialCipher::disabled();
         $this->ensureSchema();
+
+        if ($this->cipher->isEnabled()) {
+            $this->sealPlaintextKeys();
+        }
     }
 
 
@@ -48,6 +62,51 @@ class FederationKeyRepository
 
 
     /**
+     * Encrypt key material stored before a secret was configured (idempotent: sealed rows are skipped).
+     */
+    private function sealPlaintextKeys(): void
+    {
+        $rows = $this->pdo->query(
+            'SELECT kid, private_jwk FROM ' . self::TABLE . ' WHERE private_jwk IS NOT NULL',
+        )->fetchAll(PDO::FETCH_ASSOC);
+
+        $update = $this->pdo->prepare('UPDATE ' . self::TABLE . ' SET private_jwk = ? WHERE kid = ?');
+        foreach ($rows as $row) {
+            if (!KeyMaterialCipher::isSealed((string) $row['private_jwk'])) {
+                $update->execute([
+                    $this->cipher->seal((string) $row['private_jwk'], (string) $row['kid']),
+                    $row['kid'],
+                ]);
+            }
+        }
+    }
+
+
+    /**
+     * @param array<string,mixed> $row
+     */
+    private function hydrate(array $row): FederationKey
+    {
+        if (isset($row['private_jwk'])) {
+            $row['private_jwk'] = $this->cipher->open((string) $row['private_jwk'], (string) $row['kid']);
+        }
+
+        return FederationKey::fromRow($row);
+    }
+
+
+    /**
+     * @param array<string,mixed>|null $privateJwk
+     */
+    private function sealPrivateJwk(?array $privateJwk, string $kid): ?string
+    {
+        return $privateJwk !== null
+            ? $this->cipher->seal((string) json_encode($privateJwk, JSON_UNESCAPED_SLASHES), $kid)
+            : null;
+    }
+
+
+    /**
      * All keys, newest first.
      *
      * @return \SimpleSAML\Module\oidanchor\Entity\FederationKey[]
@@ -59,7 +118,7 @@ class FederationKeyRepository
         );
 
         return array_map(
-            static fn(array $row): FederationKey => FederationKey::fromRow($row),
+            fn(array $row): FederationKey => $this->hydrate($row),
             $stmt->fetchAll(PDO::FETCH_ASSOC),
         );
     }
@@ -78,7 +137,7 @@ class FederationKeyRepository
         /** @var array<string,mixed>|false $row */
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        return $row === false ? null : FederationKey::fromRow($row);
+        return $row === false ? null : $this->hydrate($row);
     }
 
 
@@ -97,7 +156,7 @@ class FederationKeyRepository
         /** @var array<string,mixed>|false $row */
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        return $row === false ? null : FederationKey::fromRow($row);
+        return $row === false ? null : $this->hydrate($row);
     }
 
 
@@ -112,7 +171,7 @@ class FederationKeyRepository
 
         $stmt->execute([
             $key->kid,
-            $key->privateJwk !== null ? json_encode($key->privateJwk, JSON_UNESCAPED_SLASHES) : null,
+            $this->sealPrivateJwk($key->privateJwk, $key->kid),
             json_encode($key->publicJwk, JSON_UNESCAPED_SLASHES),
             $key->alg,
             $key->kmsManaged ? 1 : 0,
@@ -196,7 +255,7 @@ class FederationKeyRepository
         );
         $stmt->execute([
             $alg,
-            $privateJwk !== null ? json_encode($privateJwk, JSON_UNESCAPED_SLASHES) : null,
+            $this->sealPrivateJwk($privateJwk, $kid),
             json_encode($publicJwk, JSON_UNESCAPED_SLASHES),
             $kid,
         ]);

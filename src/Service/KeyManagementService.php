@@ -10,6 +10,7 @@ use PDO;
 use RuntimeException;
 use SimpleSAML\Configuration;
 use SimpleSAML\Logger;
+use SimpleSAML\Module\oidanchor\Database\KeyMaterialCipher;
 use SimpleSAML\Module\oidanchor\Entity\FederationKey;
 use SimpleSAML\Module\oidanchor\Repository\FederationKeyRepository;
 use SimpleSAML\Module\oidanchor\Repository\SettingsRepository;
@@ -43,6 +44,8 @@ class KeyManagementService
     private ?SettingsRepository $settings = null;
 
     private ?FederationKeyRepository $keys = null;
+
+    private ?KeyMaterialCipher $cipher = null;
 
 
     public function __construct(
@@ -529,6 +532,14 @@ class KeyManagementService
 
         $this->keyRepo()->create($key);
 
+        if (!$this->cipher()->isEnabled()) {
+            Logger::warning(sprintf(
+                'oidanchor: federation signing key %s is stored UNENCRYPTED in the database; '
+                . 'set key_store_secret to encrypt key material at rest.',
+                $kid,
+            ));
+        }
+
         return $this->keyRepo()->findByKid($kid) ?? $key;
     }
 
@@ -649,6 +660,12 @@ class KeyManagementService
 
     private function keyRepo(): FederationKeyRepository
     {
-        return $this->keys ??= new FederationKeyRepository($this->pdo);
+        return $this->keys ??= new FederationKeyRepository($this->pdo, $this->cipher());
+    }
+
+
+    private function cipher(): KeyMaterialCipher
+    {
+        return $this->cipher ??= KeyMaterialCipher::fromConfig($this->moduleConfig);
     }
 }

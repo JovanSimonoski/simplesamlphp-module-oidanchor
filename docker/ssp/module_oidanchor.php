@@ -29,6 +29,8 @@ return [
         'response_lifetime'    => 600,
         // DEV ONLY — allow self-signed TLS on fetched entity statements (e.g. the mock leaf).
         'http_verify_tls'      => getenv('OIDANCHOR_RESOLVE_VERIFY_TLS') === 'false' ? false : true,
+        // DEV ONLY — the dev stack's entities live on private/loopback addresses.
+        'allow_private_networks' => true,
     ],
 
     'federation_fetch_endpoint_enabled' => true,

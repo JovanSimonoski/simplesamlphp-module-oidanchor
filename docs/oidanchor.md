@@ -136,6 +136,19 @@ The subordinate listing supports the `entity_type`, `trust_marked` and
 `unsupported_parameter`. The Trust Mark endpoint (8.5) and Trust Mark listing
 endpoint (8.6) are not implemented; see the README.
 
+`/resolve` fetches remote statements on behalf of anonymous callers, so it is
+hardened (all in the `resolve` configuration block):
+
+- Responses are reused for `cache_ttl` seconds (default 300).
+- Resolutions that miss the cache are limited to `rate_limit` per client IP
+  per minute (default 30); over the limit the endpoint answers 429 with
+  `Retry-After`.
+- Outbound fetches only reach globally routable addresses, so the endpoint
+  cannot be used to probe internal hosts. Set `allow_private_networks` only
+  for development stacks.
+- Fetch and trust chain failures are reported without network detail; the
+  detail is logged.
+
 ## Admin UI
 
 Log in as the SimpleSAMLphp administrator; the module adds a "Trust Anchor"

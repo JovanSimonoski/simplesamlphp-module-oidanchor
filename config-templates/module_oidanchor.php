@@ -126,6 +126,17 @@ return [
         // statements (e.g. a local mock leaf served with a self-signed certificate).
         // Leave true in production.
         'http_verify_tls'      => true,
+        // Seconds a signed Resolve Response is reused for the same sub/trust_anchor/type
+        // (never beyond its exp). 0 disables the cache.
+        'cache_ttl'            => 300,
+        // Resolutions per client IP per minute (cache hits are free). Over the limit the
+        // endpoint answers 429 with Retry-After. 0 disables the limit. Behind a reverse proxy
+        // every client shares the proxy's IP unless Symfony's trusted proxies are configured.
+        'rate_limit'           => 30,
+        // Outbound fetches (resolve, trust mark refresh) may only reach globally routable
+        // addresses, so the public /resolve endpoint cannot be used to probe internal hosts.
+        // DEV ONLY: set true when federation entities run on a private network.
+        'allow_private_networks' => false,
     ],
 
     /*

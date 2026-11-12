@@ -200,11 +200,11 @@ jobs:
 
       - name: PHPStan
         run: |
-          vendor/bin/phpstan analyze -c phpstan.neon --debug
+          vendor/bin/phpstan analyze -c phpstan.neon --debug --memory-limit=1G
 
       - name: PHPStan (testsuite)
         run: |
-          vendor/bin/phpstan analyze -c phpstan-dev.neon --debug
+          vendor/bin/phpstan analyze -c phpstan-dev.neon --debug --memory-limit=1G
 
   security:
     name: Security checks

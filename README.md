@@ -19,6 +19,7 @@ Paths are relative to the module URL, e.g.
 | Subordinate statement fetch | `/federation/fetch` (or `/fetch`) |
 | Resolve                     | `/resolve`                        |
 | Trust Mark status           | `/trust_mark_status`              |
+| Entity collection           | `/federation/collection`          |
 
 The admin UI lives under `/admin/` and the Federation Admin REST API under
 `/api/v1/admin/`.
@@ -40,3 +41,6 @@ The admin UI lives under `/admin/` and the Federation Admin REST API under
   supported.** Requests that use it get HTTP 400 with `unsupported_parameter`,
   as the specification requires. The `entity_type`, `trust_marked` and
   `trust_mark_type` filters are supported.
+- **The entity collection lists direct subordinates only.** Entities below an
+  intermediate are not collected, and the display information and Trust
+  Marks it returns are refreshed by cron, not on each request.

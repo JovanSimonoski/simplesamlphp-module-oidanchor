@@ -158,6 +158,12 @@ class EntityConfigurationService
                 ?? $baseUrl . '/federation/list';
         }
 
+        // OpenID Federation Entity Collection 1.0 (an extension; not in the library's ClaimsEnum).
+        if ($moduleConfig->getOptionalBoolean('federation_collection_endpoint_enabled', true)) {
+            $metadata['federation_collection_endpoint'] = $moduleConfig->getOptionalString('federation_collection_endpoint', null)
+                ?? $baseUrl . '/federation/collection';
+        }
+
         // The library's ClaimsEnum has no federation_resolve_endpoint case (it models
         // fetch/list/trust-mark/trust-mark-status only), so the spec name is used literally.
         $metadata['federation_resolve_endpoint'] = $moduleConfig->getOptionalString('federation_resolve_endpoint', null)

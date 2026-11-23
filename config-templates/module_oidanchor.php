@@ -96,6 +96,12 @@ return [
     'federation_list_endpoint' => null,
 
     /*
+     * Override the federation_collection_endpoint URL advertised in the Entity Configuration JWT.
+     * null = auto-compute as base_url + '/federation/collection'.
+     */
+    'federation_collection_endpoint' => null,
+
+    /*
      * Lifetime in seconds of Subordinate Statements issued by this TA.
      */
     'subordinate_statement_lifetime' => 86400,
@@ -140,9 +146,18 @@ return [
     ],
 
     /*
+     * Entity Collection endpoint (/federation/collection) settings.
+     */
+    'collection' => [
+        // Most entities returned in one page; also the page size when the request has no limit.
+        'max_page_size' => 100,
+    ],
+
+    /*
      * The SimpleSAMLphp cron tag on which periodic maintenance runs: interval-based signing-key
-     * rotation (KMS rotation options) and refreshing / re-issuing the trust marks published in
-     * this TA's own Entity Configuration. None of this happens on public requests, so the cron
+     * rotation (KMS rotation options), refreshing / re-issuing the trust marks published in
+     * this TA's own Entity Configuration, and refreshing the entity collection (resolving every
+     * active subordinate). None of this happens on public requests, so the cron
      * module must be enabled and run for this tag (it should run more often than the shortest
      * trust mark lifetime / rotation interval).
      */
@@ -161,6 +176,13 @@ return [
      * federation_list_endpoint is not advertised in the Entity Configuration.
      */
     'federation_list_endpoint_enabled' => true,
+
+    /*
+     * Enable/disable the federation_collection endpoint. When false, /federation/collection
+     * answers 404, federation_collection_endpoint is not advertised in the Entity Configuration,
+     * and cron no longer resolves the subordinates to refresh the collection.
+     */
+    'federation_collection_endpoint_enabled' => true,
 
     /*
      * PDO DSN for the module database (subordinates, keys, trust marks, settings).

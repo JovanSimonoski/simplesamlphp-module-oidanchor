@@ -9,11 +9,8 @@ use SimpleSAML\Logger;
 use SimpleSAML\Module;
 use SimpleSAML\Module\oidanchor\Database\PdoFactory;
 use SimpleSAML\Module\oidanchor\Exception\ResolveException;
-use SimpleSAML\Module\oidanchor\Repository\IssuedTrustMarkRepository;
-use SimpleSAML\Module\oidanchor\Repository\TrustMarkSubjectRepository;
 use SimpleSAML\Module\oidanchor\Service\FederationKeyService;
 use SimpleSAML\Module\oidanchor\Service\FederationResolver;
-use SimpleSAML\Module\oidanchor\Service\TrustMarkStatusService;
 use SimpleSAML\XHTML\Template;
 use Symfony\Component\HttpFoundation\Request;
 use Throwable;
@@ -56,15 +53,7 @@ class AdminResolve extends AdminController
                 try {
                     $pdo      = PdoFactory::get($moduleConfig);
                     $keys     = new FederationKeyService($moduleConfig, $pdo);
-                    $resolver = new FederationResolver(
-                        $moduleConfig,
-                        $keys,
-                        new TrustMarkStatusService(
-                            $keys,
-                            new IssuedTrustMarkRepository($pdo),
-                            new TrustMarkSubjectRepository($pdo),
-                        ),
-                    );
+                    $resolver = FederationResolver::forModule($moduleConfig, $keys, $pdo);
 
                     $result = $resolver->resolve(
                         $formData['sub'],

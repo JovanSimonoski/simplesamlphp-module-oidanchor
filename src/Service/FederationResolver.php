@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace SimpleSAML\Module\oidanchor\Service;
 
+use PDO;
 use SimpleSAML\Configuration;
 use SimpleSAML\Module\oidanchor\Exception\ResolveException;
+use SimpleSAML\Module\oidanchor\Repository\IssuedTrustMarkRepository;
+use SimpleSAML\Module\oidanchor\Repository\TrustMarkSubjectRepository;
 use SimpleSAML\OpenID\Codebooks\ClaimsEnum;
 use SimpleSAML\OpenID\Codebooks\EntityTypesEnum;
 use SimpleSAML\OpenID\Exceptions\MetadataPolicyException;
@@ -31,6 +34,22 @@ class FederationResolver
         private readonly FederationKeyService $keys,
         private readonly TrustMarkStatusService $trustMarkStatus,
     ) {
+    }
+
+
+    /**
+     * The resolver as the module uses it: Trust Marks issued by this Trust Anchor are
+     * status-checked against the module database.
+     */
+    public static function forModule(Configuration $moduleConfig, FederationKeyService $keys, PDO $pdo): self
+    {
+        $trustMarkStatus = new TrustMarkStatusService(
+            $keys,
+            new IssuedTrustMarkRepository($pdo),
+            new TrustMarkSubjectRepository($pdo),
+        );
+
+        return new self($moduleConfig, $keys, $trustMarkStatus);
     }
 
 

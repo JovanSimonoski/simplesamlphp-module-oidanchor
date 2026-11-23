@@ -1,7 +1,11 @@
 .phpunit.cache/
 .phpunit.result.cache
 vendor/
-composer.lock
-lib/WebAuthn/restena.php
 phpunit.xml.bak
 nbproject/
+# Working notes stay local; only the module documentation is tracked.
+docs/*
+!docs/oidanchor.md
+!docs/architecture.md
+memory/
+federation_admin_openapi.yaml

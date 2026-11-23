@@ -6,8 +6,11 @@ namespace SimpleSAML\Module\oidanchor\Controller;
 
 use SimpleSAML\Configuration;
 use SimpleSAML\Module\oidanchor\Database\PdoFactory;
+use SimpleSAML\Module\oidanchor\Exception\EntityCollectionException;
 use SimpleSAML\Module\oidanchor\Repository\IssuedTrustMarkRepository;
 use SimpleSAML\Module\oidanchor\Repository\SubordinateRepository;
+use SimpleSAML\Module\oidanchor\Service\EntityCollectionRequest;
+use SimpleSAML\Module\oidanchor\Service\EntityCollectionService;
 use SimpleSAML\Module\oidanchor\Service\EntityConfigurationService;
 use SimpleSAML\Module\oidanchor\Service\FederationKeyService;
 use SimpleSAML\Module\oidanchor\Service\SubordinateService;
@@ -186,6 +189,49 @@ class OpenIDFederation
     }
 
 
+    /**
+     * Serve the Entity Collection endpoint (OpenID Federation Entity Collection 1.0): the active
+     * subordinates with their informational metadata and verified Trust Marks, for discovery
+     * services. Plain JSON (informational, not signed); GET, or POST with a form-encoded body.
+     * Readable cross-origin, so a discovery page in the browser can call it.
+     */
+    public function collection(Request $request): JsonResponse
+    {
+        $moduleConfig = Configuration::getConfig('module_oidanchor.php');
+
+        if (!$moduleConfig->getOptionalBoolean('federation_collection_endpoint_enabled', true)) {
+            return $this->endpointDisabled();
+        }
+
+        try {
+            if ($request->isMethod('POST') && $request->getContentTypeFormat() !== 'form') {
+                throw EntityCollectionException::invalidRequest(
+                    'A POST request must be application/x-www-form-urlencoded.',
+                );
+            }
+
+            // Parsed from the raw string: parameters such as entity_type may be repeated.
+            $encoded = $request->isMethod('POST')
+                ? (string) $request->getContent()
+                : (string) $request->server->get('QUERY_STRING', '');
+
+            $page = EntityCollectionService::fromConfig($moduleConfig, PdoFactory::get($moduleConfig))
+                ->page(EntityCollectionRequest::fromParameters(EntityCollectionRequest::parseFormEncoded($encoded)));
+
+            $response = new JsonResponse($page);
+            $response->setEncodingOptions(
+                JsonResponse::DEFAULT_ENCODING_OPTIONS | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
+            );
+        } catch (EntityCollectionException $e) {
+            $response = $this->federationError($e->errorCode, $e->getMessage(), $e->httpStatus);
+        }
+
+        $response->headers->set('Access-Control-Allow-Origin', '*');
+
+        return $response;
+    }
+
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
@@ -203,7 +249,7 @@ class OpenIDFederation
 
 
     /**
-     * An endpoint switched off with federation_{fetch,list}_endpoint_enabled: answered as if it
+     * An endpoint switched off with federation_{fetch,list,collection}_endpoint_enabled: answered as if it
      * did not exist (it is not advertised in the Entity Configuration either).
      */
     private function endpointDisabled(): JsonResponse

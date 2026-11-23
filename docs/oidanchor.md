@@ -63,11 +63,11 @@ databases will not work yet.
 
 ### Cron
 
-Interval-based key rotation and the refresh of the Trust Marks the Trust
-Anchor publishes about itself run from the SimpleSAMLphp cron module, on the
-tag configured as `cron_tag` (default `hourly`). They never run on public
-requests, so cron must be set up for that tag. See the cron module's
-documentation for invoking it.
+Interval-based key rotation, the refresh of the Trust Marks the Trust Anchor
+publishes about itself, and the refresh of the entity collection run from the
+SimpleSAMLphp cron module, on the tag configured as `cron_tag` (default
+`hourly`). They never run on public requests, so cron must be set up for that
+tag. See the cron module's documentation for invoking it.
 
 ### Web server
 
@@ -99,7 +99,9 @@ each one. The most important:
 - `authority_hints`: superiors, when this Trust Anchor is itself a
   subordinate.
 - `resolve`: resolver depth, outbound HTTP timeouts and TLS verification.
-- `cron_tag`: cron tag for key rotation and Trust Mark refresh.
+- `collection`: page size of the entity collection.
+- `cron_tag`: cron tag for key rotation, Trust Mark refresh and the entity
+  collection.
 - `database_dsn`: PDO DSN of the module database.
 - `api_admin_username`, `api_admin_password`: HTTP Basic credential for the
   admin API.
@@ -110,9 +112,10 @@ Several values (lifetimes, signing algorithm, RSA key length, rotation
 options) can also be changed at runtime through the admin API; a stored value
 takes precedence over the configuration file.
 
-`federation_fetch_endpoint_enabled` and `federation_list_endpoint_enabled`
-switch those endpoints off: a disabled endpoint answers 404 and is not
-advertised in the Entity Configuration.
+`federation_fetch_endpoint_enabled`, `federation_list_endpoint_enabled` and
+`federation_collection_endpoint_enabled` switch those endpoints off: a
+disabled endpoint answers 404 and is not advertised in the Entity
+Configuration.
 
 ## Federation endpoints
 
@@ -126,6 +129,10 @@ Paths are relative to the module URL
 | Subordinate statement fetch | `/federation/fetch` (alias `/fetch`) | 8.1   |
 | Resolve                     | `/resolve`                           | 8.3   |
 | Trust Mark status           | `/trust_mark_status`                 | 8.4   |
+| Entity collection           | `/federation/collection`             | EC 3  |
+
+EC is OpenID Federation Entity Collection 1.0 (draft 02), an extension
+specification.
 
 Signed responses carry `Cache-Control: public, max-age=...` derived from the
 token's `exp`. Errors use the specification's JSON error format
@@ -148,6 +155,44 @@ hardened (all in the `resolve` configuration block):
   for development stacks.
 - Fetch and trust chain failures are reported without network detail; the
   detail is logged.
+
+### Entity collection
+
+`/federation/collection` lists the entities in the federation for discovery
+services: each active subordinate with its entity types, its display
+information (`display_name`, `logo_uri`, `description` and the other
+informational metadata claims, per entity type) and, on request, its Trust
+Marks. The response is plain JSON, not a signed JWT, and is readable
+cross-origin (`Access-Control-Allow-Origin: *`).
+
+The information comes from cron, not from the request. Each cron run resolves
+the trust chain of every active subordinate to this Trust Anchor, the same
+way `/resolve` does: signatures are verified, metadata policy is applied, and
+only Trust Marks that validate are kept. The endpoint then answers from
+stored data and makes no outbound requests. Who is listed is always current;
+the display information and Trust Marks are as of the last cron run. A
+subordinate whose chain does not resolve is still listed, with only the
+entity types registered for it here.
+
+Supported request parameters, as GET query parameters or a form-encoded POST
+body:
+
+- `entity_type` (repeatable, any of the types) and `trust_mark_type`
+  (repeatable, a valid mark of every type is required).
+- `query`: case-insensitive text matched against the entity ID, names,
+  descriptions and keywords.
+- `entity_claims` (`entity_id`, `entity_types`, `entity_infos`,
+  `trust_marks`), `info_claims` and `locale`, which select what each entry
+  contains. By default an entry has `entity_id`, `entity_types` and
+  `entity_infos`.
+- `limit` and `from` for paging. Entries are ordered by entity ID; a page has
+  at most `collection.max_page_size` entries (default 100), and `next`
+  carries the `from` value of the next page.
+- `trust_anchor`: only this Trust Anchor's own entity ID is accepted; any
+  other answers `invalid_trust_anchor`.
+
+Only direct subordinates are collected: entities below an intermediate are
+not listed.
 
 ## Admin UI
 

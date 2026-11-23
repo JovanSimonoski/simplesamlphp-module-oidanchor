@@ -33,6 +33,9 @@ class SettingsRepository
 
     public const string GENERAL_CONSTRAINTS = 'general_constraints';
 
+    /** Bookkeeping, not an admin setting: when cron last refreshed the entity collection. */
+    public const string ENTITY_COLLECTION_REFRESHED_AT = 'entity_collection_refreshed_at';
+
 
     public function __construct(private readonly PDO $pdo)
     {

@@ -18,6 +18,7 @@
         "php": "^8.3",
         "ext-date": "*",
         "ext-hash": "*",
+        "ext-mbstring": "*",
         "ext-openssl": "*",
         "ext-pdo": "*",
 

@@ -46,8 +46,11 @@ response. They hold no federation logic.
   and recorded; `TrustMarkStatusService` answers status queries.
   `EcTrustMarkService` manages the marks the Trust Anchor publishes about
   itself.
+- `EntityCollectionService` builds the entity collection: cron resolves every
+  active subordinate and stores what verified, and the endpoint serves pages
+  from that store.
 - `FederationMaintenanceService` holds the periodic work (rotation, Trust
-  Mark refresh) that the cron listener runs.
+  Mark refresh, entity collection refresh) that the cron listener runs.
 
 JOSE work (signing, parsing, verification) goes through simplesamlphp/openid;
 the module does not hand-roll JWTs.

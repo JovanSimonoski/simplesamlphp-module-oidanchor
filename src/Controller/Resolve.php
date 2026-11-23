@@ -8,13 +8,10 @@ use SimpleSAML\Configuration;
 use SimpleSAML\Logger;
 use SimpleSAML\Module\oidanchor\Database\PdoFactory;
 use SimpleSAML\Module\oidanchor\Exception\ResolveException;
-use SimpleSAML\Module\oidanchor\Repository\IssuedTrustMarkRepository;
 use SimpleSAML\Module\oidanchor\Repository\RateLimitRepository;
 use SimpleSAML\Module\oidanchor\Repository\ResolveCacheRepository;
-use SimpleSAML\Module\oidanchor\Repository\TrustMarkSubjectRepository;
 use SimpleSAML\Module\oidanchor\Service\FederationKeyService;
 use SimpleSAML\Module\oidanchor\Service\FederationResolver;
-use SimpleSAML\Module\oidanchor\Service\TrustMarkStatusService;
 use SimpleSAML\Module\oidanchor\Validation\Url;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -105,16 +102,7 @@ class Resolve
                 }
             }
 
-            $keys     = new FederationKeyService($moduleConfig, $pdo);
-            $resolver = new FederationResolver(
-                $moduleConfig,
-                $keys,
-                new TrustMarkStatusService(
-                    $keys,
-                    new IssuedTrustMarkRepository($pdo),
-                    new TrustMarkSubjectRepository($pdo),
-                ),
-            );
+            $resolver = FederationResolver::forModule($moduleConfig, new FederationKeyService($moduleConfig, $pdo), $pdo);
 
             $result = $resolver->resolve($sub, $trustAnchor, $type);
             $token  = $resolver->buildSignedResponse($result);

@@ -24,6 +24,18 @@ final class FederationMaintenanceServiceTest extends TestCase
     }
 
 
+    public function testTheEntityCollectionIsRefreshedUnlessItsEndpointIsDisabled(): void
+    {
+        $this->assertContains('entity collection: 0 resolved, 0 failed', $this->service()->run());
+
+        $config = $this->moduleConfig(['federation_collection_endpoint_enabled' => false]);
+        $this->assertNotContains(
+            'entity collection: 0 resolved, 0 failed',
+            (new FederationMaintenanceService($config, $this->keys($config)))->run(),
+        );
+    }
+
+
     public function testDueRotationRotatesAndReissuesSelfIssuedMarksWithTheNewKey(): void
     {
         $config = $this->moduleConfig();

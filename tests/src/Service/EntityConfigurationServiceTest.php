@@ -39,6 +39,7 @@ final class EntityConfigurationServiceTest extends TestCase
         $this->assertSame([
             'federation_fetch_endpoint'             => self::ENTITY_ID . '/federation/fetch',
             'federation_list_endpoint'              => self::ENTITY_ID . '/federation/list',
+            'federation_collection_endpoint'        => self::ENTITY_ID . '/federation/collection',
             'federation_resolve_endpoint'           => self::ENTITY_ID . '/resolve',
             'federation_trust_mark_status_endpoint' => self::ENTITY_ID . '/trust_mark_status',
         ], $claims['metadata']['federation_entity']);
@@ -48,8 +49,9 @@ final class EntityConfigurationServiceTest extends TestCase
     public function testDisabledEndpointsAreNotAdvertised(): void
     {
         $config = $this->moduleConfig([
-            'federation_fetch_endpoint_enabled' => false,
-            'federation_list_endpoint_enabled'  => false,
+            'federation_fetch_endpoint_enabled'      => false,
+            'federation_list_endpoint_enabled'       => false,
+            'federation_collection_endpoint_enabled' => false,
         ]);
 
         $metadata = (new EntityConfigurationService($this->keys($config)))
@@ -57,6 +59,7 @@ final class EntityConfigurationServiceTest extends TestCase
 
         $this->assertArrayNotHasKey('federation_fetch_endpoint', $metadata);
         $this->assertArrayNotHasKey('federation_list_endpoint', $metadata);
+        $this->assertArrayNotHasKey('federation_collection_endpoint', $metadata);
         $this->assertSame(self::ENTITY_ID . '/resolve', $metadata['federation_resolve_endpoint']);
     }
 

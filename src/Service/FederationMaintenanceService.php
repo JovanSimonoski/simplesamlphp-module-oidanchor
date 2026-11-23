@@ -9,7 +9,8 @@ use SimpleSAML\Module\oidanchor\Repository\EcTrustMarkRepository;
 
 /**
  * Periodic work that must stay off the public request path: interval-based signing-key
- * rotation and the refresh / re-issuance of the TA's own Entity Configuration Trust Marks.
+ * rotation, the refresh / re-issuance of the TA's own Entity Configuration Trust Marks, and the
+ * refresh of the entity collection (which resolves every active subordinate).
  *
  * Run by {@see \SimpleSAML\Module\oidanchor\Event\Listener\CronListener}.
  */
@@ -46,6 +47,14 @@ class FederationMaintenanceService
             $counts['refreshed'],
             $counts['failed'],
         );
+
+        if ($this->moduleConfig->getOptionalBoolean('federation_collection_endpoint_enabled', true)) {
+            $pdo    = $this->keys->pdoConnection();
+            $counts = EntityCollectionService::fromConfig($this->moduleConfig, $pdo)
+                ->refresh(FederationResolver::forModule($this->moduleConfig, $this->keys, $pdo));
+
+            $summary[] = sprintf('entity collection: %d resolved, %d failed', $counts['resolved'], $counts['failed']);
+        }
 
         return $summary;
     }

@@ -27,6 +27,15 @@ oidanchor-federation-fetch:
   }
   methods: [GET]
 
+# Entity Collection endpoint (federation_collection_endpoint, OpenID Federation Entity Collection 1.0).
+# Accessible at: /simplesaml/module.php/oidanchor/federation/collection?entity_type=<type>&...
+oidanchor-federation-collection:
+  path: /federation/collection
+  defaults: {
+    _controller: 'SimpleSAML\Module\oidanchor\Controller\OpenIDFederation::collection'
+  }
+  methods: [GET, POST]
+
 # ============================================================
 # Admin UI routes (require admin session)
 # ============================================================
